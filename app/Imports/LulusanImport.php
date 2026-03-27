@@ -2,7 +2,7 @@
 
 namespace App\Imports;
 
-use App\Models\Alumni;
+use App\Models\Lulusan;
 use App\Models\SurveyUser;
 use App\Models\User;
 use Exception;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class AlumniImport implements ToModel, WithHeadingRow
+class LulusanImport implements ToModel, WithHeadingRow
 {
     protected $survey_id;
 
@@ -44,13 +44,13 @@ class AlumniImport implements ToModel, WithHeadingRow
         //         [
         //             'name' => $row['nama'],
         //             'password' => bcrypt(substr($row['nip'], 0, 5)), // Use first 5 digits of NIP as password
-        //             'role' => 'alumni',
+        //             'role' => 'lulusan',
         //         ]
         //     );
 
         //     // Assign role if not already assigned
-        //     if (!$user->hasRole('alumni')) {
-        //         $user->assignRole('alumni');
+        //     if (!$user->hasRole('lulusan')) {
+        //         $user->assignRole('lulusan');
         //     }
         try {
             // Add name cleaning function
@@ -68,6 +68,7 @@ class AlumniImport implements ToModel, WithHeadingRow
 
             // Clean the name before saving
             $cleanedName = $cleanName($row['nama']);
+            $prodi = $row['prodi'] ?? ($row['program_studi'] ?? null);
 
             //mengeluarkan 8 angka NIP untuk menjadi variabel tanggal_lahir
             if($row['nip']){
@@ -90,76 +91,78 @@ class AlumniImport implements ToModel, WithHeadingRow
             }
             $tahunLulus = !empty($row['tahun_lulus']) ? $row['tahun_lulus'] : null;
 
-            // Find existing alumni by name and date of birth
-            $existingAlumni = null;
+            // Find existing lulusan by name and date of birth
+            $existingLulusan = null;
             if ($tanggalLahir) {
-                $existingAlumni = Alumni::where('nama', 'LIKE', $cleanedName . '%')
+                $existingLulusan = Lulusan::where('nama', 'LIKE', $cleanedName . '%')
                     ->Where('tanggal_lahir', $tanggalLahir)
                     ->first();
             }
-            if ($existingAlumni) {
+            if ($existingLulusan) {
 
                 // Update existing record with new data
-                $existingAlumni->update([
-                    'nip' => $row['nip'] ?? $existingAlumni->nip,
-                    'email' => $row['email'] ?? $existingAlumni->email,
-                    'jabatan' => $row['jabatan'] ?? $existingAlumni->jabatan,
-                    'satuan_kerja' => $row['satuan_kerja'] ?? $existingAlumni->satuan_kerja,
-                    'unit_kerja' => $row['unit_kerja'] ?? $existingAlumni->unit_kerja,
-                    'no_hp' => $row['no_hp'] ?? $existingAlumni->no_hp,
-                    'nip_kepala_bps' => $row['nip_kepala_bps'] ?? $existingAlumni->nip_kepala_bps,
-                    'tahun_lulus' => $tahunLulus ?? $existingAlumni->tahun_lulus
+                $existingLulusan->update([
+                    'nip' => $row['nip'] ?? $existingLulusan->nip,
+                    'email' => $row['email'] ?? $existingLulusan->email,
+                    'prodi' => $prodi ?? $existingLulusan->prodi,
+                    'jabatan' => $row['jabatan'] ?? $existingLulusan->jabatan,
+                    'satuan_kerja' => $row['satuan_kerja'] ?? $existingLulusan->satuan_kerja,
+                    'unit_kerja' => $row['unit_kerja'] ?? $existingLulusan->unit_kerja,
+                    'no_hp' => $row['no_hp'] ?? $existingLulusan->no_hp,
+                    'nip_pengguna_lulusan' => $row['nip_pengguna_lulusan'] ?? $existingLulusan->nip_pengguna_lulusan,
+                    'tahun_lulus' => $tahunLulus ?? $existingLulusan->tahun_lulus
                 ]);
 
                 // Update the associated user if email is provided
-                if (!empty($row['email']) && $existingAlumni->user) {
-                    $existingAlumni->user->update([
+                if (!empty($row['email']) && $existingLulusan->user) {
+                    $existingLulusan->user->update([
                         'email' => $row['email'],
                         'name' => $cleanedName
                     ]);
                 }
 
                 // Create survey_user entry if survey_id is set and doesn't exist
-                if ($this->survey_id && $existingAlumni->user) {
+                if ($this->survey_id && $existingLulusan->user) {
                     SurveyUser::firstOrCreate(
                         [
                             'survey_id' => $this->survey_id,
-                            'user_id' => $existingAlumni->user->id,
+                            'user_id' => $existingLulusan->user->id,
                         ]
                     );
                 }
 
-                Log::info("Updated existing alumni: " . $cleanedName . " with birth date: " . $tanggalLahir);
-                return $existingAlumni;
+                Log::info("Updated existing lulusan: " . $cleanedName . " with birth date: " . $tanggalLahir);
+                return $existingLulusan;
             }
 
-            // Create new record if no existing alumni found
+            // Create new record if no existing lulusan found
             // Create the user
             $user = User::firstOrCreate(
                 ['email' => $row['email']],
                 [
                     'name' => $cleanedName,
                     'password' => bcrypt(substr($row['nip'], 0, 5)),
-                    'role' => 'alumni',
+                    'role' => 'lulusan',
                 ]
             );
 
             // Assign role if not already assigned
-            if (!$user->hasRole('alumni')) {
-                $user->assignRole('alumni');
+            if (!$user->hasRole('lulusan')) {
+                $user->assignRole('lulusan');
             }
 
-            // Create the alumni record
-            $alumni = Alumni::create([
+            // Create the lulusan record
+            $lulusan = Lulusan::create([
                 'user_id' => $user->id,
                 'nama' => $cleanedName,
                 'nip' => $row['nip'] ?? '',
                 'email' => $row['email'] ?? '',
+                'prodi' => $prodi,
                 'jabatan' => $row['jabatan'] ?? '',
                 'satuan_kerja' => $row['satuan_kerja'] ?? '',
                 'unit_kerja' => $row['unit_kerja'] ?? '',
                 'no_hp' => $row['no_hp'] ?? '',
-                'nip_kepala_bps' => $row['nip_kepala_bps'] ?? '',
+                'nip_pengguna_lulusan' => $row['nip_pengguna_lulusan'] ?? '',
                 'tanggal_lahir' => $tanggalLahir,
                 'tahun_lulus' => $tahunLulus,
             ]);
@@ -174,9 +177,9 @@ class AlumniImport implements ToModel, WithHeadingRow
                 );
             }
 
-            Log::info("Created new alumni: " . $cleanedName . " with birth date: " . $tanggalLahir);
+            Log::info("Created new lulusan: " . $cleanedName . " with birth date: " . $tanggalLahir);
 
-            return $alumni;
+            return $lulusan;
         } catch (QueryException $e) {
             Log::error("Database error during import: " . $e->getMessage());
             throw new Exception("Error importing data: " . $e->getMessage());

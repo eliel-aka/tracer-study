@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use App\Models\Alumni;
-use App\Models\Atasan;
+use App\Models\Lulusan;
+use App\Models\PenggunaLulusan;
 use App\Models\Survey;
 use App\Models\SurveyUser;
 use Illuminate\Http\RedirectResponse;
@@ -101,10 +101,10 @@ class ProfileController extends Controller
         $user = Auth::user();
         
         // Load relasi berdasarkan role user
-        if ($user->hasRole('alumni')) {
-            $user->load('alumni');
-        } elseif ($user->hasRole('atasan')) {
-            $user->load('atasan');
+        if ($user->hasRole('lulusan')) {
+            $user->load('lulusan');
+        } elseif ($user->hasRole('pengguna_lulusan')) {
+            $user->load('penggunaLulusan');
         }
         
         return view('user.views.index', [
@@ -114,13 +114,13 @@ class ProfileController extends Controller
     }
     // buat di indeks user
     // public function profileUser(){
-    //     // $alumni=Alumni::findOrFail($id);
-    //     $alumni=Alumni::where('user_id',31)->first();
+    //     // $lulusan=Lulusan::findOrFail($id);
+    //     $lulusan=Lulusan::where('user_id',31)->first();
 
 
     //     return view('user.views.index', [
 
-    //         'profil'=>$alumni
+    //         'profil'=>$lulusan
     //     ]);
     // }
 

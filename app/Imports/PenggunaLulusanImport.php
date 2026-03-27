@@ -2,15 +2,16 @@
 
 namespace App\Imports;
 
-use App\Models\Atasan;
+use App\Models\PenggunaLulusan;
 use App\Models\SurveyUser;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Exception;
 
-class AtasanImport implements ToModel, WithHeadingRow
+class PenggunaLulusanImport implements ToModel, WithHeadingRow
 {
     protected $survey_id;
 
@@ -43,17 +44,17 @@ class AtasanImport implements ToModel, WithHeadingRow
             [
                 'name' => $row['nama'],
                 'password' => bcrypt(substr($row['nip'], 0, 5)), // Use first 5 digits of NIP as password
-                'role' => 'atasan',
+                'role' => 'pengguna_lulusan',
             ]
         );
 
         // Assign role if not already assigned
-        if (!$user->hasRole('atasan')) {
-            $user->assignRole('atasan');
+        if (!$user->hasRole('pengguna_lulusan')) {
+            $user->assignRole('pengguna_lulusan');
         }
 
-        // Create the atasan record
-        $atasan = Atasan::firstOrCreate(
+        // Create the pengguna_lulusan record
+        $pengguna_lulusan = PenggunaLulusan::firstOrCreate(
             ['nip' => $row['nip']],
             [
                 'user_id' => $user->id,
@@ -76,7 +77,7 @@ class AtasanImport implements ToModel, WithHeadingRow
                 ]
             );
         }
-        return $atasan;
+        return $pengguna_lulusan;
     } catch (QueryException $e) {
         Log::error("Database error during import: " . $e->getMessage());
             throw new Exception("Error importing data: " . $e->getMessage());

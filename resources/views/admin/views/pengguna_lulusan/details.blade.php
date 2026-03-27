@@ -29,31 +29,31 @@
                       </tr>
                     </thead>
                     <tbody>
-                    @foreach($alumni as $alumnus)  
+                    @foreach($lulusan as $lulusanus)  
                     <tr>
                       <td class="p-2 align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                         <div class="flex flex-col px-2 py-1">
                           <h6 class="mb-0 text-sm leading-normal dark:text-white break-words whitespace-normal">
-                            {{ $alumnus->nama }}
+                            {{ $lulusanus->nama }}
                           </h6> 
                         </div>
                       </td>
 
                       <td class="p-2 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                         <span class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400 break-words whitespace-normal">
-                          {{ $alumnus->nip }}
+                          {{ $lulusanus->nip }}
                         </span>
                       </td>
 
                       <td class="p-2 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                         <span class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400 break-words whitespace-normal">
-                          {{ $alumnus->email }}
+                          {{ $lulusanus->email }}
                         </span>
                       </td>
 
                       <td class="p-2 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                         <span class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400 break-words whitespace-normal">
-                          {{ $alumnus->jabatan }}
+                          {{ $lulusanus->jabatan }}
                         </span>
                       </td>
                     </tr>
@@ -62,7 +62,7 @@
                     </tbody>
                   </table>
                   <div class="p-4">
-                    {{ $alumni->links() }}
+                    {{ $lulusan->links() }}
                   </div>
                 </div>
               </div>

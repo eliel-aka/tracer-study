@@ -22,7 +22,7 @@ try {
             'deskripsi' => 'Survey untuk testing navigation system',
             'tanggal_mulai' => now(),
             'tanggal_selesai' => now()->addDays(30),
-            'type_survei' => 'alumni', // Add this required field
+            'type_survei' => 'lulusan', // Add this required field
             'created_by' => 1
         ]
     );

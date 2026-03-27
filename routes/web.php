@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\AlumniController;
-use App\Http\Controllers\AtasanController;
+use App\Http\Controllers\LulusanController;
+use App\Http\Controllers\PenggunaLulusanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\ProfileController;
@@ -39,15 +39,17 @@ Route::get('/', function () {
 // Admin route
 Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('alumni/export', [AlumniController::class, 'export'])->name('alumni.export');
-    Route::post('alumni/import', [AlumniController::class, 'import'])->name('alumni.import');
-    Route::delete('alumni/delete/{id}', [AlumniController::class, 'destroy'])->name('admin.alumni.destroy'); //hapus alumni
-    Route::post('atasan/import', [AtasanController::class, 'import'])->name('atasan.import');
-    Route::get('atasan/export', [AtasanController::class, 'export'])->name('atasan.export');
-    Route::get('atasan/details/{id}', [AtasanController::class, 'details'])->name('atasan.details');
-    Route::delete('atasan/delete/{id}', [AtasanController::class, 'destroy'])->name('admin.atasan.destroy');
-    Route::resource('alumni', AlumniController::class);
-    Route::resource('atasan', AtasanController::class);
+    Route::get('dashboard/grafik/{id}', [DashboardController::class, 'grafik'])->name('dashboard.grafik');
+    Route::get('dashboard/chart-data/{surveyId}/{questionId}', [DashboardController::class, 'getChartData'])->name('dashboard.chartData');
+    Route::get('lulusan/export', [LulusanController::class, 'export'])->name('lulusan.export');
+    Route::post('lulusan/import', [LulusanController::class, 'import'])->name('lulusan.import');
+    Route::delete('lulusan/delete/{id}', [LulusanController::class, 'destroy'])->name('admin.lulusan.destroy'); //hapus lulusan
+    Route::post('pengguna_lulusan/import', [PenggunaLulusanController::class, 'import'])->name('pengguna_lulusan.import');
+    Route::get('pengguna_lulusan/export', [PenggunaLulusanController::class, 'export'])->name('pengguna_lulusan.export');
+    Route::get('pengguna_lulusan/details/{id}', [PenggunaLulusanController::class, 'details'])->name('pengguna_lulusan.details');
+    Route::delete('pengguna_lulusan/delete/{id}', [PenggunaLulusanController::class, 'destroy'])->name('admin.pengguna_lulusan.destroy');
+    Route::resource('lulusan', LulusanController::class);
+    Route::resource('pengguna_lulusan', PenggunaLulusanController::class);
     Route::post('survey/import', [SurveyController::class, 'import'])->name('survey.import');
     // Form Builder Routes
     Route::get('survey/form-builder/create', [App\Http\Controllers\Admin\FormBuilderController::class, 'create'])->name('survey.form_builder.create');
@@ -76,8 +78,6 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
     Route::get('monitoring/export/{surveyId}', [MonitoringController::class, 'export'])->name('monitoring.export');
     Route::get('monitoring/details/{id}', [MonitoringController::class, 'details'])->name('monitoring.details');
     Route::resource('monitoring', MonitoringController::class);
-    Route::get('monitoring/grafik/{id}', [MonitoringController::class, 'grafik'])->name('monitoring.grafik');
-    Route::get('monitoring/chart-data/{surveyId}/{questionId}', [MonitoringController::class, 'getChartData'])->name('monitoring.chartData');
     // Route::resource('profile', ProfileController::class);
     Route::get('profile/edit', [ProfileController::class, 'editAdmin'])->name('profile.edit');
     Route::put('profile/update', [ProfileController::class, 'updateAdmin'])->name('profile.update');
@@ -85,7 +85,7 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
     Route::resource('user', ProfileController::class);
     Route::get('search_user',[SurveyUserController::class, 'search_user'])->name('search_user');
     Route::post('survey/add_user',[SurveyUserController::class, 'add_user'])->name('survey.add_user');
-    Route::post('survey/add_alumni_by_graduation_year',[SurveyUserController::class, 'add_alumni_by_graduation_year'])->name('survey.add_alumni_by_graduation_year');
+    Route::post('survey/add_lulusan_by_graduation_year',[SurveyUserController::class, 'add_lulusan_by_graduation_year'])->name('survey.add_lulusan_by_graduation_year');
     Route::get('get_graduation_years',[SurveyUserController::class, 'get_graduation_years'])->name('get_graduation_years');
     Route::post('send_email/{surveyId}',[SurveyUserController::class, 'sendEmail'])->name('send_email');
     Route::post('send_reminders/{surveyId}',[SurveyUserController::class, 'sendReminders'])->name('send_reminders');
@@ -99,7 +99,7 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
 });
 
 // User route
-Route::middleware(['auth', 'role:alumni|atasan'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth', 'role:lulusan|pengguna_lulusan'])->prefix('user')->name('user.')->group(function () {
     Route::get('profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::post('profile/update', [SurveyUserController::class, 'updateProfile'])->name('profile.update');
     Route::get('survey/{id}', [SurveyUserController::class, 'surveyUserPertanyaan'])->name('survey.survey');

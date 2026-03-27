@@ -192,7 +192,7 @@
                   <div class="flex items-center gap-4">
                   @if(!auth()->user()->hasRole('supervisor'))
                     <div class="relative w-64">
-                      <label for="graduationYearSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tambah User by Tahun Lulus: <span class="text-red-500">[HANYA UNTUK SURVEI TIPE ALUMNI]</span></label>
+                      <label for="graduationYearSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tambah User by Tahun Lulus: <span class="text-red-500">[HANYA UNTUK SURVEI TIPE LULUSAN]</span></label>
                       <select id="graduationYearSelect" class="w-full form-select focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                         <option value="">Pilih Tahun Lulus...</option>
                       </select>
@@ -416,9 +416,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedYear = $(this).val();
 
         if (selectedYear) {
-            if (confirm(`Apakah Anda yakin ingin menambahkan semua alumni yang lulus pada tahun ${selectedYear} ke dalam survey ini?`)) {
+            if (confirm(`Apakah Anda yakin ingin menambahkan semua lulusan yang lulus pada tahun ${selectedYear} ke dalam survey ini?`)) {
                 $.ajax({
-                    url: '{{ route("admin.survey.add_alumni_by_graduation_year") }}',
+                    url: '{{ route("admin.survey.add_lulusan_by_graduation_year") }}',
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     },
                     error: function(xhr) {
-                        const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menambahkan alumni.';
+                        const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menambahkan lulusan.';
                         const alertDiv = $(`
                             <div class="fixed top-4 right-4 bg-red-100 border-t-4 border-red-500 rounded-b text-red-900 px-4 py-3 shadow-md" role="alert">
                                 <div class="flex">

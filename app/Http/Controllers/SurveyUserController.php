@@ -45,7 +45,7 @@ class SurveyUserController extends Controller
     }
 
     /**
-     * Update user profile information (alumni or atasan)
+     * Update user profile information (lulusan or pengguna lulusan)
      */
     public function updateProfile(Request $request)
     {
@@ -59,15 +59,15 @@ class SurveyUserController extends Controller
         $user = Auth::user();
 
         try {
-            if ($user->hasRole('alumni') && $user->alumni) {
-                $user->alumni->update([
+            if ($user->hasRole('lulusan') && $user->lulusan) {
+                $user->lulusan->update([
                     'jabatan' => $request->jabatan,
                     'satuan_kerja' => $request->satuan_kerja,
                     'unit_kerja' => $request->unit_kerja,
                     'no_hp' => $request->no_hp,
                 ]);
-            } elseif ($user->hasRole('atasan') && $user->atasan) {
-                $user->atasan->update([
+            } elseif ($user->hasRole('pengguna_lulusan') && $user->pengguna_lulusan) {
+                $user->pengguna_lulusan->update([
                     'jabatan' => $request->jabatan,
                     'satuan_kerja' => $request->satuan_kerja,
                     'unit_kerja' => $request->unit_kerja,
@@ -317,7 +317,7 @@ class SurveyUserController extends Controller
 
     public function sendEmail($id){
         try {
-            $surveyUsers = SurveyUser::with(['user.alumni','user.atasan'])->where('survey_id', $id)->get();
+            $surveyUsers = SurveyUser::with(['user.lulusan','user.pengguna_lulusan'])->where('survey_id', $id)->get();
             if($surveyUsers->isEmpty()) {
                 return response()->json(['success'=>false, 'message'=>'Tidak ada pengguna yang terdaftar untuk survei ini.'], 400);
             }
@@ -340,18 +340,18 @@ class SurveyUserController extends Controller
 
     public function search_user (Request $request){
         $search = $request->input('search');
-        $type = $request->input('type', 'alumni');
+        $type = $request->input('type', 'lulusan');
         $surveyId = $request->input('survey_id');
 
         $query = User::query();
 
-        if ($type === 'alumni') {
+        if ($type === 'lulusan') {
             $query->whereHas('roles', function($q) {
-                $q->where('name', 'alumni');
+                $q->where('name', 'lulusan');
             });
         } else {
             $query->whereHas('roles', function($q) {
-                $q->where('name', 'atasan');
+                $q->where('name', 'pengguna_lulusan');
             });
         }
 
@@ -368,7 +368,7 @@ class SurveyUserController extends Controller
             $q->where('name', 'like', "%{$search}%")
               ->orWhere('email', 'like', "%{$search}%");
         })
-        ->with(['alumni' => function($q) {
+        ->with(['lulusan' => function($q) {
             $q->select('id', 'user_id', 'nama', 'nip');
         }])
         ->select('users.id', 'users.name', 'users.email')
@@ -514,7 +514,7 @@ class SurveyUserController extends Controller
     public function sendThankYou($surveyUserId)
     {
         try {
-            $surveyUser = SurveyUser::with(['user', 'user.alumni', 'user.atasan'])
+            $surveyUser = SurveyUser::with(['user', 'user.lulusan', 'user.pengguna_lulusan'])
                 ->find($surveyUserId);
             
             if (!$surveyUser) {
@@ -573,10 +573,10 @@ class SurveyUserController extends Controller
         }
     }
 
-    public function add_alumni_by_graduation_year(Request $request)
+    public function add_lulusan_by_graduation_year(Request $request)
     {
         // Enable detailed logging
-        Log::info('=== ADD ALUMNI BY GRADUATION YEAR FUNCTION CALLED ===');
+        Log::info('=== ADD LULUSAN BY GRADUATION YEAR FUNCTION CALLED ===');
         Log::info('Request method: ' . $request->method());
         Log::info('Request URL: ' . $request->url());
         Log::info('Request all data: ', $request->all());
@@ -585,7 +585,7 @@ class SurveyUserController extends Controller
         $surveyId = $request->input('survey_id');
         
         // Debug logging
-        Log::info('Add Alumni by Graduation Year Debug', [
+        Log::info('Add Lulusan by Graduation Year Debug', [
             'tahun_lulus' => $graduationYear,
             'survey_id' => $surveyId,
             'request_data' => $request->all()
@@ -602,55 +602,55 @@ class SurveyUserController extends Controller
                 ]);
             }
             
-            // Get all alumni with the specified graduation year
-            $alumni = \App\Models\Alumni::where('tahun_lulus', $graduationYear)
+            // Get all lulusan with the specified graduation year
+            $lulusan = \App\Models\Lulusan::where('tahun_lulus', $graduationYear)
                 ->whereHas('user') // Make sure they have associated user accounts
                 ->get();
                 
-            Log::info('Alumni found', ['count' => $alumni->count()]);
+            Log::info('Lulusan found', ['count' => $lulusan->count()]);
             
-            if ($alumni->isEmpty()) {
+            if ($lulusan->isEmpty()) {
                 return response()->json([
                     'success' => false, 
-                    'message' => 'Tidak ada alumni yang lulus pada tahun ' . $graduationYear
+                    'message' => 'Tidak ada lulusan yang lulus pada tahun ' . $graduationYear
                 ]);
             }
             
             $addedCount = 0;
             $skippedCount = 0;
             
-            foreach ($alumni as $alumnus) {
+            foreach ($lulusan as $lulusanus) {
                 // Check if user is already in this survey
-                $existingSurveyUser = SurveyUser::where('user_id', $alumnus->user_id)
+                $existingSurveyUser = SurveyUser::where('user_id', $lulusanus->user_id)
                     ->where('survey_id', $surveyId)
                     ->first();
                 
                 if (!$existingSurveyUser) {
                     $surveyUser = SurveyUser::create([
-                        'user_id' => $alumnus->user_id,
+                        'user_id' => $lulusanus->user_id,
                         'survey_id' => $surveyId,
                         'status' => 0
                     ]);
-                    Log::info('Alumni added to survey', [
-                        'user_id' => $alumnus->user_id, 
+                    Log::info('Lulusan added to survey', [
+                        'user_id' => $lulusanus->user_id, 
                         'survey_user_id' => $surveyUser->id
                     ]);
                     $addedCount++;
                 } else {
-                    Log::info('Alumni already in survey', [
-                        'user_id' => $alumnus->user_id, 
+                    Log::info('Lulusan already in survey', [
+                        'user_id' => $lulusanus->user_id, 
                         'existing_survey_user_id' => $existingSurveyUser->id
                     ]);
                     $skippedCount++;
                 }
             }
             
-            $message = "Berhasil menambahkan {$addedCount} alumni dari tahun lulus {$graduationYear}";
+            $message = "Berhasil menambahkan {$addedCount} lulusan dari tahun lulus {$graduationYear}";
             if ($skippedCount > 0) {
-                $message .= ". {$skippedCount} alumni sudah terdaftar dalam survey ini.";
+                $message .= ". {$skippedCount} lulusan sudah terdaftar dalam survey ini.";
             }
             
-            Log::info('Bulk add alumni result', [
+            Log::info('Bulk add lulusan result', [
                 'added_count' => $addedCount,
                 'skipped_count' => $skippedCount
             ]);
@@ -663,7 +663,7 @@ class SurveyUserController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            Log::error('Add alumni by graduation year error', [
+            Log::error('Add lulusan by graduation year error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -677,7 +677,7 @@ class SurveyUserController extends Controller
     public function get_graduation_years()
     {
         try {
-            $years = \App\Models\Alumni::whereNotNull('tahun_lulus')
+            $years = \App\Models\Lulusan::whereNotNull('tahun_lulus')
                 ->where('tahun_lulus', '!=', '')
                 ->distinct()
                 ->orderBy('tahun_lulus', 'desc')

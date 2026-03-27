@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Atasan extends Model
+class PenggunaLulusan extends Model
 {
-    protected $table = 'atasan';
+    protected $table = 'pengguna_lulusan';
     protected $fillable = ['user_id', 'nama','nip','email', 'jabatan', 'satuan_kerja', 'unit_kerja','no_hp'];
 
     public function user()

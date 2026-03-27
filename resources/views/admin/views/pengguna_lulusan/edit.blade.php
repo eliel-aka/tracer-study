@@ -1,8 +1,8 @@
 @extends('admin.layouts.app')
-@section('title', 'Edit Atasan')
+@section('title', 'Edit Pengguna Lulusan')
 @section('content')
     <!-- table 1 -->
-    <form action="{{ route('admin.atasan.update', $atasan) }}" method="POST">
+    <form action="{{ route('admin.pengguna_lulusan.update', $pengguna_lulusan) }}" method="POST">
         @csrf
         @method('PUT')
         <div class="flex flex-wrap -mx-3">
@@ -20,7 +20,7 @@
                                     <div class="mb-4">
                                         <label for="nama"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Nama <span class="text-red-500">*</span></label>
-                                        <input type="text" name="nama" value="{{ $atasan->nama }}"
+                                        <input type="text" name="nama" value="{{ $pengguna_lulusan->nama }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('nama')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -31,7 +31,7 @@
                                     <div class="mb-4">
                                         <label for="nip"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">NIP <span class="text-red-500">*</span></label>
-                                        <input type="text" name="nip" value="{{ $atasan->nip }}"
+                                        <input type="text" name="nip" value="{{ $pengguna_lulusan->nip }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('nip')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -43,7 +43,7 @@
                                     <div class="mb-4">
                                         <label for="email"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Email <span class="text-red-500">*</span></label>
-                                        <input type="email" name="email" value="{{ $atasan->email }}"
+                                        <input type="email" name="email" value="{{ $pengguna_lulusan->email }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('email')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -54,7 +54,7 @@
                                     <div class="mb-4">
                                         <label for="jabatan"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Jabatan</label>
-                                        <input type="text" name="jabatan" value="{{ $atasan->jabatan }}"
+                                        <input type="text" name="jabatan" value="{{ $pengguna_lulusan->jabatan }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('jabatan')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -66,7 +66,7 @@
                                         <label for="satuan_kerja"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Satuan
                                             Kerja</label>
-                                        <input type="text" name="satuan_kerja" value="{{ $atasan->satuan_kerja }}"
+                                        <input type="text" name="satuan_kerja" value="{{ $pengguna_lulusan->satuan_kerja }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('satuan_kerja')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -78,7 +78,7 @@
                                         <label for="unit_kerja"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Unit
                                             Kerja</label>
-                                        <input type="text" name="unit_kerja" value="{{ $atasan->unit_kerja }}"
+                                        <input type="text" name="unit_kerja" value="{{ $pengguna_lulusan->unit_kerja }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('unit_kerja')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -91,7 +91,7 @@
                                         <label for="unit_kerja"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Unit
                                             Kerja</label>
-                                        <input type="text" name="unit_kerja" value="{{ $atasan->unit_kerja }}"
+                                        <input type="text" name="unit_kerja" value="{{ $pengguna_lulusan->unit_kerja }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('unit_kerja')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -104,7 +104,7 @@
                                         <label for="no_hp"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">No
                                             HP</label>
-                                        <input type="textarea" name="no_hp" value="{{ $atasan->no_hp }}"
+                                        <input type="textarea" name="no_hp" value="{{ $pengguna_lulusan->no_hp }}"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                                         @error('no_hp')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -114,11 +114,11 @@
                                 
                             </div>
                             <div class="flex justify-end items-center mt-4">
-                                <a href="{{ route('admin.atasan.index') }}"
-                                    class="inline-block px-8 py-2 w-36 h-10 font-bold text-center align-middle transition-all ease-in border border-gray-300 rounded-lg text-gray-700 bg-transparent hover:bg-gray-100 text-xs tracking-tight-rem cursor-pointer mr-4">Batal</button>
+                                <a href="{{ route('admin.pengguna_lulusan.index') }}"
+                                    class="inline-flex items-center justify-center px-8 py-2 w-36 h-10 font-bold text-center align-middle transition-all ease-in border border-gray-300 rounded-lg text-gray-700 bg-transparent hover:bg-gray-100 text-xs tracking-tight-rem cursor-pointer mr-4">Batal</button>
                                 </a>
                                 <button type="submit"
-                                    class="inline-block px-8 py-2 w-36 h-10 font-bold text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">Simpan</button>
+                                    class="inline-flex items-center justify-center px-8 py-2 w-36 h-10 font-bold text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">Simpan</button>
                                 </a>
                             </div>
                         </div>

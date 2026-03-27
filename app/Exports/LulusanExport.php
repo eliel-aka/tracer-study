@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Alumni;
+use App\Models\Lulusan;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class AlumniExport implements FromCollection, WithHeadings
+class LulusanExport implements FromCollection, WithHeadings
 {
     /**
      * @return \Illuminate\Support\Collection
      */
     public function collection()
     {
-        return Alumni::join('users', 'alumni.user_id', '=', 'users.id')
-        ->get(['alumni.id', 'alumni.nama', 'alumni.nip', 'users.email', 'alumni.jabatan','alumni.satuan_kerja','alumni.unit_kerja', 'alumni.no_hp', 'alumni.nip_kepala_bps', 'alumni.tanggal_lahir','alumni.tahun_lulus','alumni.created_at', 'alumni.updated_at']);
+        return Lulusan::join('users', 'lulusan.user_id', '=', 'users.id')
+        ->get(['lulusan.id', 'lulusan.nama', 'lulusan.nip', 'users.email', 'lulusan.prodi', 'lulusan.jabatan','lulusan.satuan_kerja','lulusan.unit_kerja', 'lulusan.no_hp', 'lulusan.nip_pengguna_lulusan', 'lulusan.tanggal_lahir','lulusan.tahun_lulus','lulusan.created_at', 'lulusan.updated_at']);
     }
 
     /**
@@ -27,12 +27,12 @@ class AlumniExport implements FromCollection, WithHeadings
             'Nama',
             'NIP',
             'Email',
+            'Program Studi',
             'Jabatan',
             'Satuan Kerja',
             'Unit Kerja',
             'No HP',
-            'Kepala BPS',
-            'NIP Kepala BPS',
+            'NIP Pengguna Lulusan',
             'Tanggal Lahir',
             'Tahun Lulus',
             'Created At',

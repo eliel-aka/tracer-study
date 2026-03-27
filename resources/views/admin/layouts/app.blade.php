@@ -32,29 +32,38 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- Custom Styles -->
+    <style>
+        @media (min-width: 1024px) {
+            .admin-main-content {
+                margin-left: 17rem;
+                width: calc(100% - 17rem);
+            }
+        }
+    </style>
     @stack('styles')
 </head>
 
 <body
     class="m-0 font-sans text-base antialiased font-normal dark:bg-slate-900 leading-default bg-gray-50 text-slate-500">
-    <div class="absolute w-full bg-blue-500 dark:hidden" style="height: 40vh;"></div>
+    <div class="absolute w-full bg-gradient-to-b from-blue-500 to-transparent" style="height: 100vh;"></div>
     @include ('admin.layouts.sidebar')
 
-    <main class="relative h-full max-h-screen transition-all duration-200 ease-in-out xl:ml-68 rounded-xl">
+    <main class="admin-main-content relative h-full max-h-screen transition-all duration-200 ease-in-out rounded-xl">
         @include('admin.layouts.navigation')
         <div class="w-full px-6 py-6 mx-auto">
+            @include('admin.components.alert')
             @yield('content')
 
             <footer class="pt-4">
                 <div class="w-full px-6 mx-auto">
-                    <div class="flex flex-wrap items-center -mx-3 lg:justify-between">
+                    <div class="flex flex-wrap items-center -mx-3 lg:justify-center">
                         <div class="w-full max-w-full px-3 mt-0 mb-6 shrink-0 lg:mb-0 lg:w-1/2 lg:flex-none">
                             <div class="text-sm leading-normal text-center text-slate-500 lg:text-left">
                                 ©
                                 <script>
                                     document.write(new Date().getFullYear() + ",");
                                 </script>
-                                made with <i class="fa fa-heart"></i> by
+                                made with <i class="fa fa-heart text-red-500"></i> by
                                 <a href="https://www.creative-tim.com"
                                     class="font-semibold dark:text-white text-slate-700" target="_blank">unit SPM</a>
                                 , Politeknik Statistika STIS.

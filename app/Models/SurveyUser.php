@@ -33,10 +33,10 @@ class SurveyUser extends Model
             ->join('survey','survey.id','=','survey_user.survey_id')
             ->join('users','users.id','=','survey_user.user_id');
 
-            if ($survey->type_survei=='alumni'){
-              $query->join('alumni as a' , 'users.id','=','a.user_id');
-            } elseif ($survey->type_survei=='atasan'){
-                $query->join('atasan as a', 'users.id', '=', 'a.user_id');
+            if ($survey->type_survei=='lulusan'){
+              $query->join('lulusan as a' , 'users.id','=','a.user_id');
+            } elseif ($survey->type_survei=='pengguna_lulusan'){
+                $query->join('pengguna_lulusan as a', 'users.id', '=', 'a.user_id');
             }
             $query->where ('survey_user.survey_id',$id_survey);
             return $query->paginate(10, ['*'], 'user_page');
@@ -52,10 +52,10 @@ class SurveyUser extends Model
             ->join('survey','survey.id','=','survey_user.survey_id')
             ->join('users','users.id','=','survey_user.user_id');
 
-            if ($survey->type_survei=='alumni'){
-              $query->join('alumni as a' , 'users.id','=','a.user_id');
-            } elseif ($survey->type_survei=='atasan'){
-                $query->join('atasan as a', 'users.id', '=', 'a.user_id');
+            if ($survey->type_survei=='lulusan'){
+              $query->join('lulusan as a' , 'users.id','=','a.user_id');
+            } elseif ($survey->type_survei=='pengguna_lulusan'){
+                $query->join('pengguna_lulusan as a', 'users.id', '=', 'a.user_id');
             }
             $query->where ('survey_user.survey_id',$id_survey);
             return $query->get();

@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('alumni', function (Blueprint $table) {
+        Schema::table('pengguna_lulusan', function (Blueprint $table) {
             $table->string('no_hp', 15)->nullable()->change();
             $table->string('jabatan', 255)->nullable()->change();
             $table->string('satuan_kerja', 255)->nullable()->change();
             $table->string('unit_kerja', 255)->nullable()->change();
         });
-        Schema::table('atasan', function (Blueprint $table) {
+        Schema::table('pengguna_lulusan', function (Blueprint $table) {
             $table->string('no_hp', 15)->nullable()->change();
             $table->string('jabatan', 255)->nullable()->change();
             $table->string('satuan_kerja', 255)->nullable()->change();
@@ -32,14 +32,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('alumni', function (Blueprint $table) {
+        Schema::table('lulusan', function (Blueprint $table) {
             $table->string('no_hp', 15)->nullable(false)->change();
             $table->string('jabatan', 255)->nullable(false)->change();
             $table->string('satuan_kerja', 255)->nullable(false)->change();
             $table->string('unit_kerja', 255)->nullable(false)->change();
         });
 
-        Schema::table('atasan', function (Blueprint $table) {
+        Schema::table('pengguna_lulusan', function (Blueprint $table) {
             $table->string('no_hp', 15)->nullable(false)->change();
             $table->string('jabatan', 255)->nullable(false)->change();
             $table->string('satuan_kerja', 255)->nullable(false)->change();

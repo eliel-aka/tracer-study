@@ -1,0 +1,353 @@
+@extends('admin.layouts.app')
+@section('title', 'Dashboard Visualisasi Survei')
+
+@section('content')
+    <div class="w-full px-6 py-6 mx-auto">
+        <div class="flex flex-wrap -mx-3">
+            <div class="w-full px-3">
+                <div
+                    class="relative flex flex-col min-w-0 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border">
+                    <div class="p-6 pb-0 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent">
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center">
+                                <h6 class="dark:text-white mr-2">Visualisasi Survey:</h6>
+                                <select id="surveySelect" class="select2 w-64">
+                                    <option value="{{ $survey->id }}" selected>{{ $survey->nama }}</option>
+                                    @foreach($allSurveys ?? [] as $s)
+                                        @if($s->id != $survey->id)
+                                            <option value="{{ $s->id }}">{{ $s->nama }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="flex gap-3">
+                                <a href="{{ route('admin.monitoring.export', $survey->id) }}"
+                                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800">
+                                    <i class="fas fa-file-excel mr-2"></i>
+                                    Export Excel
+                                </a>
+                            </div>
+                        </div>
+
+                        @php
+                            $totalResponses = $survey->surveyUsers()->count();
+                            $completedResponses = $survey->surveyUsers()->where('status', true)->count();
+                            $completionRate =
+                                $totalResponses > 0 ? round(($completedResponses / $totalResponses) * 100, 1) : 0;
+                        @endphp
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                                <h4 class="text-sm font-semibold text-blue-600 dark:text-blue-300">Total Responden</h4>
+                                <p class="text-2xl font-bold text-blue-800 dark:text-blue-100">{{ $totalResponses }}</p>
+                            </div>
+                            <div class="bg-green-50 dark:bg-green-900 rounded-lg p-4">
+                                <h4 class="text-sm font-semibold text-green-600 dark:text-green-300">Responden Selesai</h4>
+                                <p class="text-2xl font-bold text-green-800 dark:text-green-100">{{ $completedResponses }}
+                                </p>
+                            </div>
+                            <div class="bg-purple-50 dark:bg-purple-900 rounded-lg p-4">
+                                <h4 class="text-sm font-semibold text-purple-600 dark:text-purple-300">Tingkat Penyelesaian
+                                </h4>
+                                <p class="text-2xl font-bold text-purple-800 dark:text-purple-100">{{ $completionRate }}%
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-auto px-0 pt-0 pb-2">
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                @foreach ($questions as $question)
+                                    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+                                        <div class="mb-4 flex justify-between items-start">
+                                            <div>
+                                                <h3 class="text-lg font-semibold dark:text-white">{{ $question->pertanyaan }}
+                                                </h3>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $question->blok }}</p>
+                                            </div>
+                                            <button onclick="downloadChart('{{ $question->id }}', '{{ addslashes($question->pertanyaan) }}')"
+                                                class="ml-4 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 border border-blue-600 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors"
+                                                title="Download chart as PNG">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </div>
+                                        <div class="chart-container bg-white dark:bg-slate-800 rounded-lg"
+                                            style="position: relative; height:300px;">
+                                            <canvas id="chart-{{ $question->id }}" class="p-2"></canvas>
+                                            <div id="error-{{ $question->id }}"
+                                                class="text-red-500 dark:text-red-400 text-center hidden">
+                                                <i class="fas fa-exclamation-circle mr-2"></i>Error loading chart data
+                                            </div>
+                                            <div id="loading-{{ $question->id }}"
+                                                class="text-center py-4 text-gray-600 dark:text-gray-400">
+                                                <div class="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 dark:text-blue-500 rounded-full"
+                                                    role="status" aria-label="loading">
+                                                    <span class="sr-only">Loading...</span>
+                                                </div>
+                                                <p class="mt-2">Loading chart data...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    @push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    @endpush
+
+    @push('scripts')
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $('.select2').select2({
+                    placeholder: "Pilih Survey",
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                $('#surveySelect').on('change', function() {
+                    const selectedId = $(this).val();
+                    window.location.href = "{{ url('admin/dashboard/grafik') }}/" + selectedId;
+                });
+            });
+        </script>
+    @endpush
+
+
+
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+        <script>
+            function hideLoading(questionId) {
+                document.getElementById(`loading-${questionId}`).style.display = 'none';
+            }
+
+            function showError(questionId) {
+                hideLoading(questionId);
+                document.getElementById(`error-${questionId}`).classList.remove('hidden');
+            }
+
+            function getChartThemeColors() {
+                const isDark = document.documentElement.classList.contains('dark');
+                return {
+                    gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    textColor: isDark ? '#fff' : '#000'
+                };
+            }
+
+            const chartInstances = new Map();
+
+            function downloadChart(questionId, questionText) {
+                const chart = chartInstances.get(questionId);
+                if (!chart) {
+                    alert('Chart not found or still loading');
+                    return;
+                }
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = chart.canvas.width;
+                canvas.height = chart.canvas.height;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(chart.canvas, 0, 0);
+
+                const link = document.createElement('a');
+                link.download = `chart-${questionText.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+
+            function updateChartThemes() {
+                const { gridColor, textColor } = getChartThemeColors();
+
+                chartInstances.forEach((chart) => {
+                    if (chart.config.type === 'bar') {
+                        chart.options.scales.y.grid.color = gridColor;
+                        chart.options.scales.y.ticks.color = textColor;
+                        chart.options.scales.x.grid.color = gridColor;
+                        chart.options.scales.x.ticks.color = textColor;
+                    }
+                    chart.options.plugins.legend.labels.color = textColor;
+                    chart.update();
+                });
+            }
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.target.classList.contains('dark')) {
+                        updateChartThemes();
+                    }
+                });
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const csrfElement = document.querySelector('meta[name="csrf-token"]');
+                const token = csrfElement ? csrfElement.getAttribute('content') : '';
+
+                if (!token) {
+                    console.error('CSRF token not found');
+                    return;
+                }
+
+                const fetchOptions = {
+                    headers: {
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                };
+
+                const chartColors = [
+                    '#4B0082',
+                    '#0096FF',
+                    '#00FF7F',
+                    '#FFD700',
+                    '#FF69B4',
+                    '#8B4513',
+                    '#4682B4',
+                    '#D2691E',
+                    '#9370DB',
+                    '#3CB371'
+                ];
+
+                const answerColorMap = new Map();
+                let colorIndex = 0;
+
+                function getColorForAnswer(answer) {
+                    if (!answerColorMap.has(answer)) {
+                        answerColorMap.set(answer, chartColors[colorIndex % chartColors.length]);
+                        colorIndex++;
+                    }
+                    return answerColorMap.get(answer);
+                }
+
+                @foreach ($questions as $question)
+                    fetch("{{ route('admin.dashboard.chartData', ['surveyId' => $survey->id, 'questionId' => $question->id]) }}",
+                            fetchOptions)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+
+                            hideLoading('{{ $question->id }}');
+                            const ctx = document.getElementById('chart-{{ $question->id }}').getContext('2d');
+
+                            if (data.data.datasets && data.data.datasets.length > 0) {
+                                data.data.datasets[0].backgroundColor = data.data.labels.map(answer =>
+                                    getColorForAnswer(answer)
+                                );
+
+                                data.data.datasets[0].hoverBackgroundColor = data.data.labels.map(answer => {
+                                    const color = getColorForAnswer(answer);
+                                    return color.replace('1)', '0.8)');
+                                });
+                            }
+
+                            if (document.documentElement.classList.contains('dark')) {
+                                ctx.canvas.style.backgroundColor = 'rgb(30, 41, 59)';
+                            }
+
+                            const chart = new Chart(ctx, {
+                                type: data.type,
+                                data: data.data,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: {
+                                        duration: 1000,
+                                        easing: 'easeInOutQuart'
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            labels: {
+                                                padding: 20,
+                                                usePointStyle: true,
+                                                font: {
+                                                    size: 12
+                                                },
+                                                color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const value = context.raw;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = ((value / total) * 100).toFixed(1);
+                                                    return `${context.label}: ${value} responden (${percentage}%)`;
+                                                }
+                                            },
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            titleColor: '#fff',
+                                            bodyColor: '#fff',
+                                            padding: 12,
+                                            boxPadding: 6
+                                        }
+                                    },
+                                    scales: data.type === 'bar' ? {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: {
+                                                color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' :
+                                                    'rgba(0, 0, 0, 0.1)'
+                                            },
+                                            ticks: {
+                                                precision: 0,
+                                                color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                                                callback: function(value) {
+                                                    return value + ' responden';
+                                                }
+                                            }
+                                        },
+                                        x: {
+                                            grid: {
+                                                color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' :
+                                                    'rgba(0, 0, 0, 0.1)'
+                                            },
+                                            ticks: {
+                                                color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                                            }
+                                        }
+                                    } : undefined
+                                }
+                            });
+
+                            chartInstances.set('{{ $question->id }}', chart);
+                        })
+                        .catch(error => {
+                            console.error('Error loading chart data:', error);
+                            showError('{{ $question->id }}');
+
+                            if ({{ config('app.debug') ? 'true' : 'false' }}) {
+                                document.getElementById(`error-{{ $question->id }}`).innerHTML +=
+                                    `<br><small class="text-gray-500">${error.toString()}</small>`;
+                            }
+                        });
+                @endforeach
+            });
+        </script>
+    @endpush
+@endsection

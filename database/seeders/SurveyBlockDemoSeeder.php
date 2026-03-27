@@ -22,7 +22,7 @@ class SurveyBlockDemoSeeder extends Seeder
             'nama' => 'Demo Survey dengan Blok dan Percabangan',
             'tanggal_mulai' => Carbon::now(),
             'tanggal_selesai' => Carbon::now()->addMonths(3),
-            'type_survei' => 'alumni',
+            'type_survei' => 'lulusan',
             'deskripsi' => 'Survey demo untuk menunjukkan fitur manajemen blok dan aturan percabangan'
         ]);
 
@@ -40,7 +40,7 @@ class SurveyBlockDemoSeeder extends Seeder
             'survey_id' => $survey->id,
             'kode' => 'B',
             'nama' => 'Pengalaman Kerja - Fresh Graduate',
-            'deskripsi' => 'Untuk alumni yang baru lulus dan belum bekerja',
+            'deskripsi' => 'Untuk lulusan yang baru lulus dan belum bekerja',
             'urutan' => 2,
             'is_terminal' => false
         ]);
@@ -49,7 +49,7 @@ class SurveyBlockDemoSeeder extends Seeder
             'survey_id' => $survey->id,
             'kode' => 'C',
             'nama' => 'Pengalaman Kerja - Sudah Bekerja',
-            'deskripsi' => 'Untuk alumni yang sudah bekerja',
+            'deskripsi' => 'Untuk lulusan yang sudah bekerja',
             'urutan' => 3,
             'is_terminal' => false
         ]);

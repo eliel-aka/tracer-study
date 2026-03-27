@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\survey;
+use App\Models\Survey;
 use App\Models\SurveyUser;
 use App\Models\TemplateJawaban;
 use App\Models\TemplatePertanyaan;
@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\AlumniImport;
-use App\Imports\AtasanImport;
+use App\Imports\LulusanImport;
+use App\Imports\PenggunaLulusanImport;
 
 class SurveyController extends Controller
 {
@@ -505,11 +505,11 @@ class SurveyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(survey $survey)
+    public function show(Survey $survey)
     {
         //
     }
-                ]);
+/*                 ]);
 
                 try {
                     // Clear any cached model attributes
@@ -605,13 +605,11 @@ class SurveyController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(survey $survey)
     {
-        //
-    }
+        
+    } */
 
     /**
      * Show the form for editing the specified resource.
@@ -1043,10 +1041,10 @@ class SurveyController extends Controller
             ]);
             $survey_id = $request->input('survey_id');
             $survey = Survey::findOrFail($survey_id);
-            if ($survey->type_survei=='atasan'){
-                Excel::import(new AtasanImport($survey_id), ($request->file('file')));
+            if ($survey->type_survei=='pengguna_lulusan') {
+                Excel::import(new PenggunaLulusanImport($survey_id), ($request->file('file')));
             } else {
-                Excel::import(new AlumniImport($survey_id), $request->file('file'));
+                Excel::import(new LulusanImport($survey_id), $request->file('file'));
             }
             DB::commit();
             return redirect()->route('admin.survey.index')->with('success', 'User imported successfully.');

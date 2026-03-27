@@ -4,19 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Alumni extends Model
+class Lulusan extends Model
 {
-    protected $table = 'alumni';
+    protected $table = 'lulusan';
     protected $fillable = [
         'user_id',
         'nama',
         'nip',
         'email',
+        'prodi',
         'jabatan',
         'satuan_kerja',
         'unit_kerja',
         'no_hp',
-        'nip_kepala_bps',
+        'nip_pengguna_lulusan',
         'tanggal_lahir',
         'tahun_lulus',
     ];

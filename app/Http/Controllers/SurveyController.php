@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\AlumniImport;
-use App\Imports\AtasanImport;
+use App\Imports\LulusanImport;
+use App\Imports\PenggunaLulusanImport;
 
 class SurveyController extends Controller
 {

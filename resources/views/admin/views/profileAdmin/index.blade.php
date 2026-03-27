@@ -41,8 +41,15 @@
                             </div>
                         </div>
                         <div class="flex items-center justify-end mt-2 mb-2 gap-4">
-                            <a href="{{ route('admin.profile.edit') }}" class="inline-block px-8 py-2 w-36 h-10 font-bold text-center text-gray-700 align-middle transition-all ease-in border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-100 text-xs tracking-tight-rem cursor-pointer">Batal</a>
-                            <button type="submit" class="inline-block px-8 py-2 w-36 h-10 font-bold text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">Simpan</button>
+                            <a href="{{ route('admin.profile.edit') }}" 
+                            class="flex items-center justify-center w-36 h-10 font-bold text-gray-700 transition-all ease-in border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-100 text-xs tracking-tight-rem cursor-pointer">
+                            Batal
+                            </a>
+
+                            <button type="submit" 
+                                    class="flex items-center justify-center w-36 h-10 font-bold text-white transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
+                                Simpan
+                            </button>
                         </div>
                     </div>
                     <!-- form end -->

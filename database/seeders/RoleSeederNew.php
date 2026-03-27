@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Alumni;
-use App\Models\Atasan;
+use App\Models\Lulusan;
+use App\Models\PenggunaLulusan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -22,11 +22,11 @@ class RoleSeederNew extends Seeder
         
         // Create all roles first
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $alumniRole = Role::firstOrCreate(['name' => 'alumni']);
-        $atasanRole = Role::firstOrCreate(['name' => 'atasan']);
+        $lulusanRole = Role::firstOrCreate(['name' => 'lulusan']);
+        $penggunaLulusanRole = Role::firstOrCreate(['name' => 'pengguna_lulusan']);
         $supervisorRole = Role::firstOrCreate(['name' => 'supervisor']);
         
-        $this->command->info('✅ Roles created: admin, alumni, atasan, supervisor');
+        $this->command->info('✅ Roles created: admin, lulusan, pengguna_lulusan, supervisor');
 
         // Create Admin User
         $adminUser = User::firstOrCreate(
@@ -42,65 +42,66 @@ class RoleSeederNew extends Seeder
         );
         $adminUser->assignRole($adminRole);
 
-        // Create Alumni User
-        $alumniUser = User::firstOrCreate(
-            ['email' => 'alumni@alumni.com'],
+        // Create Lulusan User
+        $lulusanUser = User::firstOrCreate(
+            ['email' => 'lulusan@lulusan.com'],
             [
-                'name' => 'Alumni User',
-                'email' => 'alumni@alumni.com',
+                'name' => 'Lulusan User',
+                'email' => 'lulusan@lulusan.com',
                 'password' => Hash::make('123123123'),
-                'role' => 'alumni',
+                'role' => 'lulusan',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
-        $alumniUser->assignRole($alumniRole);
+        $lulusanUser->assignRole($lulusanRole);
 
-        // Create Alumni profile
-        Alumni::firstOrCreate(
-            ['user_id' => $alumniUser->id],
+        // Create Lulusan profile
+        Lulusan::firstOrCreate(
+            ['user_id' => $lulusanUser->id],
             [
-                'user_id' => $alumniUser->id,
-                'nama' => 'Alumni Demo',
+                'user_id' => $lulusanUser->id,
+                'nama' => 'Lulusan Demo',
                 'no_hp' => '08123456789',
                 'nip' => '123456789',
                 'jabatan' => 'Staff',
                 'satuan_kerja' => 'Divisi IT',
                 'unit_kerja' => 'Pengembangan',
-                'email' => 'alumni@gmail.com',
+                'email' => 'lulusan@gmail.com',
                 'tanggal_lahir' => '1990-01-01',
-                'nip_kepala_bps' => '123456789',
+                'nip_pengguna_lulusan' => '123456789',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
 
-        // Create Atasan User
-        $atasanUser = User::firstOrCreate(
-            ['email' => 'atasan@atasan.com'],
+        // Create Pengguna Lulusan User
+        $penggunaLulusanUser = User::firstOrCreate(
+            ['email' => 'pengguna_lulusan@pengguna_lulusan.com'],
             [
-                'name' => 'Atasan User',
-                'email' => 'atasan@atasan.com',
+                'name' => 'Pengguna Lulusan User',
+                'email' => 'pengguna_lulusan@pengguna_lulusan.com',
                 'password' => Hash::make('123123123'),
-                'role' => 'atasan',
+                'role' => 'pengguna_lulusan',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
-        $atasanUser->assignRole($atasanRole);
+        $penggunaLulusanUser->assignRole($penggunaLulusanRole);
 
-        // Create Atasan profile
-        Atasan::firstOrCreate(
-            ['user_id' => $atasanUser->id],
+        // Create Pengguna Lulusan profile
+        PenggunaLulusan::firstOrCreate(
+            ['user_id' => $penggunaLulusanUser->id],
             [
-                'user_id' => $atasanUser->id,
-                'nama' => 'Atasan Demo',
+                'user_id' => $penggunaLulusanUser->id,
+                'nama' => 'Pengguna Lulusan Demo',
                 'jabatan' => 'Manager',
                 'satuan_kerja' => 'Divisi IT',
                 'unit_kerja' => 'Pengembangan',
-                'email' => 'atasan@gmail.com',
+                'email' => 'pengguna_lulusan@gmail.com',
                 'no_hp' => '08123456789',
                 'nip' => '987654321',
+                'nip_pengguna_lulusan' => '987654321',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
@@ -122,8 +123,8 @@ class RoleSeederNew extends Seeder
 
         $this->command->info('✅ Demo users created with credentials:');
         $this->command->info('👑 Admin: admin@admin.com / 123123123');
-        $this->command->info('🎓 Alumni: alumni@alumni.com / 123123123');
-        $this->command->info('👔 Atasan: atasan@atasan.com / 123123123');
+        $this->command->info('🎓 Lulusan: lulusan@lulusan.com / 123123123');
+        $this->command->info('👔 Pengguna Lulusan: pengguna_lulusan@pengguna_lulusan.com / 123123123');
         $this->command->info('📊 Supervisor: supervisor@example.com / 123123123');
         $this->command->info('');
         $this->command->info('🎉 All roles and demo users have been created successfully!');

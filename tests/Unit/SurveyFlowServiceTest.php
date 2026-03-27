@@ -28,7 +28,7 @@ class SurveyFlowServiceTest extends TestCase
             'nama' => 'Test Survey',
             'tanggal_mulai' => now(),
             'tanggal_selesai' => now()->addDays(30),
-            'type_survei' => 'alumni',
+            'type_survei' => 'lulusan',
             'deskripsi' => 'Test survey for flow service'
         ]);
     }

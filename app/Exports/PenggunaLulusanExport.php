@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Atasan;
+use App\Models\PenggunaLulusan;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class AtasanExport implements FromCollection, WithHeadings
+class PenggunaLulusanExport implements FromCollection, WithHeadings
 {
     /**
     * @return \Illuminate\Support\Collection
     */
     public function collection()
     {
-        return Atasan::join('users', 'atasan.user_id', '=', 'users.id')
-        ->get(['atasan.id', 'atasan.nama','atasan.nip','users.email', 'atasan.jabatan', 'atasan.satuan_kerja','atasan.unit_kerja', 'atasan.no_hp', 'atasan.created_at', 'atasan.updated_at']);
+        return PenggunaLulusan::join('users', 'pengguna_lulusan.user_id', '=', 'users.id')
+        ->get(['pengguna_lulusan.id', 'pengguna_lulusan.nama','pengguna_lulusan.nip','users.email', 'pengguna_lulusan.jabatan', 'pengguna_lulusan.satuan_kerja','pengguna_lulusan.unit_kerja', 'pengguna_lulusan.no_hp', 'pengguna_lulusan.created_at', 'pengguna_lulusan.updated_at']);
     }
 
     /**

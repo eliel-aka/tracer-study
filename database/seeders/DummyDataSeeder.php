@@ -10,8 +10,8 @@ use App\Models\TemplatePertanyaan;
 use App\Models\TemplateJawaban;
 use App\Models\SurveyUser;
 use App\Models\SurveyUserJawaban;
-use App\Models\Alumni;
-use App\Models\Atasan;
+use App\Models\Lulusan;
+use App\Models\PenggunaLulusan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -31,11 +31,11 @@ class DummyDataSeeder extends Seeder
         //     'name' => 'admin'
         // ]);
         //  seed user role
-        // $alumniRole = Role::create([
-        //     'name' => 'alumni'
+        // $lulusanRole = Role::create([
+        //     'name' => 'lulusan'
         // ]);
-        // $atasanRole = Role::create([
-        //     'name' => 'atasan'
+        // $penggunaLulusanRole = Role::create([
+        //     'name' => 'pengguna_lulusan'
         // ]);
         // Create Admin User
         $admin = User::firstOrCreate(
@@ -53,16 +53,16 @@ class DummyDataSeeder extends Seeder
         $survey = Survey::firstOrCreate(
             ['nama' => 'Tracer Study 2024'],
             [
-                'deskripsi' => 'Survei pelacakan untuk alumni tahun kelulusan 2020-2023',
+                'deskripsi' => 'Survei pelacakan untuk lulusan tahun kelulusan 2020-2023',
                 'tanggal_mulai' => Carbon::now()->subDays(30),
                 'tanggal_selesai' => Carbon::now()->addDays(60),
                 'created_by' => $admin->id,
-                'type_survei' => 'alumni',
+                'type_survei' => 'lulusan',
             ]
         );
 
-        // Create Alumni (50 alumni)
-        $alumni = [];
+        // Create Lulusan (50 lulusan)
+        $lulusan = [];
         for ($i = 1; $i <= 50; $i++) {
             $gender = ['L', 'P'][rand(0, 1)];
             $year = rand(2020, 2023);
@@ -70,24 +70,24 @@ class DummyDataSeeder extends Seeder
 
             // Create user first
             $user = User::firstOrCreate(
-                ['email' => 'alumni' . $i . '@example.com'],
+                ['email' => 'lulusan' . $i . '@example.com'],
                 [
-                    'name' => 'Alumni ' . $i,
+                    'name' => 'Lulusan ' . $i,
                     'password' => Hash::make('password'),
-                    'role' => 'alumni',
+                    'role' => 'lulusan',
                     'remember_token' => Str::random(10),
                 ]
             );
-            // Assign alumni role
-            $user->assignRole('alumni');
+            // Assign lulusan role
+            $user->assignRole('lulusan');
 
-            // Create alumni record
-            $alumni[] = Alumni::firstOrCreate(
+            // Create lulusan record
+            $lulusan[] = Lulusan::firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'nama' => 'Alumni ' . $i,
+                    'nama' => 'Lulusan ' . $i,
                     'nip' => '1990' . str_pad($i, 6, '0', STR_PAD_LEFT),
-                    'email' => 'alumni' . $i . '@example.com',
+                    'email' => 'Lulusan ' . $i . '@example.com',
                     'jabatan' => ['Staff', 'Supervisor', 'Manager'][rand(0, 2)],
                     'satuan_kerja' => 'Satker ' . ceil($i / 5),
                     'unit_kerja' => 'Unit ' . ceil($i / 3),
@@ -99,29 +99,29 @@ class DummyDataSeeder extends Seeder
             );
         }
 
-        // Create Atasan (20 atasan)
-        $atasans = [];
+        // Create Pengguna Lulusan (20 pengguna lulusan)
+        $penggunaLulusans = [];
         for ($i = 1; $i <= 20; $i++) {
             // Create user first
             $user = User::firstOrCreate(
-                ['email' => 'atasan' . $i . '@company.com'],
+                ['email' => 'pengguna_lulusan' . $i . '@example.com'],
                 [
-                    'name' => 'Atasan ' . $i,
+                    'name' => 'Pengguna Lulusan ' . $i,
                     'password' => Hash::make('password'),
-                    'role' => 'atasan',
+                    'role' => 'pengguna_lulusan',
                     'remember_token' => Str::random(10),
                 ]
             );
-            // Assign atasan role
-            $user->assignRole('atasan');
+            // Assign pengguna_lulusan role
+            $user->assignRole('pengguna_lulusan');
 
-            // Create atasan record
-            $atasans[] = Atasan::firstOrCreate(
+            // Create pengguna_lulusan record
+            $penggunaLulusans[] = PenggunaLulusan::firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'nama' => 'Atasan ' . $i,
+                    'nama' => 'Pengguna Lulusan ' . $i,
                     'nip' => '1980' . str_pad($i, 6, '0', STR_PAD_LEFT),
-                    'email' => 'atasan' . $i . '@company.com',
+                    'email' => 'pengguna_lulusan' . $i . '@example.com',
                     'jabatan' => ['Manager', 'Supervisor', 'Director', 'Team Lead'][rand(0, 3)],
                     'satuan_kerja' => 'Satker ' . ceil($i / 2),
                     'unit_kerja' => 'Unit ' . ceil($i / 2),
@@ -221,10 +221,10 @@ class DummyDataSeeder extends Seeder
             }
         }
 
-        // Create Survey Users - Assign each alumni to the survey
-        foreach ($alumni as $alumnus) {
+        // Create Survey Users - Assign each lulusan to the survey
+        foreach ($lulusan as $lulusanus) {
             $surveyUser = SurveyUser::firstOrCreate(
-                ['survey_id' => $survey->id, 'user_id' => $alumnus->user_id],
+                ['survey_id' => $survey->id, 'user_id' => $lulusanus->user_id],
                 [
                     'status' => rand(0, 1),
                     'tanggal_mengisi' => Carbon::now()->subDays(rand(0, 29)),

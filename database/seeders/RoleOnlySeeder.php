@@ -15,7 +15,7 @@ class RoleOnlySeeder extends Seeder
     {
         $this->command->info('🚀 Creating roles only...');
         
-        $roles = ['admin', 'alumni', 'atasan', 'supervisor'];
+        $roles = ['admin', 'lulusan', 'pengguna_lulusan', 'supervisor'];
         
         foreach ($roles as $roleName) {
             $role = Role::firstOrCreate(['name' => $roleName]);
@@ -24,6 +24,6 @@ class RoleOnlySeeder extends Seeder
         
         $this->command->info('');
         $this->command->info('🎉 All roles have been created successfully!');
-        $this->command->info('Available roles: admin, alumni, atasan, supervisor');
+        $this->command->info('Available roles: admin, lulusan, pengguna_lulusan, supervisor');
     }
 }

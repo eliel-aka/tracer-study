@@ -50,8 +50,8 @@
                                 <label for="type_survei" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Tipe</label>
                                 <select name="type_survei" class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                                     <option value="{{ $survey->type_survei }}" disabled selected hidden>{{ $survey->type_survei }}</option>
-                                    <option value="atasan" {{ old('type_survei') == 'atasan' ? 'selected' : '' }}>Pengguna Lulusan</option>
-                                    <option value="alumni" {{ old('type_survei') == 'alumni' ? 'selected' : '' }}>Lulusan</option>
+                                    <option value="pengguna_lulusan" {{ old('type_survei') == 'pengguna_lulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
+                                    <option value="lulusan" {{ old('type_survei') == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
                                 </select>
                                 @error('type_survei')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>

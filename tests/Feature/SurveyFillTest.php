@@ -32,7 +32,7 @@ class SurveyFillTest extends TestCase
             'nama' => 'Test Survey',
             'tanggal_mulai' => now()->subDay(),
             'tanggal_selesai' => now()->addDays(7),
-            'type_survei' => 'alumni',
+            'type_survei' => 'lulusan',
             'deskripsi' => 'Test survey description'
         ]);
     }
@@ -200,7 +200,7 @@ class SurveyFillTest extends TestCase
             'nama' => 'Inactive Survey',
             'tanggal_mulai' => now()->addDays(1),
             'tanggal_selesai' => now()->addDays(7),
-            'type_survei' => 'alumni'
+            'type_survei' => 'lulusan'
         ]);
 
         $response = $this->actingAs($this->user)
