@@ -35,7 +35,7 @@ class DummyDataSeeder extends Seeder
         //     'name' => 'lulusan'
         // ]);
         // $penggunaLulusanRole = Role::create([
-        //     'name' => 'pengguna_lulusan'
+        //     'name' => 'penggunaLulusan'
         // ]);
         // Create Admin User
         $admin = User::firstOrCreate(
@@ -104,24 +104,24 @@ class DummyDataSeeder extends Seeder
         for ($i = 1; $i <= 20; $i++) {
             // Create user first
             $user = User::firstOrCreate(
-                ['email' => 'pengguna_lulusan' . $i . '@example.com'],
+                ['email' => 'penggunaLulusan' . $i . '@example.com'],
                 [
                     'name' => 'Pengguna Lulusan ' . $i,
                     'password' => Hash::make('password'),
-                    'role' => 'pengguna_lulusan',
+                    'role' => 'penggunaLulusan',
                     'remember_token' => Str::random(10),
                 ]
             );
-            // Assign pengguna_lulusan role
-            $user->assignRole('pengguna_lulusan');
+            // Assign penggunaLulusan role
+            $user->assignRole('penggunaLulusan');
 
-            // Create pengguna_lulusan record
+            // Create penggunaLulusan record
             $penggunaLulusans[] = PenggunaLulusan::firstOrCreate(
                 ['user_id' => $user->id],
                 [
                     'nama' => 'Pengguna Lulusan ' . $i,
                     'nip' => '1980' . str_pad($i, 6, '0', STR_PAD_LEFT),
-                    'email' => 'pengguna_lulusan' . $i . '@example.com',
+                    'email' => 'penggunaLulusan' . $i . '@example.com',
                     'jabatan' => ['Manager', 'Supervisor', 'Director', 'Team Lead'][rand(0, 3)],
                     'satuan_kerja' => 'Satker ' . ceil($i / 2),
                     'unit_kerja' => 'Unit ' . ceil($i / 2),

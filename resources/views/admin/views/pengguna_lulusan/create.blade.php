@@ -4,7 +4,7 @@
 @section('content')
 
 <!-- table 1 -->
-<form action="{{ route('admin.pengguna_lulusan.store') }}" method="POST">
+<form action="{{ route('admin.penggunaLulusan.store') }}" method="POST">
     @csrf
 
     <div class="flex flex-wrap -mx-3">
@@ -127,7 +127,7 @@
 
                         <!-- Buttons -->
                         <div class="flex justify-end items-center mt-4">
-                            <a href="{{ route('admin.pengguna_lulusan.index') }}"
+                            <a href="{{ route('admin.penggunaLulusan.index') }}"
                                 class="inline-flex items-center justify-center px-8 py-2 w-36 h-10 font-bold text-center align-middle transition-all ease-in border border-gray-300 rounded-lg text-gray-700 bg-transparent hover:bg-gray-100 text-xs tracking-tight-rem cursor-pointer mr-4">
                                 Batal
                             </a>

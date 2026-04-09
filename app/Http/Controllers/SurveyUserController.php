@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Survey;
 use App\Models\SurveyUser;
 use App\Models\SurveyUserJawaban;
+use App\Models\Lulusan;
+use App\Models\PenggunaLulusan;
 use App\Models\TemplatePertanyaan;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use App\Services\SurveyEmailService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -575,100 +578,79 @@ class SurveyUserController extends Controller
 
     public function add_lulusan_by_graduation_year(Request $request)
     {
-        // Enable detailed logging
-        Log::info('=== ADD LULUSAN BY GRADUATION YEAR FUNCTION CALLED ===');
-        Log::info('Request method: ' . $request->method());
-        Log::info('Request URL: ' . $request->url());
-        Log::info('Request all data: ', $request->all());
-        
-        $graduationYear = $request->input('tahun_lulus');
+        $graduationYear = trim((string) $request->input('tahun_lulus', ''));
         $surveyId = $request->input('survey_id');
         
-        // Debug logging
-        Log::info('Add Lulusan by Graduation Year Debug', [
-            'tahun_lulus' => $graduationYear,
-            'survey_id' => $surveyId,
-            'request_data' => $request->all()
-        ]);
-        
         try {
-            // Check if survey exists
-            $survey = \App\Models\Survey::find($surveyId);
-            if (!$survey) {
-                Log::error('Survey not found', ['survey_id' => $surveyId]);
+            if ($graduationYear === '' || !$surveyId) {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
+                    'message' => 'Tahun lulus dan survey wajib dipilih.'
+                ], 422);
+            }
+
+            $survey = Survey::find($surveyId);
+            if (!$survey) {
+                return response()->json([
+                    'success' => false,
                     'message' => 'Survey tidak ditemukan'
                 ]);
             }
-            
-            // Get all lulusan with the specified graduation year
-            $lulusan = \App\Models\Lulusan::where('tahun_lulus', $graduationYear)
-                ->whereHas('user') // Make sure they have associated user accounts
-                ->get();
-                
-            Log::info('Lulusan found', ['count' => $lulusan->count()]);
-            
-            if ($lulusan->isEmpty()) {
+
+            $respondentQuery = $this->buildRespondentAssignmentQuery($survey, $graduationYear);
+
+            if (!(clone $respondentQuery)->exists()) {
                 return response()->json([
-                    'success' => false, 
-                    'message' => 'Tidak ada lulusan yang lulus pada tahun ' . $graduationYear
+                    'success' => false,
+                    'message' => 'Tidak ada responden yang memenuhi tahun lulus ' . $graduationYear
                 ]);
             }
-            
+
             $addedCount = 0;
-            $skippedCount = 0;
-            
-            foreach ($lulusan as $lulusanus) {
-                // Check if user is already in this survey
-                $existingSurveyUser = SurveyUser::where('user_id', $lulusanus->user_id)
-                    ->where('survey_id', $surveyId)
-                    ->first();
-                
-                if (!$existingSurveyUser) {
-                    $surveyUser = SurveyUser::create([
-                        'user_id' => $lulusanus->user_id,
-                        'survey_id' => $surveyId,
-                        'status' => 0
-                    ]);
-                    Log::info('Lulusan added to survey', [
-                        'user_id' => $lulusanus->user_id, 
-                        'survey_user_id' => $surveyUser->id
-                    ]);
-                    $addedCount++;
-                } else {
-                    Log::info('Lulusan already in survey', [
-                        'user_id' => $lulusanus->user_id, 
-                        'existing_survey_user_id' => $existingSurveyUser->id
-                    ]);
-                    $skippedCount++;
+            $timestamp = now();
+            $batchRows = [];
+
+            foreach ($respondentQuery->cursor() as $respondent) {
+                $batchRows[] = [
+                    'user_id' => (int) $respondent->user_id,
+                    'survey_id' => (int) $survey->id,
+                    'status' => 0,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+
+                if (count($batchRows) >= 1000) {
+                    DB::table('survey_user')->insert($batchRows);
+                    $addedCount += count($batchRows);
+                    $batchRows = [];
                 }
             }
-            
-            $message = "Berhasil menambahkan {$addedCount} lulusan dari tahun lulus {$graduationYear}";
-            if ($skippedCount > 0) {
-                $message .= ". {$skippedCount} lulusan sudah terdaftar dalam survey ini.";
+
+            if (!empty($batchRows)) {
+                DB::table('survey_user')->insert($batchRows);
+                $addedCount += count($batchRows);
             }
-            
-            Log::info('Bulk add lulusan result', [
-                'added_count' => $addedCount,
-                'skipped_count' => $skippedCount
-            ]);
-            
+
+            $surveyTypeLabel = $this->normalizeSurveyType($survey->type_survei) === 'pengguna_lulusan'
+                ? 'pengguna lulusan'
+                : 'lulusan';
+
             return response()->json([
-                'success' => true, 
-                'message' => $message,
+                'success' => true,
+                'message' => "Berhasil menambahkan {$addedCount} {$surveyTypeLabel} dari tahun lulus {$graduationYear}",
                 'added_count' => $addedCount,
-                'skipped_count' => $skippedCount
+                'skipped_count' => 0,
             ]);
             
         } catch (\Exception $e) {
-            Log::error('Add lulusan by graduation year error', [
+            Log::error('Add responden by graduation year error', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'survey_id' => $surveyId,
+                'tahun_lulus' => $graduationYear,
             ]);
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
@@ -677,13 +659,13 @@ class SurveyUserController extends Controller
     public function get_graduation_years()
     {
         try {
-            $years = \App\Models\Lulusan::whereNotNull('tahun_lulus')
+            $years = Lulusan::whereNotNull('tahun_lulus')
                 ->where('tahun_lulus', '!=', '')
                 ->distinct()
                 ->orderBy('tahun_lulus', 'desc')
                 ->pluck('tahun_lulus')
-                ->filter() // Remove any null or empty values
-                ->values(); // Reset array keys
+                ->filter()
+                ->values();
             
             return response()->json([
                 'success' => true,
@@ -696,6 +678,45 @@ class SurveyUserController extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
+    }
+
+    private function normalizeSurveyType(?string $surveyType): string
+    {
+        $normalizedType = strtolower(trim((string) $surveyType));
+        $normalizedType = str_replace(['-', ' '], '_', $normalizedType);
+
+        if ($normalizedType === 'penggunaLulusan') {
+            return 'pengguna_lulusan';
+        }
+
+        return $normalizedType;
+    }
+
+    private function buildRespondentAssignmentQuery(Survey $survey, string $graduationYear)
+    {
+        $surveyType = $this->normalizeSurveyType($survey->type_survei);
+
+        $query = DB::table('users')
+            ->leftJoin('survey_user as existing_survey_user', function ($join) use ($survey) {
+                $join->on('existing_survey_user.user_id', '=', 'users.id')
+                    ->where('existing_survey_user.survey_id', '=', $survey->id);
+            })
+            ->whereNull('existing_survey_user.id');
+
+        if ($surveyType === 'pengguna_lulusan') {
+            $query->join('pengguna_lulusan', 'pengguna_lulusan.user_id', '=', 'users.id')
+                ->join('lulusan', 'lulusan.nip_pengguna_lulusan', '=', 'pengguna_lulusan.nip');
+        } else {
+            $query->join('lulusan', 'lulusan.user_id', '=', 'users.id');
+        }
+
+        return $query
+            ->where('lulusan.tahun_lulus', $graduationYear)
+            ->whereNotNull('lulusan.tahun_lulus')
+            ->where('lulusan.tahun_lulus', '!=', '')
+            ->select('users.id as user_id')
+            ->distinct()
+            ->orderBy('users.id');
     }
 
     /**
@@ -928,9 +949,10 @@ class SurveyUserController extends Controller
             'answer' => $answer
         ]);
         
-        // Only radio and select questions can have navigation rules
+        // Only radio/select questions support option-level branching.
+        // multiple_choice_grid is treated as grid and no longer uses option branching.
         if (!in_array($question->tipe, ['radio', 'select']) || !$answer) {
-            Log::info('No branching rules: not radio/select or no answer');
+            Log::info('No branching rules: not radio/select type or no answer');
             return null;
         }
 
@@ -1014,8 +1036,12 @@ class SurveyUserController extends Controller
         // Handle different answer formats
         $answerValue = $answer;
         
+        // For multiple_choice_grid grid, store per-row selections as JSON.
+        if ($currentQuestion->tipe === 'multiple_choice_grid' && is_array($answer)) {
+            $answerValue = json_encode($answer, JSON_UNESCAPED_UNICODE);
+        }
         // For checkbox answers (array), convert to comma-separated string
-        if (is_array($answer)) {
+        elseif (is_array($answer)) {
             $answerValue = implode(',', $answer);
         }
         
@@ -1040,3 +1066,4 @@ class SurveyUserController extends Controller
 
     // ...existing methods...
 }
+

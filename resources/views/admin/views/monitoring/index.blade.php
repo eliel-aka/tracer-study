@@ -96,15 +96,6 @@
                     </div>
                 </div>
 
-                <!-- Info Box -->
-                @if ($selectedSurveyId)
-                    <div class="px-4 pt-4">
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700 text-xs dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-300">
-                            <i class="fas fa-info-circle mr-1"></i> Pilih tepat satu filter: Tahun Lulus atau Program Studi. Opsi Tahun Lulus/Program Studi hanya menampilkan data lulusan yang sudah terhubung ke survei terpilih.
-                        </div>
-                    </div>
-                @endif
-
                 <div class="px-4 pt-4">
                     <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                         <div class="flex items-center justify-between mb-3">
@@ -112,7 +103,7 @@
                             <span id="visualizationLegendTitle" class="text-xs text-slate-500 dark:text-slate-300">Legend</span>
                         </div>
                         <div id="visualizationEmptyState" class="text-xs text-slate-500 dark:text-slate-300 py-6 text-center leading-relaxed">
-                            Pilih 1 Survei untuk visualisasi, lalu isi salah satu filter (Tahun Lulus atau Program Studi). Jika keduanya "Semua", tabel tetap tampil tetapi grafik tidak ditampilkan.
+                            Pilih 1 survei untuk menampilkan visualisasi response rate. Dimensi sumbu akan menyesuaikan otomatis berdasarkan kombinasi filter Tahun Lulus dan Program Studi.
                         </div>
                         <div id="visualizationCanvasContainer" class="hidden visualization-canvas-wrap">
                             <canvas id="responseRateChart" height="110"></canvas>
@@ -220,26 +211,26 @@
 
     <!-- Scripts -->
     @php
-        $selectedSurvey = $survey->first();
-        $filterLabel = null;
-
-        if ($activeFilterType === 'tahun_lulus' && $activeFilterValue) {
-            $filterLabel = 'Tahun Lulus: ' . $activeFilterValue;
-        } elseif ($activeFilterType === 'prodi' && $activeFilterValue) {
-            $filterLabel = 'Program Studi: ' . $activeFilterValue;
-        }
-
         $monitoringChartPayload = [
             'selectedChartType' => $selectedChartType,
-            'selectedSurveyName' => $selectedSurvey ? $selectedSurvey->nama : null,
+            'selectedSurveyName' => $selectedSurveyForVisualization ? $selectedSurveyForVisualization->nama : null,
             'activeFilterType' => $activeFilterType,
             'activeFilterValue' => $activeFilterValue,
             'selectedSurveyId' => $selectedSurveyId,
             'selectedGraduationYear' => $selectedGraduationYear,
             'selectedStudyProgram' => $selectedStudyProgram,
             'filterOptionsBySurvey' => $filterOptionsBySurvey,
-            'chartLabels' => $filterLabel ? [$filterLabel] : [],
-            'chartRates' => $selectedSurvey && $filterLabel ? [(float) $selectedSurvey->filtered_rate] : [],
+            'chartLabels' => $dynamicChart['labels'] ?? [],
+            'chartRates' => $dynamicChart['rates'] ?? [],
+            'chartTargets' => $dynamicChart['targets'] ?? [],
+            'chartResponded' => $dynamicChart['responded'] ?? [],
+            'overallRate' => $dynamicChart['overallRate'] ?? 0,
+            'overallTarget' => $dynamicChart['overallTarget'] ?? 0,
+            'overallResponded' => $dynamicChart['overallResponded'] ?? 0,
+            'xAxisTitle' => $dynamicChart['xAxisTitle'] ?? 'Program Studi',
+            'yAxisTitle' => $dynamicChart['yAxisTitle'] ?? 'Response Rate (%)',
+            'chartScenario' => $dynamicChart['scenario'] ?? null,
+            'showChart' => (bool) ($dynamicChart['showChart'] ?? false),
         ];
     @endphp
 
@@ -272,6 +263,15 @@
             const filterOptionsBySurvey = payload.filterOptionsBySurvey || {};
             const chartLabels = Array.isArray(payload.chartLabels) ? payload.chartLabels : [];
             const chartRates = Array.isArray(payload.chartRates) ? payload.chartRates : [];
+            const chartTargets = Array.isArray(payload.chartTargets) ? payload.chartTargets : [];
+            const chartResponded = Array.isArray(payload.chartResponded) ? payload.chartResponded : [];
+            const overallRate = Number(payload.overallRate ?? 0);
+            const overallTarget = Number(payload.overallTarget ?? 0);
+            const overallResponded = Number(payload.overallResponded ?? 0);
+            const xAxisTitle = payload.xAxisTitle || 'Program Studi';
+            const yAxisTitle = payload.yAxisTitle || 'Response Rate (%)';
+            const chartScenario = payload.chartScenario || 'all';
+            const showChart = Boolean(payload.showChart);
 
             const filterForm = document.getElementById('monitoringFilterForm');
             const surveySelect = document.getElementById('surveySelect');
@@ -314,49 +314,55 @@
 
             function updateFilterOptionsBySurvey(keepCurrentSelection) {
                 const surveyId = surveySelect.value ? String(surveySelect.value) : '';
-                const optionSet = filterOptionsBySurvey[surveyId] || { years: [], programs: [] };
+                const optionSet = filterOptionsBySurvey[surveyId] || {
+                    years: [],
+                    programs: [],
+                    programsByYear: {},
+                    yearsByProgram: {}
+                };
+
+                const currentYear = keepCurrentSelection ? selectedGraduationYear : graduationYearSelect.value;
+                const currentProgram = keepCurrentSelection ? selectedStudyProgram : studyProgramSelect.value;
+
+                const availableYears = Array.isArray(optionSet.years) ? optionSet.years : [];
+                const availablePrograms = Array.isArray(optionSet.programs) ? optionSet.programs : [];
+
+                let filteredYears = availableYears;
+                if (currentProgram && optionSet.yearsByProgram && Array.isArray(optionSet.yearsByProgram[currentProgram])) {
+                    filteredYears = optionSet.yearsByProgram[currentProgram];
+                }
+
+                let filteredPrograms = availablePrograms;
+                if (currentYear && optionSet.programsByYear && Array.isArray(optionSet.programsByYear[currentYear])) {
+                    filteredPrograms = optionSet.programsByYear[currentYear];
+                }
 
                 populateSelectOptions(
                     graduationYearSelect,
-                    Array.isArray(optionSet.years) ? optionSet.years : [],
+                    filteredYears,
                     'Semua Tahun',
-                    keepCurrentSelection ? selectedGraduationYear : ''
+                    filteredYears.includes(currentYear) ? currentYear : ''
                 );
 
                 populateSelectOptions(
                     studyProgramSelect,
-                    Array.isArray(optionSet.programs) ? optionSet.programs : [],
+                    filteredPrograms,
                     'Semua Prodi',
-                    keepCurrentSelection ? selectedStudyProgram : ''
+                    filteredPrograms.includes(currentProgram) ? currentProgram : ''
                 );
             }
 
-            function syncExclusiveFilters(changedField) {
-                if (changedField === 'tahun_lulus' && graduationYearSelect.value) {
-                    studyProgramSelect.value = '';
-                }
-
-                if (changedField === 'prodi' && studyProgramSelect.value) {
-                    graduationYearSelect.value = '';
-                }
-
-                graduationYearSelect.disabled = !!studyProgramSelect.value;
-                studyProgramSelect.disabled = !!graduationYearSelect.value;
-            }
-
             graduationYearSelect.addEventListener('change', function() {
-                syncExclusiveFilters('tahun_lulus');
+                updateFilterOptionsBySurvey(false);
             });
 
             studyProgramSelect.addEventListener('change', function() {
-                syncExclusiveFilters('prodi');
+                updateFilterOptionsBySurvey(false);
             });
 
             surveySelect.addEventListener('change', function() {
                 updateFilterOptionsBySurvey(false);
                 filterValidation.textContent = '';
-                graduationYearSelect.disabled = false;
-                studyProgramSelect.disabled = false;
             });
 
             if (selectedSurveyId) {
@@ -364,7 +370,6 @@
             }
 
             updateFilterOptionsBySurvey(true);
-            syncExclusiveFilters();
 
             filterForm.addEventListener('submit', function(event) {
                 const hasSurvey = !!surveySelect.value;
@@ -375,12 +380,6 @@
                 if (anyFilterApplied && !hasSurvey) {
                     event.preventDefault();
                     filterValidation.textContent = 'Pilih survei terlebih dahulu jika ingin menampilkan visualisasi berdasarkan filter.';
-                    return;
-                }
-
-                if (hasYear && hasProgram) {
-                    event.preventDefault();
-                    filterValidation.textContent = 'Tahun Lulus dan Program Studi bersifat eksklusif. Pilih salah satu saja.';
                     return;
                 }
 
@@ -410,7 +409,16 @@
             }
 
             function renderChart() {
-                if (!selectedChartType || !['bar', 'pie'].includes(selectedChartType) || chartLabels.length === 0 || chartRates.length === 0) {
+                if (!selectedSurveyId) {
+                    emptyState.textContent = 'Pilih 1 survei untuk menampilkan visualisasi response rate.';
+                    emptyState.classList.remove('hidden');
+                    canvasContainer.classList.add('hidden');
+                    exportButton.disabled = true;
+                    return;
+                }
+
+                if (!showChart || !selectedChartType || !['bar', 'pie'].includes(selectedChartType) || chartLabels.length === 0 || chartRates.length === 0) {
+                    emptyState.textContent = 'Data response rate tidak tersedia untuk kombinasi filter yang dipilih.';
                     emptyState.classList.remove('hidden');
                     canvasContainer.classList.add('hidden');
                     exportButton.disabled = true;
@@ -423,24 +431,50 @@
                 const isMobile = window.matchMedia('(max-width: 767px)').matches;
                 const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
-                const filterText = activeFilterType === 'tahun_lulus'
-                    ? `Tahun Lulus ${activeFilterValue}`
-                    : `Program Studi ${activeFilterValue}`;
+                let scenarioLabel = 'Semua Tahun dan Semua Prodi';
+                if (chartScenario === 'year_only') {
+                    scenarioLabel = `Tahun Lulus ${selectedGraduationYear || '-'}`;
+                } else if (chartScenario === 'program_only') {
+                    scenarioLabel = `Program Studi ${selectedStudyProgram || '-'}`;
+                } else if (chartScenario === 'year_and_program') {
+                    scenarioLabel = `Tahun ${selectedGraduationYear || '-'} - ${selectedStudyProgram || '-'}`;
+                }
 
                 title.textContent = selectedChartType === 'bar'
-                    ? `Visualisasi Response Rate (${filterText})`
-                    : `Visualisasi Distribusi Response Rate (${filterText})`;
+                    ? `Visualisasi Response Rate (${scenarioLabel})`
+                    : `Visualisasi Distribusi Response Rate (${scenarioLabel})`;
 
-                legendTitle.textContent = activeFilterType === 'tahun_lulus'
-                    ? `Legenda: Response Rate berdasarkan Tahun Lulus (${activeFilterValue})`
-                    : `Legenda: Response Rate berdasarkan Program Studi (${activeFilterValue})`;
+                legendTitle.textContent = selectedChartType === 'bar'
+                    ? ''
+                    : `X-axis: ${xAxisTitle} | Y-axis: ${yAxisTitle}`;
+
+                const renderedLabels = chartLabels.slice();
+                const renderedRates = chartRates.slice();
+                const renderedTargets = chartTargets.slice();
+                const renderedResponded = chartResponded.slice();
+
+                if (selectedChartType === 'bar') {
+                    const overallLabel = 'Politeknik Statistika STIS';
+                    const overallLabelIndex = renderedLabels.findIndex(function(label) {
+                        return String(label) === overallLabel;
+                    });
+
+                    if (overallLabelIndex >= 0) {
+                        renderedRates[overallLabelIndex] = overallRate;
+                        renderedTargets[overallLabelIndex] = overallTarget;
+                        renderedResponded[overallLabelIndex] = overallResponded;
+                    } else {
+                        renderedLabels.push(overallLabel);
+                        renderedRates.push(overallRate);
+                        renderedTargets.push(overallTarget);
+                        renderedResponded.push(overallResponded);
+                    }
+                }
 
                 const datasetConfig = {
-                    label: activeFilterType === 'tahun_lulus'
-                        ? `Response Rate Tahun Lulus ${activeFilterValue}`
-                        : `Response Rate Program Studi ${activeFilterValue}`,
-                    data: chartRates,
-                    backgroundColor: chartLabels.map((_, index) => palette[index % palette.length]),
+                    label: 'Response Rate (%)',
+                    data: renderedRates,
+                    backgroundColor: renderedLabels.map((_, index) => palette[index % palette.length]),
                     borderColor: selectedChartType === 'bar' ? '#1E3A8A' : '#FFFFFF',
                     borderWidth: selectedChartType === 'bar' ? 1 : 2,
                     radius: selectedChartType === 'pie' ? '78%' : undefined,
@@ -453,7 +487,7 @@
                 chartInstance = new Chart(canvas, {
                     type: selectedChartType,
                     data: {
-                        labels: chartLabels,
+                        labels: renderedLabels,
                         datasets: [datasetConfig],
                     },
                     options: {
@@ -461,7 +495,7 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: true,
+                                display: selectedChartType !== 'bar',
                                 position: 'bottom',
                                 labels: {
                                     boxWidth: isMobile ? 10 : 12,
@@ -471,22 +505,17 @@
                                 }
                             },
                             title: {
-                                display: true,
-                                text: selectedChartType === 'bar'
-                                    ? `Bar Chart Response Rate - ${selectedSurveyName || 'Survei Terpilih'}`
-                                    : `Pie Chart Response Rate - ${selectedSurveyName || 'Survei Terpilih'}`,
-                                
-                                font: {
-                                    size: selectedChartType === 'pie' ? (isDesktop ? 20 : 14) : (isMobile ? 13 : 15),
-                                    weight: 'bold'
-                                }
+                                display: false,
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
                                         const label = context.label || '';
                                         const value = context.raw ?? 0;
-                                        return `${label}: ${Number(value).toFixed(2)}%`;
+                                        const index = context.dataIndex || 0;
+                                        const responded = renderedResponded[index] ?? 0;
+                                        const target = renderedTargets[index] ?? 0;
+                                        return `${label}: ${Number(value).toFixed(2)}% (${responded}/${target})`;
                                     }
                                 }
                             }
@@ -505,7 +534,7 @@
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Response Rate (%)'
+                                    text: yAxisTitle
                                 }
                             },
                             x: {
@@ -519,6 +548,7 @@
                                 },
                                 title: {
                                     display: true,
+                                    text: xAxisTitle,
                                 }
                             }
                         } : undefined,
@@ -536,8 +566,8 @@
                 const link = document.createElement('a');
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
                 link.href = chartInstance.toBase64Image('image/png', 1);
-                const safeFilterName = (activeFilterType || 'filter').replace(/[^a-zA-Z0-9_-]/g, '_');
-                link.download = `visualisasi-response-rate-${safeFilterName}-${selectedChartType}-${timestamp}.png`;
+                const safeScenario = (chartScenario || 'all').replace(/[^a-zA-Z0-9_-]/g, '_');
+                link.download = `visualisasi-response-rate-${safeScenario}-${selectedChartType}-${timestamp}.png`;
                 link.click();
             });
 

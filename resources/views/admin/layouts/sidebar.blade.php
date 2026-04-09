@@ -77,7 +77,7 @@
       <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
 
       <li class="w-full">
-        <a href="{{ route('admin.pengguna_lulusan.index') }}" class="{{ request()->routeIs('admin.pengguna_lulusan.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
+        <a href="{{ route('admin.penggunaLulusan.index') }}" class="{{ request()->routeIs('admin.penggunaLulusan.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
           <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center fill-current stroke-0 text-center">
             <i class="text-sm leading-normal text-emerald-500 ni ni-credit-card"></i>
           </div>

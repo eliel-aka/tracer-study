@@ -107,11 +107,11 @@
 │   │   ├── 🐘 2025_01_01_065606_create_template_pertanyaan_table.php
 │   │   ├── 🐘 2025_01_01_065845_create_template_jawaban_table.php
 │   │   ├── 🐘 2025_01_01_071532_create_lulusan_table.php
-│   │   ├── 🐘 2025_01_01_071541_create_pengguna_lulusan_table.php
+│   │   ├── 🐘 2025_01_01_071541_create_penggunaLulusan_table.php
 │   │   ├── 🐘 2025_01_01_073048_create_survey_user_table.php
 │   │   ├── 🐘 2025_01_01_073052_create_survey_user_jawaban_table.php
 │   │   ├── 🐘 2025_01_11_050152_add_column_nohp_lulusan.php
-│   │   ├── 🐘 2025_01_11_070542_add_column_email_nohp_pengguna_lulusan.php
+│   │   ├── 🐘 2025_01_11_070542_add_column_email_nohp_penggunaLulusan.php
 │   │   ├── 🐘 2025_01_15_000001_create_survey_blocks_table.php
 │   │   ├── 🐘 2025_01_15_000002_create_survey_branch_rules_table.php
 │   │   ├── 🐘 2025_01_15_000003_add_block_id_to_template_pertanyaan_table.php

@@ -203,6 +203,39 @@
                                             </div>
                                         </div>
 
+                                        <div x-show="question.tipe === 'multiple_choice_grid'" class="overflow-x-auto">
+                                            <table class="min-w-full bg-white dark:bg-dark-2 border border-blue-100 dark:border-dark-3 rounded-md">
+                                                <thead>
+                                                    <tr class="bg-blue-50 dark:bg-dark-3">
+                                                        <th class="text-left text-xs font-semibold text-blue-800 dark:text-dark-6 px-3 py-2 border-b border-blue-100 dark:border-dark-3 min-w-[220px]">Pernyataan</th>
+                                                        <template x-for="scale in multiple_choice_gridScaleOptions" :key="'header_' + scale.value">
+                                                            <th class="text-center text-[11px] font-semibold text-blue-800 dark:text-dark-6 px-2 py-2 border-b border-blue-100 dark:border-dark-3 min-w-[95px]">
+                                                                <div x-text="scale.value"></div>
+                                                                <div class="text-[10px] font-normal mt-1" x-text="scale.label"></div>
+                                                            </th>
+                                                        </template>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <template x-for="row in question.template_jawaban" :key="'row_' + row.id">
+                                                        <tr class="border-b border-blue-100 dark:border-dark-3">
+                                                            <td class="text-sm text-blue-800 dark:text-dark-6 px-3 py-2" x-text="row.pilihan_jawaban"></td>
+                                                            <template x-for="scale in multiple_choice_gridScaleOptions" :key="'cell_' + row.id + '_' + scale.value">
+                                                                <td class="text-center px-2 py-2">
+                                                                    <input type="radio"
+                                                                           :name="'multiple_choice_grid_' + question.id + '_' + row.id"
+                                                                           :value="scale.value"
+                                                                           :checked="getMultipleChoiceGridValue(question.id, row.id) == scale.value"
+                                                                           @change="selectMultipleChoiceGridOption(question.id, row.id, scale.value)"
+                                                                           class="text-blue-600 focus:ring-blue-500 dark:text-primary dark:focus:ring-primary" />
+                                                                </td>
+                                                            </template>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
                                         <div x-show="question.tipe === 'select'">
                                             <select :name="'answer_' + question.id"
                                                     :id="'question_' + question.id"
@@ -338,6 +371,13 @@
                 currentQuestions: [],
                 currentQuestionIndex: 0,
                 answers: {},
+                multiple_choice_gridScaleOptions: [
+                    { value: 1, label: 'Sangat Tidak Setuju' },
+                    { value: 2, label: 'Tidak Setuju' },
+                    { value: 3, label: 'Netral' },
+                    { value: 4, label: 'Setuju' },
+                    { value: 5, label: 'Sangat Setuju' },
+                ],
                 progress: 0,
                 isCompleted: false,
                 questionHistory: [], // Track navigation history for back button
@@ -383,7 +423,7 @@
                     this.allBlocks.forEach(block => {
                         block.questions.forEach(question => {
                             if (question.tipe === 'radio' && question.template_jawaban && question.template_jawaban.length > 0) {
-                                console.log(`Radio question "${question.pertanyaan}" has options:`, 
+                                console.log(`Single-choice question "${question.pertanyaan}" has options:`, 
                                     question.template_jawaban.map(opt => ({
                                         text: opt.pilihan_jawaban,
                                         target: opt.navigation_target
@@ -736,6 +776,18 @@
                     // Load existing answers if user is resuming the survey
                     if (this.existingAnswers && Object.keys(this.existingAnswers).length > 0) {
                         Object.entries(this.existingAnswers).forEach(([questionId, answer]) => {
+                            const question = this.findQuestionById(questionId);
+
+                            if (question && question.tipe === 'multiple_choice_grid') {
+                                try {
+                                    const parsed = JSON.parse(answer);
+                                    this.answers[questionId] = (parsed && typeof parsed === 'object') ? parsed : {};
+                                } catch (error) {
+                                    this.answers[questionId] = {};
+                                }
+                                return;
+                            }
+
                             // Handle different answer formats
                             if (typeof answer === 'string' && answer.includes(',')) {
                                 // Checkbox answers stored as comma-separated values
@@ -778,6 +830,34 @@
 
                 handleSelectChange(questionId, value) {
                     this.answers[questionId] = value;
+                },
+
+                selectMultipleChoiceGridOption(questionId, rowId, value) {
+                    if (!this.answers[questionId] || typeof this.answers[questionId] !== 'object' || Array.isArray(this.answers[questionId])) {
+                        this.answers[questionId] = {};
+                    }
+
+                    this.answers[questionId][rowId] = Number(value);
+                },
+
+                getMultipleChoiceGridValue(questionId, rowId) {
+                    const questionAnswer = this.answers[questionId];
+                    if (!questionAnswer || typeof questionAnswer !== 'object' || Array.isArray(questionAnswer)) {
+                        return '';
+                    }
+
+                    return questionAnswer[rowId] ?? '';
+                },
+
+                findQuestionById(questionId) {
+                    for (const block of this.allBlocks) {
+                        const question = (block.questions || []).find(q => String(q.id) === String(questionId));
+                        if (question) {
+                            return question;
+                        }
+                    }
+
+                    return null;
                 },
 
                 handleCheckboxChange(questionId, optionId, checked) {
@@ -852,6 +932,9 @@
                             } else if (answer instanceof File) {
                                 // File upload
                                 formData.append(`answer_${questionId}`, answer);
+                            } else if (answer && typeof answer === 'object') {
+                                // Multiple choice grid answers
+                                formData.append(`answer_${questionId}`, JSON.stringify(answer));
                             } else {
                                 // Regular answers
                                 formData.append(`answer_${questionId}`, answer);
@@ -904,6 +987,21 @@
                         case 'radio':
                         case 'select':
                             return answer && answer !== '';
+                        case 'multiple_choice_grid': {
+                            if (!answer || typeof answer !== 'object' || Array.isArray(answer)) {
+                                return false;
+                            }
+
+                            const expectedRows = (currentQuestion.template_jawaban || []).map(option => String(option.id));
+                            if (expectedRows.length === 0) {
+                                return false;
+                            }
+
+                            return expectedRows.every((rowId) => {
+                                const value = answer[rowId];
+                                return Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 5;
+                            });
+                        }
                         case 'checkbox':
                             return Array.isArray(answer) && answer.length > 0;
                         case 'text':
@@ -997,3 +1095,5 @@
 </body>
 
 </html>
+
+

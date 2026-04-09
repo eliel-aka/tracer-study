@@ -52,6 +52,36 @@ class AnswerQuestionRequest extends FormRequest
                     ]
                 ];
 
+            case 'multiple_choice_grid':
+                $optionIds = TemplateJawaban::where('id_template_pertanyaan', $question->id)
+                    ->pluck('id')
+                    ->map(fn ($id) => (string) $id)
+                    ->toArray();
+
+                return [
+                    'answer_grid' => [
+                        'required',
+                        'array',
+                        'min:1',
+                        function ($attribute, $value, $fail) use ($optionIds) {
+                            if (!is_array($value)) {
+                                $fail('Format jawaban grid tidak valid.');
+                                return;
+                            }
+
+                            $givenRowIds = array_keys($value);
+                            sort($givenRowIds);
+                            $expectedRowIds = $optionIds;
+                            sort($expectedRowIds);
+
+                            if ($givenRowIds !== $expectedRowIds) {
+                                $fail('Semua baris pada Multiple Choice Grid wajib dijawab.');
+                            }
+                        },
+                    ],
+                    'answer_grid.*' => 'required|integer|between:1,5',
+                ];
+
             case 'checkbox':
                 return [
                     'answer_option_id' => 'array|nullable',
@@ -99,6 +129,11 @@ class AnswerQuestionRequest extends FormRequest
             'answer_option_id.required' => 'Pilih salah satu jawaban.',
             'answer_option_id.exists' => 'Pilihan jawaban tidak valid.',
             'answer_option_id.*.exists' => 'Salah satu pilihan jawaban tidak valid.',
+            'answer_grid.required' => 'Semua baris pada Multiple Choice Grid wajib dijawab.',
+            'answer_grid.array' => 'Format jawaban Multiple Choice Grid tidak valid.',
+            'answer_grid.*.required' => 'Setiap baris Multiple Choice Grid wajib dipilih.',
+            'answer_grid.*.integer' => 'Pilihan jawaban grid tidak valid.',
+            'answer_grid.*.between' => 'Skala jawaban grid harus antara 1 sampai 5.',
             'value.required' => 'Jawaban wajib diisi.',
             'value.string' => 'Jawaban harus berupa teks.',
             'value.max' => 'Jawaban terlalu panjang.',
@@ -133,3 +168,4 @@ class AnswerQuestionRequest extends FormRequest
         }
     }
 }
+

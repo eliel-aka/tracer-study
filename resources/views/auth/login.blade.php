@@ -135,6 +135,9 @@
                   class="w-full px-5 py-3 text-base transition bg-transparent border rounded-md outline-none border-stroke dark:border-dark-3 text-body-color dark:text-dark-6 placeholder:text-dark-6 focus:border-primary dark:focus:border-primary focus-visible:shadow-none" />
                   <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>
+              <div class="mb-6 text-right">
+                <a href="{{ route('password.request') }}" class="text-sm text-primary hover:underline">Lupa password?</a>
+              </div>
               <div class="mb-9">
                 <input type="submit" value="Login"
                   class="w-full px-5 py-3 text-base text-white transition duration-300 ease-in-out border rounded-md cursor-pointer border-primary bg-primary hover:bg-blue-dark" />

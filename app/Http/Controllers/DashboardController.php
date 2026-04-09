@@ -32,8 +32,9 @@ class DashboardController extends Controller
 
         $surveyAktif = $query->paginate(10)->appends(request()->query());
         foreach ($surveyAktif as $survey) {
-            $totalResponses = $survey->surveyUsers()->count();
-            $completedResponses = $survey->surveyUsers()->where('status', true)->count();
+            $assignmentStats = SurveyUser::getAssignmentStats((int) $survey->id);
+            $totalResponses = $assignmentStats['total'];
+            $completedResponses = $assignmentStats['completed'];
             $completionRate = $totalResponses > 0 ? round(($completedResponses / $totalResponses) * 100, 1) : 0;
             $survey->completionRate = $completionRate;
             $survey->completedResponses = $completedResponses;

@@ -313,7 +313,7 @@
                                 <label for="type_survei" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Tipe <span class="text-red-500">*</span></label>
                                 <select name="type_survei" required class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                                     <option value="" disabled selected hidden>Pilih Tipe</option>
-                                    <option value="pengguna_lulusan" {{ old('type_survei') == 'pengguna_lulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
+                                    <option value="penggunaLulusan" {{ old('type_survei') == 'penggunaLulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
                                     <option value="lulusan" {{ old('type_survei') == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
                                 </select>
                                 @error('type_survei')
@@ -383,6 +383,10 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault(); // Always prevent default to handle submission manually
 
+            // Normalize dynamic indexes to avoid timestamp-based keys (e.g. questions[1775...])
+            // that can create confusing backend validation paths.
+            normalizeFormIndexesBeforeSubmit();
+
             if (!validateForm()) {
                 return false;
             }
@@ -420,6 +424,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Error response with JSON data
+                    if (status === 422 && data.errors) {
+                        throw new Error(buildFriendlyValidationMessage(data.errors));
+                    }
+
                     throw new Error(data.message || 'Terjadi kesalahan saat menyimpan survey');
                 }
             })
@@ -750,7 +758,7 @@ function restoreFormDataToSection(sectionId, data) {
                     }
 
                     // Add options if needed
-                    if (['radio', 'checkbox', 'select'].includes(questionData.type) && questionData.options.length > 0) {
+                    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) && questionData.options.length > 0) {
                         setTimeout(() => {
                             const optionsList = questionEl.querySelector(`#optionsList-${sectionId}-${questionCount}`);
                             if (optionsList) {
@@ -857,19 +865,22 @@ function updateNavigationOptions() {
     });
 }
 
-function addQuestion(sectionId) {
-    const questionCount = document.querySelectorAll(`#questionsContainer-${sectionId} .question-item`).length + 1;
+function addQuestion(sectionId, afterQuestionId = null) {
+    const temporaryQuestionId = Date.now();
 
     const questionHtml = `
-        <div class="question-item" data-question-id="${questionCount}" data-question-number="Q${questionCount}">
+        <div class="question-item" data-question-id="${temporaryQuestionId}" data-question-number="Q${temporaryQuestionId}">
             <div class="question-header">
                 <div class="flex justify-between items-start">
-                    <h6 class="text-sm font-medium text-gray-600">Pertanyaan ${questionCount}</h6>
+                    <h6 class="text-sm font-medium text-gray-600">Pertanyaan ${temporaryQuestionId}</h6>
                     <div class="icon-container">
-                        <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCount})" class="icon-link" title="Clone Question">
+                        <button type="button" onclick="addQuestion(${sectionId}, ${temporaryQuestionId})" class="icon-link add-question-after-btn" title="Tambah Pertanyaan di Bawah">
+                            <i class="fas fa-plus text-green-600"></i>
+                        </button>
+                        <button type="button" onclick="cloneQuestion(${sectionId}, ${temporaryQuestionId})" class="icon-link" title="Clone Question">
                             <i class="fas fa-copy text-blue-600"></i>
                         </button>
-                        <button type="button" onclick="deleteQuestion(${sectionId}, ${questionCount})" class="icon-link" title="Delete Question">
+                        <button type="button" onclick="deleteQuestion(${sectionId}, ${temporaryQuestionId})" class="icon-link" title="Delete Question">
                             <i class="fas fa-trash text-red-600"></i>
                         </button>
                     </div>
@@ -879,32 +890,33 @@ function addQuestion(sectionId) {
             <div class="space-y-3">
                 <div>
                     <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Teks Pertanyaan <span class="text-red-500">*</span></label>
-                    <textarea name="sections[${sectionId}][questions][${questionCount}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
+                    <textarea name="sections[${sectionId}][questions][${temporaryQuestionId}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"></textarea>
                 </div>
 
                 <div>
                     <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Deskripsi/Instruksi</label>
-                    <textarea name="sections[${sectionId}][questions][${questionCount}][description]" rows="1" placeholder="Tulis deskripsi disini..."
+                    <textarea name="sections[${sectionId}][questions][${temporaryQuestionId}][description]" rows="1" placeholder="Tulis deskripsi disini..."
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"></textarea>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div>
-                        <select name="sections[${sectionId}][questions][${questionCount}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${questionCount}, this.value)"
+                        <select name="sections[${sectionId}][questions][${temporaryQuestionId}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${temporaryQuestionId}, this.value)"
                                 class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                             <option value="text">Text Input</option>
                             <option value="textarea">Text Area</option>
                             <option value="radio">Radio Button</option>
                             <option value="checkbox">Checkbox</option>
                             <option value="select">Select Dropdown</option>
+                            <option value="multiple_choice_grid">Multiple Choice Grid</option>
                             <option value="file">File Upload</option>
                             <option value="date">Date</option>
                         </select>
                     </div>
 
                     <div>
-                        <select name="sections[${sectionId}][questions][${questionCount}][visualization]"
+                        <select name="sections[${sectionId}][questions][${temporaryQuestionId}][visualization]"
                                 class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                             <option value="">Tidak ada visualisasi</option>
                             <option value="bar">Bar Chart</option>
@@ -914,7 +926,7 @@ function addQuestion(sectionId) {
 
                     <div class="flex items-center justify-center">
                         <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="sections[${sectionId}][questions][${questionCount}][required]" value="1" class="sr-only peer">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${temporaryQuestionId}][required]" value="1" class="sr-only peer">
                             <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                             <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Required</span>
                         </label>
@@ -922,13 +934,13 @@ function addQuestion(sectionId) {
                 </div>
 
                 <!-- Options container (will be shown for radio, checkbox, select) -->
-                <div id="optionsContainer-${sectionId}-${questionCount}" class="mt-3" style="display: none;">
+                <div id="optionsContainer-${sectionId}-${temporaryQuestionId}" class="mt-3" style="display: none;">
                     <h6 class="text-sm font-medium text-gray-600 mb-2">Pilihan Jawaban</h6>
                     <div class="text-xs text-gray-500 mb-2">Pilih tipe jawaban terlebih dahulu</div>
-                    <div id="optionsList-${sectionId}-${questionCount}" class="space-y-2">
+                    <div id="optionsList-${sectionId}-${temporaryQuestionId}" class="space-y-2">
                         <!-- Options will be added here -->
                     </div>
-                    <button type="button" onclick="addOption(${sectionId}, ${questionCount})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                    <button type="button" onclick="addOption(${sectionId}, ${temporaryQuestionId})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
                         <i class="fas fa-plus mr-1"></i> Tambah Pilihan
                     </button>
                 </div>
@@ -936,7 +948,21 @@ function addQuestion(sectionId) {
         </div>
     `;
 
-    document.getElementById(`questionsContainer-${sectionId}`).insertAdjacentHTML('beforeend', questionHtml);
+    const questionsContainer = document.getElementById(`questionsContainer-${sectionId}`);
+    if (!questionsContainer) {
+        return;
+    }
+
+    if (afterQuestionId) {
+        const referenceQuestion = questionsContainer.querySelector(`[data-question-id="${afterQuestionId}"]`);
+        if (referenceQuestion) {
+            referenceQuestion.insertAdjacentHTML('afterend', questionHtml);
+        } else {
+            questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+        }
+    } else {
+        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+    }
 
     // Update question numbers for visual consistency
     updateQuestionNumbers(sectionId);
@@ -947,12 +973,59 @@ function updateQuestionNumbers(sectionId) {
     const questions = questionsContainer.querySelectorAll('.question-item');
 
     questions.forEach((question, index) => {
-        question.setAttribute('data-question-number', `Q${index + 1}`);
+        const oldQuestionId = question.getAttribute('data-question-id');
+        const newQuestionId = index + 1;
+
+        question.setAttribute('data-question-id', `${newQuestionId}`);
+        question.setAttribute('data-question-number', `Q${newQuestionId}`);
 
         // Update header text
         const header = question.querySelector('.question-header h6');
         if (header) {
-            header.textContent = `Pertanyaan ${index + 1}`;
+            header.textContent = `Pertanyaan ${newQuestionId}`;
+        }
+
+        const inputs = question.querySelectorAll(`[name*="sections[${sectionId}][questions]"]`);
+        inputs.forEach((input) => {
+            input.name = input.name.replace(
+                new RegExp(`sections\\[${sectionId}\\]\\[questions\\]\\[(\\d+|${oldQuestionId})\\]`),
+                `sections[${sectionId}][questions][${newQuestionId}]`
+            );
+        });
+
+        const optionsContainer = question.querySelector(`[id^="optionsContainer-${sectionId}-"]`);
+        if (optionsContainer) {
+            optionsContainer.id = `optionsContainer-${sectionId}-${newQuestionId}`;
+        }
+
+        const optionsList = question.querySelector(`[id^="optionsList-${sectionId}-"]`);
+        if (optionsList) {
+            optionsList.id = `optionsList-${sectionId}-${newQuestionId}`;
+        }
+
+        const typeSelect = question.querySelector('select[name*="[type]"]');
+        if (typeSelect) {
+            typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${sectionId}, ${newQuestionId}, this.value)`);
+        }
+
+        const addOptionButton = question.querySelector('button[onclick^="addOption("]');
+        if (addOptionButton) {
+            addOptionButton.setAttribute('onclick', `addOption(${sectionId}, ${newQuestionId})`);
+        }
+
+        const cloneButton = question.querySelector('button[onclick^="cloneQuestion("]');
+        if (cloneButton) {
+            cloneButton.setAttribute('onclick', `cloneQuestion(${sectionId}, ${newQuestionId})`);
+        }
+
+        const deleteButton = question.querySelector('button[onclick^="deleteQuestion("]');
+        if (deleteButton) {
+            deleteButton.setAttribute('onclick', `deleteQuestion(${sectionId}, ${newQuestionId})`);
+        }
+
+        const addQuestionAfterButton = question.querySelector('.add-question-after-btn');
+        if (addQuestionAfterButton) {
+            addQuestionAfterButton.setAttribute('onclick', `addQuestion(${sectionId}, ${newQuestionId})`);
         }
     });
 }
@@ -1046,7 +1119,7 @@ function cloneQuestion(sectionId, questionId) {
                 }
 
                 // Add options if needed
-                if (['radio', 'checkbox', 'select'].includes(originalData.type) && originalData.options.length > 0) {
+                if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(originalData.type) && originalData.options.length > 0) {
                     setTimeout(() => {
                         const optionsList = newQuestion.querySelector(`div[id*="optionsList"]`);
                         if (optionsList) {
@@ -1091,7 +1164,7 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         return;
     }
 
-    if (['radio', 'checkbox', 'select'].includes(type)) {
+    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(type)) {
         optionsContainer.style.display = 'block';
         // Add default options if none exist
         const optionsList = document.getElementById(`optionsList-${sectionId}-${questionId}`);
@@ -1102,8 +1175,12 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         }
         
         if (optionsList.children.length === 0) {
-            addOption(sectionId, questionId);
-            addOption(sectionId, questionId);
+            if (type === 'multiple_choice_grid') {
+                addDefaultMultipleChoiceGridOptions(sectionId, questionId);
+            } else {
+                addOption(sectionId, questionId);
+                addOption(sectionId, questionId);
+            }
         } else {
             // Update existing options to add/remove navigation based on type
             updateExistingOptionsNavigation(sectionId, questionId, type);
@@ -1434,7 +1511,7 @@ function validateForm() {
 
             // Validate options for select types
             const questionType = question.querySelector('select[name*="[type]"]');
-            if (questionType && ['radio', 'checkbox', 'select'].includes(questionType.value)) {
+            if (questionType && ['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionType.value)) {
                 const options = question.querySelectorAll('input[name*="[options]"]');
                 const filledOptions = Array.from(options).filter(opt => opt.value.trim());
                 if (filledOptions.length < 2) {
@@ -1496,6 +1573,24 @@ document.addEventListener('change', function(e) {
                 }
             });
         }
+
+        function addDefaultMultipleChoiceGridOptions(sectionId, questionId) {
+            const multiple_choice_gridLabels = [
+                'Pernyataan 1',
+                'Pernyataan 2',
+                'Pernyataan 3'
+            ];
+
+            multiple_choice_gridLabels.forEach((label, index) => {
+                addOption(sectionId, questionId);
+                const optionsList = document.getElementById(`optionsList-${sectionId}-${questionId}`);
+                const optionInputs = optionsList ? optionsList.querySelectorAll('input[type="text"]') : [];
+
+                if (optionInputs[index]) {
+                    optionInputs[index].value = label;
+                }
+            });
+        }
     }
 });
 
@@ -1506,12 +1601,13 @@ function showErrorMessage(message) {
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+    const renderedMessage = String(message).replace(/\n/g, '<br>');
     messageDiv.innerHTML = `
         <div class="flex items-center">
             <i class="fas fa-exclamation-circle mr-3"></i>
             <div>
                 <h4 class="font-semibold">Error!</h4>
-                <p class="text-sm mt-1">${message}</p>
+                <p class="text-sm mt-1">${renderedMessage}</p>
             </div>
             <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                 <i class="fas fa-times"></i>
@@ -1561,7 +1657,233 @@ function removeMessages() {
     const existingMessages = document.querySelectorAll('.fixed.top-4.right-4');
     existingMessages.forEach(msg => msg.remove());
 }
+
+function buildFriendlyValidationMessage(errorsObj) {
+    const fallback = 'Ada data yang belum valid. Periksa kembali isian formulir.';
+
+    if (!errorsObj || typeof errorsObj !== 'object') {
+        return fallback;
+    }
+
+    const messages = [];
+    Object.entries(errorsObj).forEach(([field, fieldMessages]) => {
+        if (!Array.isArray(fieldMessages) || fieldMessages.length === 0) {
+            return;
+        }
+
+        const rawMessage = fieldMessages[0];
+        messages.push(humanizeValidationField(field, rawMessage));
+    });
+
+    if (messages.length === 0) {
+        return fallback;
+    }
+
+    const uniqueMessages = [...new Set(messages)];
+    return uniqueMessages.map((message, index) => `${index + 1}. ${message}`).join('\n');
+}
+
+function humanizeValidationField(field, rawMessage) {
+    const labelByField = {
+        nama: 'Nama Survei',
+        tanggal_mulai: 'Tanggal Mulai',
+        tanggal_selesai: 'Tanggal Selesai',
+        type_survei: 'Tipe Survei',
+        deskripsi: 'Deskripsi Survei',
+    };
+
+    if (labelByField[field]) {
+        return `${labelByField[field]}: ${normalizeValidationMessage(rawMessage)}`;
+    }
+
+    const sectionMatch = field.match(/^sections\.(\d+)\.(section_name|section_description|navigation_type)$/);
+    if (sectionMatch) {
+        const sectionId = sectionMatch[1];
+        const fieldName = sectionMatch[2];
+        const sectionNumber = getSectionNumberById(sectionId);
+        const sectionLabel = `Block ${sectionNumber}`;
+
+        if (fieldName === 'section_name') {
+            return `Nama ${sectionLabel} wajib diisi.`;
+        }
+
+        if (fieldName === 'section_description') {
+            return `Deskripsi ${sectionLabel} tidak valid.`;
+        }
+
+        return `Pengaturan navigasi pada ${sectionLabel} tidak valid.`;
+    }
+
+    const questionMatch = field.match(/^sections\.(\d+)\.questions\.(\d+)\.(.+)$/);
+    if (questionMatch) {
+        const sectionId = questionMatch[1];
+        const questionId = questionMatch[2];
+        const questionField = questionMatch[3];
+
+        const sectionNumber = getSectionNumberById(sectionId);
+        const questionNumber = getQuestionNumberById(sectionId, questionId);
+        const contextLabel = `Block ${sectionNumber}, Pertanyaan ${questionNumber}`;
+
+        if (questionField === 'question') {
+            return `Teks pertanyaan wajib diisi (${contextLabel}).`;
+        }
+
+        if (questionField === 'type') {
+            return `Tipe pertanyaan wajib dipilih (${contextLabel}).`;
+        }
+
+        if (questionField.startsWith('options')) {
+            return `Pilihan jawaban belum lengkap (${contextLabel}). Minimal isi 2 pilihan.`;
+        }
+
+        if (questionField === 'visualization') {
+            return `Pilihan visualisasi tidak valid (${contextLabel}).`;
+        }
+
+        return `${normalizeValidationMessage(rawMessage)} (${contextLabel}).`;
+    }
+
+    return normalizeValidationMessage(rawMessage);
+}
+
+function normalizeValidationMessage(message) {
+    if (!message) {
+        return 'Isian tidak valid.';
+    }
+
+    const lower = String(message).toLowerCase();
+
+    if (lower.includes('required')) {
+        return 'Wajib diisi.';
+    }
+
+    if (lower.includes('must be an array') || lower.includes('must be a string') || lower.includes('must be')) {
+        return 'Format isian tidak sesuai.';
+    }
+
+    return String(message);
+}
+
+function getSectionNumberById(sectionId) {
+    const sections = Array.from(document.querySelectorAll('.section-block'));
+    const index = sections.findIndex(section => String(section.getAttribute('data-section-id')) === String(sectionId));
+    return index >= 0 ? index + 1 : sectionId;
+}
+
+function getQuestionNumberById(sectionId, questionId) {
+    const section = document.querySelector(`.section-block[data-section-id="${sectionId}"]`);
+    if (!section) {
+        return questionId;
+    }
+
+    const questions = Array.from(section.querySelectorAll('.question-item'));
+    const index = questions.findIndex(question => String(question.getAttribute('data-question-id')) === String(questionId));
+    if (index >= 0) {
+        return index + 1;
+    }
+
+    const expectedPrefix = `sections[${sectionId}][questions][${questionId}]`;
+    const matchingField = Array.from(section.querySelectorAll('[name]')).find((field) => {
+        return typeof field.name === 'string' && field.name.includes(expectedPrefix);
+    });
+
+    if (!matchingField) {
+        return questionId;
+    }
+
+    const questionItem = matchingField.closest('.question-item');
+    if (!questionItem) {
+        return questionId;
+    }
+
+    const derivedIndex = questions.indexOf(questionItem);
+    return derivedIndex >= 0 ? derivedIndex + 1 : questionId;
+}
+
+function normalizeFormIndexesBeforeSubmit() {
+    const sections = Array.from(document.querySelectorAll('.section-block'));
+
+    sections.forEach((section, sectionIndex) => {
+        const newSectionId = String(sectionIndex + 1);
+        section.setAttribute('data-section-id', newSectionId);
+
+        const sectionFields = section.querySelectorAll('[name*="sections["]');
+        sectionFields.forEach((field) => {
+            if (!field.name) {
+                return;
+            }
+
+            field.name = field.name.replace(/sections\[[^\]]+\]/, `sections[${newSectionId}]`);
+        });
+
+        const questionsContainer = section.querySelector('[id^="questionsContainer-"]');
+        if (questionsContainer) {
+            questionsContainer.id = `questionsContainer-${newSectionId}`;
+        }
+
+        const questions = Array.from(section.querySelectorAll('.question-item'));
+        questions.forEach((question, questionIndex) => {
+            const newQuestionId = String(questionIndex + 1);
+            question.setAttribute('data-question-id', newQuestionId);
+            question.setAttribute('data-question-number', `Q${newQuestionId}`);
+
+            const header = question.querySelector('.question-header h6');
+            if (header) {
+                header.textContent = `Pertanyaan ${newQuestionId}`;
+            }
+
+            const questionFields = question.querySelectorAll('[name]');
+            questionFields.forEach((field) => {
+                if (!field.name) {
+                    return;
+                }
+
+                field.name = field.name.replace(
+                    /sections\[[^\]]+\]\[questions\]\[[^\]]+\]/,
+                    `sections[${newSectionId}][questions][${newQuestionId}]`
+                );
+            });
+
+            const optionsContainer = question.querySelector('[id^="optionsContainer-"]');
+            if (optionsContainer) {
+                optionsContainer.id = `optionsContainer-${newSectionId}-${newQuestionId}`;
+            }
+
+            const optionsList = question.querySelector('[id^="optionsList-"]');
+            if (optionsList) {
+                optionsList.id = `optionsList-${newSectionId}-${newQuestionId}`;
+            }
+
+            const typeSelect = question.querySelector('select[name*="[type]"]');
+            if (typeSelect) {
+                typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${newSectionId}, ${newQuestionId}, this.value)`);
+            }
+
+            const addAfterButton = question.querySelector('.add-question-after-btn');
+            if (addAfterButton) {
+                addAfterButton.setAttribute('onclick', `addQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const cloneButton = question.querySelector('button[onclick^="cloneQuestion("]');
+            if (cloneButton) {
+                cloneButton.setAttribute('onclick', `cloneQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const deleteButton = question.querySelector('button[onclick^="deleteQuestion("]');
+            if (deleteButton) {
+                deleteButton.setAttribute('onclick', `deleteQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const addOptionButton = question.querySelector('button[onclick^="addOption("]');
+            if (addOptionButton) {
+                addOptionButton.setAttribute('onclick', `addOption(${newSectionId}, ${newQuestionId})`);
+            }
+        });
+    });
+}
 </script>
 @endpush
 
 @endsection
+
+

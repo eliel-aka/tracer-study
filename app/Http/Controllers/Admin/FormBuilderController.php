@@ -255,7 +255,7 @@ class FormBuilderController extends Controller
             'sections.*.questions' => 'required|array|min:1|max:50',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array|max:20',
@@ -308,7 +308,7 @@ class FormBuilderController extends Controller
 
             // Validate question options for select types
             foreach ($section['questions'] ?? [] as $questionIndex => $question) {
-                if (in_array($question['type'] ?? '', ['radio', 'checkbox', 'select'])) {
+                if (in_array($question['type'] ?? '', ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
                     $options = $question['options'] ?? [];
                     if (empty($options) || count($options) < 2) {
                         $errors["sections.{$sectionIndex}.questions.{$questionIndex}.options"] = [
@@ -360,7 +360,7 @@ class FormBuilderController extends Controller
             'sections.*.questions' => 'required|array|min:1|max:50',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array|max:20',
@@ -623,7 +623,7 @@ class FormBuilderController extends Controller
     {
         $options = $questionData['options'] ?? [];
         
-        if (!in_array($question->tipe, ['radio', 'checkbox', 'select']) || empty($options)) {
+        if (!in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid']) || empty($options)) {
             return;
         }
 
@@ -1013,3 +1013,4 @@ class FormBuilderController extends Controller
         ];
     }
 }
+

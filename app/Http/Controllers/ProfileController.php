@@ -103,7 +103,7 @@ class ProfileController extends Controller
         // Load relasi berdasarkan role user
         if ($user->hasRole('lulusan')) {
             $user->load('lulusan');
-        } elseif ($user->hasRole('pengguna_lulusan')) {
+        } elseif ($user->hasRole('penggunaLulusan')) {
             $user->load('penggunaLulusan');
         }
         

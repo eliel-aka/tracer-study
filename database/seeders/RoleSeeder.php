@@ -23,10 +23,10 @@ class RoleSeeder extends Seeder
         // Create all roles first
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $lulusanRole = Role::firstOrCreate(['name' => 'lulusan']);
-        $penggunaLulusanRole = Role::firstOrCreate(['name' => 'pengguna_lulusan']);
+        $penggunaLulusanRole = Role::firstOrCreate(['name' => 'penggunaLulusan']);
         $supervisorRole = Role::firstOrCreate(['name' => 'supervisor']);
         
-        $this->command->info('✅ Roles created: admin, lulusan, pengguna_lulusan, supervisor');
+        $this->command->info('✅ Roles created: admin, lulusan, penggunaLulusan, supervisor');
 
         // Create Admin User
         $adminUser = User::firstOrCreate(
@@ -77,12 +77,12 @@ class RoleSeeder extends Seeder
 
         // Create Pengguna Lulusan User
         $penggunaLulusanUser = User::firstOrCreate(
-            ['email' => 'pengguna_lulusan@pengguna_lulusan.com'],
+            ['email' => 'penggunaLulusan@penggunaLulusan.com'],
             [
                 'name' => 'Pengguna Lulusan User',
-                'email' => 'pengguna_lulusan@pengguna_lulusan.com',
+                'email' => 'penggunaLulusan@penggunaLulusan.com',
                 'password' => Hash::make('123123123'),
-                'role' => 'pengguna_lulusan',
+                'role' => 'penggunaLulusan',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
@@ -98,7 +98,7 @@ class RoleSeeder extends Seeder
                 'jabatan' => 'Manager',
                 'satuan_kerja' => 'Divisi IT',
                 'unit_kerja' => 'Pengembangan',
-                'email' => 'pengguna_lulusan@gmail.com',
+                'email' => 'penggunaLulusan@gmail.com',
                 'no_hp' => '08123456789',
                 'nip' => '987654321',
                 'created_at' => now(),
@@ -123,7 +123,7 @@ class RoleSeeder extends Seeder
         $this->command->info('✅ Demo users created with credentials:');
         $this->command->info('👑 Admin: admin@admin.com / 123123123');
         $this->command->info('🎓 Lulusan: lulusan@lulusan.com / 123123123');
-        $this->command->info('👔 Pengguna Lulusan: pengguna_lulusan@pengguna_lulusan.com / 123123123');
+        $this->command->info('👔 Pengguna Lulusan: penggunaLulusan@penggunaLulusan.com / 123123123');
         $this->command->info('📊 Supervisor: supervisor@example.com / 123123123');
         $this->command->info('');
         $this->command->info('🎉 All roles and demo users have been created successfully!');

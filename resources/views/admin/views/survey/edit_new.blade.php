@@ -140,7 +140,7 @@
                                         class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                                     <option value="">Pilih Tipe Survey</option>
                                     <option value="lulusan" {{ $survey->type_survei == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
-                                    <option value="pengguna_lulusan" {{ $survey->type_survei == 'pengguna_lulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
+                                    <option value="penggunaLulusan" {{ $survey->type_survei == 'penggunaLulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
                                 </select>
                                 @error('type_survei')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>

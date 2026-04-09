@@ -13,8 +13,8 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings
     */
     public function collection()
     {
-        return PenggunaLulusan::join('users', 'pengguna_lulusan.user_id', '=', 'users.id')
-        ->get(['pengguna_lulusan.id', 'pengguna_lulusan.nama','pengguna_lulusan.nip','users.email', 'pengguna_lulusan.jabatan', 'pengguna_lulusan.satuan_kerja','pengguna_lulusan.unit_kerja', 'pengguna_lulusan.no_hp', 'pengguna_lulusan.created_at', 'pengguna_lulusan.updated_at']);
+        return PenggunaLulusan::join('users', 'penggunaLulusan.user_id', '=', 'users.id')
+        ->get(['penggunaLulusan.id', 'penggunaLulusan.nama','penggunaLulusan.nip','users.email', 'penggunaLulusan.jabatan', 'penggunaLulusan.satuan_kerja','penggunaLulusan.unit_kerja', 'penggunaLulusan.no_hp', 'penggunaLulusan.created_at', 'penggunaLulusan.updated_at']);
     }
 
     /**

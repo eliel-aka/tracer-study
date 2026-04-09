@@ -44,17 +44,17 @@ class PenggunaLulusanImport implements ToModel, WithHeadingRow
             [
                 'name' => $row['nama'],
                 'password' => bcrypt(substr($row['nip'], 0, 5)), // Use first 5 digits of NIP as password
-                'role' => 'pengguna_lulusan',
+                'role' => 'penggunaLulusan',
             ]
         );
 
         // Assign role if not already assigned
-        if (!$user->hasRole('pengguna_lulusan')) {
-            $user->assignRole('pengguna_lulusan');
+        if (!$user->hasRole('penggunaLulusan')) {
+            $user->assignRole('penggunaLulusan');
         }
 
-        // Create the pengguna_lulusan record
-        $pengguna_lulusan = PenggunaLulusan::firstOrCreate(
+        // Create the penggunaLulusan record
+        $penggunaLulusan = PenggunaLulusan::firstOrCreate(
             ['nip' => $row['nip']],
             [
                 'user_id' => $user->id,
@@ -77,7 +77,7 @@ class PenggunaLulusanImport implements ToModel, WithHeadingRow
                 ]
             );
         }
-        return $pengguna_lulusan;
+        return $penggunaLulusan;
     } catch (QueryException $e) {
         Log::error("Database error during import: " . $e->getMessage());
             throw new Exception("Error importing data: " . $e->getMessage());

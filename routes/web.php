@@ -44,12 +44,12 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
     Route::get('lulusan/export', [LulusanController::class, 'export'])->name('lulusan.export');
     Route::post('lulusan/import', [LulusanController::class, 'import'])->name('lulusan.import');
     Route::delete('lulusan/delete/{id}', [LulusanController::class, 'destroy'])->name('admin.lulusan.destroy'); //hapus lulusan
-    Route::post('pengguna_lulusan/import', [PenggunaLulusanController::class, 'import'])->name('pengguna_lulusan.import');
-    Route::get('pengguna_lulusan/export', [PenggunaLulusanController::class, 'export'])->name('pengguna_lulusan.export');
-    Route::get('pengguna_lulusan/details/{id}', [PenggunaLulusanController::class, 'details'])->name('pengguna_lulusan.details');
-    Route::delete('pengguna_lulusan/delete/{id}', [PenggunaLulusanController::class, 'destroy'])->name('admin.pengguna_lulusan.destroy');
+    Route::post('penggunaLulusan/import', [PenggunaLulusanController::class, 'import'])->name('penggunaLulusan.import');
+    Route::get('penggunaLulusan/export', [PenggunaLulusanController::class, 'export'])->name('penggunaLulusan.export');
+    Route::get('penggunaLulusan/details/{id}', [PenggunaLulusanController::class, 'details'])->name('penggunaLulusan.details');
+    Route::delete('penggunaLulusan/delete/{id}', [PenggunaLulusanController::class, 'destroy'])->name('admin.penggunaLulusan.destroy');
     Route::resource('lulusan', LulusanController::class);
-    Route::resource('pengguna_lulusan', PenggunaLulusanController::class);
+    Route::resource('penggunaLulusan', PenggunaLulusanController::class);
     Route::post('survey/import', [SurveyController::class, 'import'])->name('survey.import');
     // Form Builder Routes
     Route::get('survey/form-builder/create', [App\Http\Controllers\Admin\FormBuilderController::class, 'create'])->name('survey.form_builder.create');
@@ -99,7 +99,7 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
 });
 
 // User route
-Route::middleware(['auth', 'role:lulusan|pengguna_lulusan'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth', 'role:lulusan|penggunaLulusan'])->prefix('user')->name('user.')->group(function () {
     Route::get('profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::post('profile/update', [SurveyUserController::class, 'updateProfile'])->name('profile.update');
     Route::get('survey/{id}', [SurveyUserController::class, 'surveyUserPertanyaan'])->name('survey.survey');

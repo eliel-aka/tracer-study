@@ -46,7 +46,7 @@
                     <!-- Search Bar: Full width di mobile -->
                     <div class="relative flex items-center w-full md:w-auto">
                         <div class="relative flex items-stretch w-full">
-                            <form action="{{ route('admin.pengguna_lulusan.index') }}" method="GET" class="flex items-center w-full">
+                            <form action="{{ route('admin.penggunaLulusan.index') }}" method="GET" class="flex items-center w-full">
                                 <span class="text-sm ease leading-5.6 absolute z-50 flex h-full items-center whitespace-nowrap rounded-lg rounded-tr-none rounded-br-none border border-r-0 border-transparent bg-transparent py-2 px-2.5 text-center font-normal text-slate-500 transition-all">
                                     <i class="fas fa-search"></i>
                                 </span>
@@ -54,7 +54,7 @@
                                     class="pl-9 w-full text-xs focus:shadow-primary-outline ease leading-5.6 relative block min-w-0 flex-auto rounded-lg border border-solid border-gray-300 dark:bg-slate-850 dark:text-white bg-white bg-clip-padding py-1.5 pr-3 text-gray-700 transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:transition-shadow"
                                     placeholder="Search nama atau NIP..." />
                                 @if(request('search'))
-                                    <a href="{{ route('admin.pengguna_lulusan.index') }}" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 mr-2 md:mr-0 md:static md:transform-none ml-2">
+                                    <a href="{{ route('admin.penggunaLulusan.index') }}" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 mr-2 md:mr-0 md:static md:transform-none ml-2">
                                         <i class="fas fa-times"></i>
                                     </a>
                                 @endif
@@ -73,7 +73,7 @@
                     </button>
 
                     <!-- pop up modal import  -->
-                    <form action="{{ route('admin.pengguna_lulusan.import') }}" method="POST" enctype="multipart/form-data" id="importForm" class="contents">
+                    <form action="{{ route('admin.penggunaLulusan.import') }}" method="POST" enctype="multipart/form-data" id="importForm" class="contents">
                         @csrf
                         <div id="uploadModal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-800 bg-opacity-50 p-4">
                             <div class="bg-white rounded-lg shadow-lg w-full max-w-sm">
@@ -94,14 +94,14 @@
                         </div>
                     </form>
 
-                    <a href="{{ route('admin.pengguna_lulusan.export') }}" class="block w-full md:w-auto">
+                    <a href="{{ route('admin.penggunaLulusan.export') }}" class="block w-full md:w-auto">
                         <button type="button"
                             class="inline-block w-full px-4 py-2 md:px-8 md:py-2 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-green-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
                             <i class="fas fa-file-excel mr-2"></i> <span class="hidden sm:inline">Export Excel</span><span class="sm:hidden">Export</span>
                         </button>
                     </a>
 
-                    <a href="{{ route('admin.pengguna_lulusan.create') }}" class="block w-full md:w-auto col-span-2 sm:col-span-1">
+                    <a href="{{ route('admin.penggunaLulusan.create') }}" class="block w-full md:w-auto col-span-2 sm:col-span-1">
                         <button type="button"
                             class="inline-block w-full px-4 py-2 md:px-8 md:py-2 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
                             <i class="fas fa-plus mr-2"></i> <span class="hidden sm:inline">Tambah Pengguna Lulusan</span><span class="sm:hidden">Tambah</span>
@@ -166,18 +166,18 @@
                                             <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                                 <div class="flex items-center justify-center gap-2">
                                                     @if(!auth()->user()->hasRole('supervisor'))
-                                                    <a href="{{ route('admin.pengguna_lulusan.edit', $penggunaLulusan) }}" class="icon-link" data-tooltip="Edit">
+                                                    <a href="{{ route('admin.penggunaLulusan.edit', $penggunaLulusan) }}" class="icon-link" data-tooltip="Edit">
                                                         <i class="fas fa-edit text-xs"></i>
                                                     </a>
                                                     <a href="javascript:;" class="icon-link" data-tooltip="Delete" onclick="event.preventDefault(); document.getElementById('delete-form-{{ $penggunaLulusan->id }}').submit();">
                                                         <i class="fas fa-trash text-xs"></i>
                                                     </a>
-                                                    <form id="delete-form-{{ $penggunaLulusan->id }}" action="{{ route('admin.pengguna_lulusan.destroy', $penggunaLulusan) }}" method="POST" style="display: none;">
+                                                    <form id="delete-form-{{ $penggunaLulusan->id }}" action="{{ route('admin.penggunaLulusan.destroy', $penggunaLulusan) }}" method="POST" style="display: none;">
                                                         @csrf
                                                         @method('DELETE')
                                                     </form>
                                                     @endif
-                                                    <a href="{{ route('admin.pengguna_lulusan.details', $penggunaLulusan) }}" class="icon-link" data-tooltip="Details">
+                                                    <a href="{{ route('admin.penggunaLulusan.details', $penggunaLulusan) }}" class="icon-link" data-tooltip="Details">
                                                         <i class="fas fa-info-circle text-xs"></i>
                                                     </a>
                                                 </div>

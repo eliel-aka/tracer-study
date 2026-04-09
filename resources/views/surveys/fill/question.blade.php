@@ -70,6 +70,13 @@
                         ])
                         @break
 
+                    @case('multiple_choice_grid')
+                        @include('surveys.fill.partials.multiple_choice_grid-field', [
+                            'options' => $answerOptions,
+                            'existingAnswer' => $existingAnswer
+                        ])
+                        @break
+
                     @case('checkbox')
                         @include('surveys.fill.partials.checkbox-field', [
                             'options' => $answerOptions,
@@ -155,3 +162,4 @@ function surveyQuestion() {
 }
 </script>
 @endsection
+

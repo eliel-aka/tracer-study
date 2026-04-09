@@ -133,6 +133,7 @@
                                         <option value="checkbox">Checkboxes</option>
                                         <option value="radio">Radio</option>
                                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                         <option value="file">File</option>
                                         <option value="date">Datepicker</option> 
                                     </select>
@@ -291,6 +292,7 @@
                         <option value="checkbox">Checkboxes</option>
                         <option value="radio">Radio</option>
                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                         <option value="file">File</option>
                         <option value="date">Datepicker</option>
                     </select>
@@ -1194,6 +1196,7 @@
                                         <option value="checkbox">Checkboxes</option>
                                         <option value="radio">Radio</option>
                                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                         <option value="file">File</option>
                                         <option value="date">Datepicker</option> 
                                     </select>
@@ -1303,6 +1306,7 @@
                                         <option value="checkbox">Checkboxes</option>
                                         <option value="radio">Radio</option>
                                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                         <option value="file">File</option>
                                         <option value="date">Datepicker</option> 
                                     </select>
@@ -1439,6 +1443,7 @@
                                                         <option value="checkbox">Checkboxes</option>
                                                         <option value="radio">Radio</option>
                                                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                                         <option value="file">File</option>
                                                         <option value="date">Datepicker</option> 
                                                     </select>
@@ -1579,6 +1584,7 @@
                                                 <option value="checkbox">Checkboxes</option>
                                                 <option value="radio">Radio</option>
                                                 <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                                 <option value="file">File</option>
                                                 <option value="date">Datepicker</option> 
                                             </select>
@@ -1757,6 +1763,7 @@
                                                         <option value="checkbox">Checkboxes</option>
                                                         <option value="radio">Radio</option>
                                                         <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                                         <option value="file">File</option>
                                                         <option value="date">Datepicker</option> 
                                                     </select>
@@ -1898,6 +1905,7 @@
                                                 <option value="checkbox">Checkboxes</option>
                                                 <option value="radio">Radio</option>
                                                 <option value="select">Dropdown</option>
+                                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                                 <option value="file">File</option>
                                                 <option value="date">Datepicker</option> 
                                             </select>
@@ -2236,7 +2244,7 @@
                     console.log(`Question ${questionIndex + 1} data:`, questionData);
                     
                     // Collect options for radio, checkbox, select
-                    if (['radio', 'checkbox', 'select'].includes(questionData.type)) {
+                    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type)) {
                         const optionInputs = container.querySelectorAll('.option-item input[type="text"]');
                         console.log(`Found option inputs for question ${questionIndex + 1}:`, optionInputs.length);
                         
@@ -2462,7 +2470,7 @@
                         
                         // Add options for radio, checkbox, select
                         setTimeout(() => {
-                            if (['radio', 'checkbox', 'select'].includes(question.type) && question.options) {
+                            if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(question.type) && question.options) {
                                 const optionContainer = questionContainer.querySelector('#optionContainer');
                                 if (optionContainer) {
                                     // Clear existing options
@@ -2515,3 +2523,7 @@
         @endif
     </script>
 @endsection
+
+
+
+

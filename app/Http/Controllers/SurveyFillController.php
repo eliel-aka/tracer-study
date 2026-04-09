@@ -101,7 +101,7 @@ class SurveyFillController extends Controller
 
         // Get answer options if question has them
         $answerOptions = [];
-        if (in_array($question->tipe, ['radio', 'checkbox', 'select'])) {
+        if (in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
             $answerOptions = TemplateJawaban::where('id_template_pertanyaan', $question->id)
                                            ->orderBy('urutan')
                                            ->get();
@@ -295,6 +295,9 @@ class SurveyFillController extends Controller
             case 'select':
                 $jawaban = $request->answer_option_id;
                 break;
+            case 'multiple_choice_grid':
+                $jawaban = json_encode($request->answer_grid ?? [], JSON_UNESCAPED_UNICODE);
+                break;
             case 'checkbox':
                 $jawaban = json_encode($request->answer_option_id ?? []);
                 break;
@@ -323,6 +326,9 @@ class SurveyFillController extends Controller
             case 'radio':
             case 'select':
                 return ['answer_option_id' => $request->answer_option_id];
+
+            case 'multiple_choice_grid':
+                return ['value' => $request->answer_grid ?? []];
             
             case 'checkbox':
                 return ['value' => $request->answer_option_id ?? []];
@@ -338,3 +344,4 @@ class SurveyFillController extends Controller
         }
     }
 }
+

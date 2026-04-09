@@ -70,7 +70,7 @@ class SurveyController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
             'type_survei' => 'required|string',
-            'deskripsi' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string',
             'sections' => 'nullable|array',
             'sections.*.section_name' => 'required_with:sections|string|max:255',
             'sections.*.section_description' => 'nullable|string|max:500',
@@ -78,7 +78,7 @@ class SurveyController extends Controller
             'sections.*.questions' => 'required_with:sections|array|min:1',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array',
@@ -226,7 +226,7 @@ class SurveyController extends Controller
                     ]);
 
                     // Create template answers for radio, checkbox, select types
-                    if (in_array($questionData['type'], ['radio', 'checkbox', 'select']) &&
+                    if (in_array($questionData['type'], ['radio', 'checkbox', 'select', 'multiple_choice_grid']) &&
                         isset($questionData['options']) && is_array($questionData['options'])) {
 
                         foreach ($questionData['options'] as $optionIndex => $option) {
@@ -556,7 +556,7 @@ class SurveyController extends Controller
                             'visualization' => $question->visualisasi ?? 'bar'
                         ];
 
-                        if (in_array($question->tipe, ['radio', 'checkbox', 'select'])) {
+                        if (in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
                             $questionData['options'] = [];
                             $questionData['option_navigation'] = [];
                             foreach ($question->templateJawaban as $answer) {
@@ -593,7 +593,7 @@ class SurveyController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
             'type_survei' => 'required|string',
-            'deskripsi' => 'nullable|string|max:255',
+            'deskripsi' => 'nullable|string',
             'sections' => 'nullable|array',
             'sections.*.section_name' => 'required_with:sections|string|max:255',
             'sections.*.section_description' => 'nullable|string|max:500',
@@ -601,7 +601,7 @@ class SurveyController extends Controller
             'sections.*.questions' => 'required_with:sections|array|min:1',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array',
@@ -876,3 +876,4 @@ class SurveyController extends Controller
         }
     }
 }
+

@@ -27,9 +27,9 @@ class SurveyEmailService
 
             // Generate password: 2 angka terakhir NIP + 2 huruf terakhir nama + 2 angka terakhir tanggal lahir
             if (!$password) {
-                $nip = $user->lulusan->nip ?? $user->pengguna_lulusan->nip ?? '';
+                $nip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
                 $nama = $user->name ?? '';
-                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->pengguna_lulusan->tanggal_lahir ?? '01';
+                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->penggunaLulusan->tanggal_lahir ?? '01';
                 
                 if ($nip && $nama) {
                     $nipLast2 = substr($nip, -2);
@@ -82,9 +82,9 @@ class SurveyEmailService
 
             // Generate password: 2 angka terakhir NIP + 2 huruf terakhir nama + 2 angka terakhir tanggal lahir
             if (!$password) {
-                $nip = $user->lulusan->nip ?? $user->pengguna_lulusan->nip ?? '';
+                $nip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
                 $nama = $user->name ?? '';
-                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->pengguna_lulusan->tanggal_lahir ?? '01';
+                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->penggunaLulusan->tanggal_lahir ?? '01';
                 
                 if ($nip && $nama) {
                     $nipLast2 = substr($nip, -2);

@@ -9,8 +9,10 @@ use App\Models\SurveyUser;
 use App\Models\SurveyUserJawaban;
 use App\Models\TemplatePertanyaan;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Excel;
 
@@ -40,12 +42,6 @@ class MonitoringController extends Controller
                 ],
                 ['survey_id.exists' => 'Survei yang dipilih tidak valid.']
             );
-
-            $validator->after(function ($validator) use ($selectedGraduationYear, $selectedStudyProgram) {
-                if (!empty($selectedGraduationYear) && !empty($selectedStudyProgram)) {
-                    $validator->errors()->add('tahun_lulus', 'Tahun Lulus dan Program Studi bersifat eksklusif. Pilih salah satu saja.');
-                }
-            });
 
             if ($validator->fails()) {
                 return redirect()->route('admin.monitoring.index', [
@@ -79,9 +75,9 @@ class MonitoringController extends Controller
                 $srvy->status = "Selesai";
             }
 
-            $overallBaseQuery = SurveyUser::where('survey_id', $srvy->id);
-            $overallTotal = (clone $overallBaseQuery)->count();
-            $overallCompleted = (clone $overallBaseQuery)->where('status', true)->count();
+            $assignmentStats = SurveyUser::getAssignmentStats((int) $srvy->id);
+            $overallTotal = $assignmentStats['total'];
+            $overallCompleted = $assignmentStats['completed'];
 
             $filteredBaseQuery = $this->buildFilteredSurveyUserQuery(
                 $srvy,
@@ -114,27 +110,58 @@ class MonitoringController extends Controller
         foreach (Survey::query()->select(['id', 'type_survei'])->get() as $surveyOption) {
             $assignedLulusanQuery = $this->buildAssignedLulusanQuery($surveyOption);
 
-            $years = (clone $assignedLulusanQuery)
+            $yearProgramPairs = (clone $assignedLulusanQuery)
+                ->select(['lulusan.tahun_lulus', 'lulusan.prodi'])
                 ->whereNotNull('lulusan.tahun_lulus')
                 ->where('lulusan.tahun_lulus', '!=', '')
-                ->orderBy('lulusan.tahun_lulus', 'desc')
+                ->whereNotNull('lulusan.prodi')
+                ->where('lulusan.prodi', '!=', '')
                 ->distinct()
-                ->pluck('lulusan.tahun_lulus')
+                ->get();
+
+            $years = $yearProgramPairs
+                ->pluck('tahun_lulus')
+                ->unique()
+                ->sortDesc()
                 ->values()
                 ->all();
 
-            $programs = (clone $assignedLulusanQuery)
-                ->whereNotNull('lulusan.prodi')
-                ->where('lulusan.prodi', '!=', '')
-                ->orderBy('lulusan.prodi')
-                ->distinct()
-                ->pluck('lulusan.prodi')
+            $programs = $yearProgramPairs
+                ->pluck('prodi')
+                ->unique()
+                ->sort()
                 ->values()
                 ->all();
+
+            $programsByYear = $yearProgramPairs
+                ->groupBy('tahun_lulus')
+                ->map(function (Collection $items) {
+                    return $items
+                        ->pluck('prodi')
+                        ->unique()
+                        ->sort()
+                        ->values()
+                        ->all();
+                })
+                ->toArray();
+
+            $yearsByProgram = $yearProgramPairs
+                ->groupBy('prodi')
+                ->map(function (Collection $items) {
+                    return $items
+                        ->pluck('tahun_lulus')
+                        ->unique()
+                        ->sortDesc()
+                        ->values()
+                        ->all();
+                })
+                ->toArray();
 
             $filterOptionsBySurvey[(string) $surveyOption->id] = [
                 'years' => $years,
                 'programs' => $programs,
+                'programsByYear' => $programsByYear,
+                'yearsByProgram' => $yearsByProgram,
             ];
         }
 
@@ -147,6 +174,30 @@ class MonitoringController extends Controller
         $activeFilterType = $selectedGraduationYear !== '' ? 'tahun_lulus' : ($selectedStudyProgram !== '' ? 'prodi' : null);
         $activeFilterValue = $selectedGraduationYear !== '' ? $selectedGraduationYear : ($selectedStudyProgram !== '' ? $selectedStudyProgram : null);
 
+        $selectedSurveyForVisualization = null;
+        if ($selectedSurveyId) {
+            $selectedSurveyForVisualization = Survey::query()->select(['id', 'nama', 'type_survei'])->find($selectedSurveyId);
+        }
+
+        $dynamicChart = [
+            'labels' => [],
+            'rates' => [],
+            'targets' => [],
+            'responded' => [],
+            'xAxisTitle' => '',
+            'yAxisTitle' => 'Response Rate (%)',
+            'scenario' => null,
+            'showChart' => false,
+        ];
+
+        if ($selectedSurveyForVisualization) {
+            $dynamicChart = $this->buildDynamicResponseRateChartData(
+                $selectedSurveyForVisualization,
+                $selectedGraduationYear !== '' ? $selectedGraduationYear : null,
+                $selectedStudyProgram !== '' ? $selectedStudyProgram : null
+            );
+        }
+
         return view('admin.views.monitoring.index', compact(
             'survey',
             'surveyOptions',
@@ -158,13 +209,15 @@ class MonitoringController extends Controller
             'selectedChartType',
             'activeFilterType',
             'activeFilterValue',
-            'filterOptionsBySurvey'
+            'filterOptionsBySurvey',
+            'selectedSurveyForVisualization',
+            'dynamicChart'
         ));
     }
 
     private function buildAssignedLulusanQuery($survey): Builder
     {
-        if ($survey->type_survei === 'pengguna_lulusan') {
+        if ($this->normalizeSurveyType($survey->type_survei) === 'pengguna_lulusan') {
             return Lulusan::query()
                 ->join('pengguna_lulusan', 'pengguna_lulusan.nip', '=', 'lulusan.nip_pengguna_lulusan')
                 ->join('users', 'users.id', '=', 'pengguna_lulusan.user_id')
@@ -183,11 +236,7 @@ class MonitoringController extends Controller
         $query = SurveyUser::query()
             ->where('survey_user.survey_id', $survey->id);
 
-        if (empty($selectedGraduationYear) && empty($selectedStudyProgram)) {
-            return $query;
-        }
-
-        if ($survey->type_survei === 'pengguna_lulusan') {
+        if ($this->normalizeSurveyType($survey->type_survei) === 'pengguna_lulusan') {
             $query->join('users', 'users.id', '=', 'survey_user.user_id')
                 ->join('pengguna_lulusan', 'pengguna_lulusan.user_id', '=', 'users.id')
                 ->join('lulusan', 'lulusan.nip_pengguna_lulusan', '=', 'pengguna_lulusan.nip');
@@ -205,6 +254,137 @@ class MonitoringController extends Controller
         }
 
         return $query;
+    }
+
+    private function buildSurveyUserLulusanBaseQuery(Survey $survey): Builder
+    {
+        $query = SurveyUser::query()
+            ->where('survey_user.survey_id', $survey->id)
+            ->join('users', 'users.id', '=', 'survey_user.user_id');
+
+        if ($this->normalizeSurveyType($survey->type_survei) === 'pengguna_lulusan') {
+            $query->join('pengguna_lulusan', 'pengguna_lulusan.user_id', '=', 'users.id')
+                ->join('lulusan', 'lulusan.nip_pengguna_lulusan', '=', 'pengguna_lulusan.nip');
+        } else {
+            $query->join('lulusan', 'lulusan.user_id', '=', 'users.id');
+        }
+
+        return $query;
+    }
+
+    private function buildResponseRateRowsByDimension(Builder $query, string $dimension): array
+    {
+        $rows = (clone $query)
+            ->whereNotNull('lulusan.' . $dimension)
+            ->where('lulusan.' . $dimension, '!=', '')
+            ->selectRaw('lulusan.' . $dimension . ' as dimension_label')
+            ->selectRaw('COUNT(DISTINCT survey_user.id) as total_target')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN survey_user.status = 1 THEN survey_user.id END) as total_responded')
+            ->groupBy('lulusan.' . $dimension)
+            ->orderBy('lulusan.' . $dimension)
+            ->get();
+
+        return $rows
+            ->map(function ($row) {
+                $totalTarget = (int) $row->total_target;
+                $totalResponded = (int) $row->total_responded;
+
+                return [
+                    'label' => (string) $row->dimension_label,
+                    'target' => $totalTarget,
+                    'responded' => $totalResponded,
+                    'rate' => $totalTarget > 0 ? round(($totalResponded / $totalTarget) * 100, 2) : 0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function buildSummaryResponseRateRow(Builder $query, string $label): array
+    {
+        $summary = (clone $query)
+            ->selectRaw('COUNT(DISTINCT survey_user.id) as total_target')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN survey_user.status = 1 THEN survey_user.id END) as total_responded')
+            ->first();
+
+        $totalTarget = (int) ($summary->total_target ?? 0);
+        $totalResponded = (int) ($summary->total_responded ?? 0);
+
+        return [
+            'label' => $label,
+            'target' => $totalTarget,
+            'responded' => $totalResponded,
+            'rate' => $totalTarget > 0 ? round(($totalResponded / $totalTarget) * 100, 2) : 0,
+        ];
+    }
+
+    private function buildDynamicResponseRateChartData(Survey $survey, ?string $selectedGraduationYear, ?string $selectedStudyProgram): array
+    {
+        $baseQuery = $this->buildSurveyUserLulusanBaseQuery($survey);
+
+        if (!empty($selectedGraduationYear)) {
+            $baseQuery->where('lulusan.tahun_lulus', $selectedGraduationYear);
+        }
+
+        if (!empty($selectedStudyProgram)) {
+            $baseQuery->where('lulusan.prodi', $selectedStudyProgram);
+        }
+
+        $scenario = 'all';
+        $xAxisTitle = 'Program Studi';
+        $rows = [];
+
+        if (!empty($selectedGraduationYear) && !empty($selectedStudyProgram)) {
+            $scenario = 'year_and_program';
+            $xAxisTitle = 'Program Studi';
+            $rows[] = $this->buildSummaryResponseRateRow($baseQuery, $selectedStudyProgram);
+        } elseif (!empty($selectedGraduationYear)) {
+            $scenario = 'year_only';
+            $xAxisTitle = 'Program Studi';
+            $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'prodi');
+        } elseif (!empty($selectedStudyProgram)) {
+            $scenario = 'program_only';
+            $xAxisTitle = 'Tahun Lulus';
+            $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'tahun_lulus');
+            usort($rows, function (array $left, array $right) {
+                return (int) $left['label'] <=> (int) $right['label'];
+            });
+        } else {
+            $scenario = 'all';
+            $xAxisTitle = 'Program Studi';
+            $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'prodi');
+        }
+
+        $overallSummary = $this->buildSummaryResponseRateRow(
+            $this->buildSurveyUserLulusanBaseQuery($survey),
+            'Politeknik Statistika STIS'
+        );
+
+        return [
+            'labels' => array_map(fn(array $row) => $row['label'], $rows),
+            'rates' => array_map(fn(array $row) => $row['rate'], $rows),
+            'targets' => array_map(fn(array $row) => $row['target'], $rows),
+            'responded' => array_map(fn(array $row) => $row['responded'], $rows),
+            'overallRate' => $overallSummary['rate'],
+            'overallTarget' => $overallSummary['target'],
+            'overallResponded' => $overallSummary['responded'],
+            'xAxisTitle' => $xAxisTitle,
+            'yAxisTitle' => 'Response Rate (%)',
+            'scenario' => $scenario,
+            'showChart' => count($rows) > 0,
+        ];
+    }
+
+    private function normalizeSurveyType(?string $surveyType): string
+    {
+        $normalizedType = strtolower(trim((string) $surveyType));
+        $normalizedType = str_replace(['-', ' '], '_', $normalizedType);
+
+        if ($normalizedType === 'penggunalulusan') {
+            return 'pengguna_lulusan';
+        }
+
+        return $normalizedType;
     }
 
     /*

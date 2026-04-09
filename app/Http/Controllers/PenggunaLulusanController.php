@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SendEmail;
 use App\Models\PenggunaLulusan;
 use App\Models\Lulusan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Excel;
 use App\Exports\PenggunaLulusanExport;
 use App\Imports\PenggunaLulusanImport;
@@ -79,10 +82,10 @@ class PenggunaLulusanController extends Controller
             $user = User::create([
                 'name'     => $request->nama,
                 'email'    => $request->email,
-                'role'     => 'pengguna_lulusan',
+                'role'     => 'penggunaLulusan',
                 'password' => bcrypt($password),
             ]);
-            $user->assignRole('pengguna_lulusan');
+            $user->assignRole('penggunaLulusan');
 
             PenggunaLulusan::create([
                 'user_id'       => $user->id,
@@ -97,7 +100,14 @@ class PenggunaLulusanController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.pengguna_lulusan.index')
+            $emailSent = $this->sendCredentialEmail($request->nama, $request->email, $password);
+
+            if (!$emailSent) {
+                return redirect()->route('admin.penggunaLulusan.index')
+                    ->with('warning', 'Data Pengguna Lulusan berhasil ditambahkan, tetapi email kredensial gagal dikirim.');
+            }
+
+            return redirect()->route('admin.penggunaLulusan.index')
                 ->with('success', 'Data Pengguna Lulusan berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -169,7 +179,7 @@ class PenggunaLulusanController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.pengguna_lulusan.index')
+            return redirect()->route('admin.penggunaLulusan.index')
                 ->with('success', 'Data Pengguna Lulusan berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -189,7 +199,7 @@ class PenggunaLulusanController extends Controller
 
     public function export(Excel $excel)
     {
-        return $excel->download(new PenggunaLulusanExport, 'pengguna_lulusan.xlsx');
+        return $excel->download(new PenggunaLulusanExport, 'penggunaLulusan.xlsx');
     }
 
     public function import(Request $request, Excel $excel)
@@ -201,10 +211,10 @@ class PenggunaLulusanController extends Controller
 
             $excel->import(new PenggunaLulusanImport, $request->file('file'));
 
-            return redirect()->route('admin.pengguna_lulusan.index')
+            return redirect()->route('admin.penggunaLulusan.index')
                 ->with('success', 'Pengguna Lulusan imported successfully.');
         } catch (\Exception $e) {
-            return redirect()->route('admin.pengguna_lulusan.index')
+            return redirect()->route('admin.penggunaLulusan.index')
                 ->with('error', 'Failed to import pengguna lulusan.');
         }
     }
@@ -221,5 +231,29 @@ class PenggunaLulusanController extends Controller
         return view('admin.views.pengguna_lulusan.details',
             compact('penggunaLulusan', 'lulusan')
         );
+    }
+
+    private function sendCredentialEmail(string $name, string $email, string $password): bool
+    {
+        try {
+            $emailData = [
+                'nama' => $name,
+                'email' => $email,
+                'password' => $password,
+                'link' => route('login'),
+                'subject' => 'Akun Tracer Study Anda Telah Dibuat',
+                'body' => '<h2>Halo ' . e($name) . '!</h2><p>Akun Tracer Study Anda telah berhasil dibuat/diaktifkan kembali.</p><p>Berikut kredensial login terbaru Anda:</p><p><strong>Email:</strong> ' . e($email) . '<br><strong>Password:</strong> ' . e($password) . '</p><p>Silakan login dan segera ubah password setelah berhasil masuk.</p>',
+            ];
+
+            Mail::to($email)->send(new SendEmail($emailData));
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengirim email kredensial pengguna lulusan.', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

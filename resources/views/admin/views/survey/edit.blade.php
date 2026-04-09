@@ -307,7 +307,7 @@
                                         class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                                     <option value="">Pilih Tipe Survey</option>
                                     <option value="lulusan" {{ $survey->type_survei == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
-                                    <option value="pengguna_lulusan" {{ $survey->type_survei == 'pengguna_lulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
+                                    <option value="penggunaLulusan" {{ $survey->type_survei == 'penggunaLulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
                                 </select>
                                 @error('type_survei')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -403,6 +403,10 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault(); // Always prevent default to handle submission manually
 
+            // Normalize dynamic indexes to avoid timestamp-based keys (e.g. questions[1775...])
+            // that can create confusing backend validation paths.
+            normalizeFormIndexesBeforeSubmit();
+
             if (!validateForm()) {
                 return false;
             }
@@ -440,6 +444,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Error response with JSON data
+                    if (status === 422 && data.errors) {
+                        throw new Error(buildFriendlyValidationMessage(data.errors));
+                    }
+
                     throw new Error(data.message || 'Terjadi kesalahan saat mengupdate survey');
                 }
             })
@@ -556,6 +564,9 @@ function loadExistingQuestion(sectionId, questionData) {
             <div class="flex justify-between items-center mb-3">
                 <h6 class="text-sm font-semibold">Pertanyaan ${questionCounter}</h6>
                 <div class="flex space-x-2">
+                    <button type="button" onclick="addQuestion(${sectionId}, ${questionCounter})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCounter})" class="text-blue-500 hover:text-blue-700" title="Clone Question">
                         <i class="fas fa-copy"></i>
                     </button>
@@ -588,6 +599,7 @@ function loadExistingQuestion(sectionId, questionData) {
                         <option value="radio" ${questionData.type === 'radio' ? 'selected' : ''}>Radio Button</option>
                         <option value="checkbox" ${questionData.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
                         <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Dropdown</option>
+                        <option value="multiple_choice_grid" ${questionData.type === 'multiple_choice_grid' ? 'selected' : ''}>Multiple Choice Grid</option>
                         <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
                         <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
                     </select>
@@ -609,7 +621,7 @@ function loadExistingQuestion(sectionId, questionData) {
             </div>
 
             <!-- Options Container -->
-            <div class="options-container" id="optionsContainer-${sectionId}-${questionCounter}" style="display: ${['radio', 'checkbox', 'select'].includes(questionData.type) ? 'block' : 'none'};">
+            <div class="options-container" id="optionsContainer-${sectionId}-${questionCounter}" style="display: ${['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) ? 'block' : 'none'};">
                 <div class="flex justify-between items-center mb-2">
                     <label class="block text-xs font-medium text-gray-700">Pilihan Jawaban</label>
                     <button type="button" onclick="addOption(${sectionId}, ${questionCounter})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors">
@@ -626,7 +638,7 @@ function loadExistingQuestion(sectionId, questionData) {
     document.getElementById(`questions-${sectionId}`).insertAdjacentHTML('beforeend', questionHtml);
 
     // Load options for this question if it's a choice-based question
-    if (['radio', 'checkbox', 'select'].includes(questionData.type) && questionData.options) {
+    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) && questionData.options) {
         questionData.options.forEach((option, index) => {
             loadExistingOption(sectionId, questionCounter, option, questionData.option_navigation ? questionData.option_navigation[index] : 'next');
         });
@@ -641,7 +653,7 @@ function loadExistingOption(sectionId, questionId, optionText, navigationValue) 
     // Check if this question type supports navigation
     const questionTypeSelect = document.querySelector(`select[name="sections[${sectionId}][questions][${questionId}][type]"]`);
     const questionType = questionTypeSelect ? questionTypeSelect.value : 'text';
-    const showNavigationToggle = ['radio', 'select'].includes(questionType);
+    const showNavigationToggle = ['radio', 'select', 'multiple_choice_grid'].includes(questionType);
 
     // Determine if custom navigation is being used
     // Custom navigation is active if navigationValue is not null, undefined, empty, or 'next' (default)
@@ -787,7 +799,7 @@ function addSection() {
     updateNavigationOptions();
 }
 
-function addQuestion(sectionId) {
+function addQuestion(sectionId, insertAfterQuestionId = null) {
     // Use timestamp as temporary question ID to avoid conflicts
     const tempQuestionId = Date.now();
 
@@ -796,6 +808,9 @@ function addQuestion(sectionId) {
             <div class="flex justify-between items-center mb-3">
                 <h6 class="text-sm font-semibold">Pertanyaan ${tempQuestionId}</h6>
                 <div class="flex space-x-2">
+                    <button type="button" onclick="addQuestion(${sectionId}, ${tempQuestionId})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     <button type="button" onclick="cloneQuestion(${sectionId}, ${tempQuestionId})" class="text-blue-500 hover:text-blue-700" title="Clone Question">
                         <i class="fas fa-copy"></i>
                     </button>
@@ -828,6 +843,7 @@ function addQuestion(sectionId) {
                         <option value="radio">Radio Button</option>
                         <option value="checkbox">Checkbox</option>
                         <option value="select">Dropdown</option>
+                        <option value="multiple_choice_grid">Multiple Choice Grid</option>
                         <option value="file">File Upload</option>
                         <option value="date">Date</option>
                     </select>
@@ -863,7 +879,21 @@ function addQuestion(sectionId) {
         </div>
     `;
 
-    document.getElementById(`questions-${sectionId}`).insertAdjacentHTML('beforeend', questionHtml);
+    const questionsContainer = document.getElementById(`questions-${sectionId}`);
+    if (!questionsContainer) {
+        return;
+    }
+
+    if (insertAfterQuestionId) {
+        const referenceQuestion = questionsContainer.querySelector(`[data-question-id="${insertAfterQuestionId}"]`);
+        if (referenceQuestion) {
+            referenceQuestion.insertAdjacentHTML('afterend', questionHtml);
+        } else {
+            questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+        }
+    } else {
+        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+    }
     
     // After adding the question, reindex all sections and questions to ensure proper order
     setTimeout(() => {
@@ -897,7 +927,7 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         return;
     }
 
-    if (['radio', 'checkbox', 'select'].includes(type)) {
+    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(type)) {
         optionsContainer.style.display = 'block';
 
         // Add default options if none exist
@@ -909,8 +939,12 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         }
 
         if (optionsList.children.length === 0) {
-            addOption(sectionId, questionId);
-            addOption(sectionId, questionId);
+            if (type === 'multiple_choice_grid') {
+                addDefaultMultipleChoiceGridOptions(sectionId, questionId);
+            } else {
+                addOption(sectionId, questionId);
+                addOption(sectionId, questionId);
+            }
         } else {
             // Update existing options to add/remove navigation based on type
             updateExistingOptionsNavigation(sectionId, questionId, type);
@@ -986,6 +1020,24 @@ function addOption(sectionId, questionId) {
     if (showNavigationToggle) {
         updateNavigationOptions();
     }
+}
+
+function addDefaultMultipleChoiceGridOptions(sectionId, questionId) {
+    const multiple_choice_gridLabels = [
+        'Pernyataan 1',
+        'Pernyataan 2',
+        'Pernyataan 3'
+    ];
+
+    multiple_choice_gridLabels.forEach((label, index) => {
+        addOption(sectionId, questionId);
+        const optionsList = document.getElementById(`optionsList-${sectionId}-${questionId}`);
+        const optionInputs = optionsList ? optionsList.querySelectorAll('input[type="text"]') : [];
+
+        if (optionInputs[index]) {
+            optionInputs[index].value = label;
+        }
+    });
 }
 
 // Helper function to get block-level navigation for a section
@@ -1395,7 +1447,7 @@ function restoreFormDataToSection(sectionId, data) {
                     }
 
                     // Add options if needed
-                    if (['radio', 'checkbox', 'select'].includes(questionData.type) && questionData.options.length > 0) {
+                    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) && questionData.options.length > 0) {
                         setTimeout(() => {
                             const optionsList = questionEl.querySelector(`#optionsList-${sectionId}-${questionCount}`);
                             if (optionsList) {
@@ -1484,7 +1536,7 @@ function updateSectionFormNames(section, oldId, newId) {
             // Replace the old question index with new sequential index
             input.name = input.name.replace(
                 new RegExp(`sections\\[${newId}\\]\\[questions\\]\\[\\d+\\]`), 
-                `sections[${newId}][questions][${questionIndex}]`
+                    `sections[${newId}][questions][${newQuestionId}]`
             );
         });
         
@@ -1520,6 +1572,12 @@ function updateSectionOnclickHandlers(section, oldId, newId) {
 }
 
 function updateQuestionOnclickHandlers(question, sectionId, oldQuestionId, newQuestionId) {
+    // Update add question button
+    const addQuestionBtn = question.querySelector('.add-question-after-btn');
+    if (addQuestionBtn) {
+        addQuestionBtn.setAttribute('onclick', `addQuestion(${sectionId}, ${newQuestionId})`);
+    }
+
     // Update clone question button
     const cloneBtn = question.querySelector(`[onclick*="cloneQuestion(${sectionId}, ${oldQuestionId})"]`);
     if (cloneBtn) {
@@ -1845,7 +1903,7 @@ function validateForm() {
 
             // Validate options for select types
             const questionType = question.querySelector('select[name*="[type]"]');
-            if (questionType && ['radio', 'checkbox', 'select'].includes(questionType.value)) {
+            if (questionType && ['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionType.value)) {
                 const options = question.querySelectorAll('input[name*="[options]"]');
                 const filledOptions = Array.from(options).filter(opt => opt.value.trim());
                 if (filledOptions.length < 2) {
@@ -1895,12 +1953,13 @@ function showErrorMessage(message) {
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+    const renderedMessage = String(message).replace(/\n/g, '<br>');
     messageDiv.innerHTML = `
         <div class="flex items-center">
             <i class="fas fa-exclamation-circle mr-3"></i>
             <div>
                 <h4 class="font-semibold">Error!</h4>
-                <p class="text-sm mt-1">${message}</p>
+                <p class="text-sm mt-1">${renderedMessage}</p>
             </div>
             <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                 <i class="fas fa-times"></i>
@@ -1950,7 +2009,234 @@ function removeMessages() {
     const existingMessages = document.querySelectorAll('.fixed.top-4.right-4');
     existingMessages.forEach(msg => msg.remove());
 }
+
+function buildFriendlyValidationMessage(errorsObj) {
+    const fallback = 'Ada data yang belum valid. Periksa kembali isian formulir.';
+
+    if (!errorsObj || typeof errorsObj !== 'object') {
+        return fallback;
+    }
+
+    const messages = [];
+    Object.entries(errorsObj).forEach(([field, fieldMessages]) => {
+        if (!Array.isArray(fieldMessages) || fieldMessages.length === 0) {
+            return;
+        }
+
+        const rawMessage = fieldMessages[0];
+        messages.push(humanizeValidationField(field, rawMessage));
+    });
+
+    if (messages.length === 0) {
+        return fallback;
+    }
+
+    const uniqueMessages = [...new Set(messages)];
+    return uniqueMessages.map((message, index) => `${index + 1}. ${message}`).join('\n');
+}
+
+function humanizeValidationField(field, rawMessage) {
+    const labelByField = {
+        nama: 'Nama Survei',
+        tanggal_mulai: 'Tanggal Mulai',
+        tanggal_selesai: 'Tanggal Selesai',
+        type_survei: 'Tipe Survei',
+        deskripsi: 'Deskripsi Survei',
+    };
+
+    if (labelByField[field]) {
+        return `${labelByField[field]}: ${normalizeValidationMessage(rawMessage)}`;
+    }
+
+    const sectionMatch = field.match(/^sections\.(\d+)\.(section_name|section_description|navigation_type)$/);
+    if (sectionMatch) {
+        const sectionId = sectionMatch[1];
+        const fieldName = sectionMatch[2];
+        const sectionNumber = getSectionNumberById(sectionId);
+        const sectionLabel = `Block ${sectionNumber}`;
+
+        if (fieldName === 'section_name') {
+            return `Nama ${sectionLabel} wajib diisi.`;
+        }
+
+        if (fieldName === 'section_description') {
+            return `Deskripsi ${sectionLabel} tidak valid.`;
+        }
+
+        return `Pengaturan navigasi pada ${sectionLabel} tidak valid.`;
+    }
+
+    const questionMatch = field.match(/^sections\.(\d+)\.questions\.(\d+)\.(.+)$/);
+    if (questionMatch) {
+        const sectionId = questionMatch[1];
+        const questionId = questionMatch[2];
+        const questionField = questionMatch[3];
+
+        const sectionNumber = getSectionNumberById(sectionId);
+        const questionNumber = getQuestionNumberById(sectionId, questionId);
+        const contextLabel = `Block ${sectionNumber}, Pertanyaan ${questionNumber}`;
+
+        if (questionField === 'question') {
+            return `Teks pertanyaan wajib diisi (${contextLabel}).`;
+        }
+
+        if (questionField === 'type') {
+            return `Tipe pertanyaan wajib dipilih (${contextLabel}).`;
+        }
+
+        if (questionField.startsWith('options')) {
+            return `Pilihan jawaban belum lengkap (${contextLabel}). Minimal isi 2 pilihan.`;
+        }
+
+        if (questionField === 'visualization') {
+            return `Pilihan visualisasi tidak valid (${contextLabel}).`;
+        }
+
+        return `${normalizeValidationMessage(rawMessage)} (${contextLabel}).`;
+    }
+
+    return normalizeValidationMessage(rawMessage);
+}
+
+function normalizeValidationMessage(message) {
+    if (!message) {
+        return 'Isian tidak valid.';
+    }
+
+    const lower = String(message).toLowerCase();
+
+    if (lower.includes('required')) {
+        return 'Wajib diisi.';
+    }
+
+    if (lower.includes('must be an array') || lower.includes('must be a string') || lower.includes('must be')) {
+        return 'Format isian tidak sesuai.';
+    }
+
+    return String(message);
+}
+
+function getSectionNumberById(sectionId) {
+    const sections = Array.from(document.querySelectorAll('.section-block'));
+    const index = sections.findIndex(section => String(section.getAttribute('data-section-id')) === String(sectionId));
+    return index >= 0 ? index + 1 : sectionId;
+}
+
+function getQuestionNumberById(sectionId, questionId) {
+    const section = document.querySelector(`.section-block[data-section-id="${sectionId}"]`);
+    if (!section) {
+        return questionId;
+    }
+
+    const questions = Array.from(section.querySelectorAll('.question-item'));
+    const index = questions.findIndex(question => String(question.getAttribute('data-question-id')) === String(questionId));
+    if (index >= 0) {
+        return index + 1;
+    }
+
+    const expectedPrefix = `sections[${sectionId}][questions][${questionId}]`;
+    const matchingField = Array.from(section.querySelectorAll('[name]')).find((field) => {
+        return typeof field.name === 'string' && field.name.includes(expectedPrefix);
+    });
+
+    if (!matchingField) {
+        return questionId;
+    }
+
+    const questionItem = matchingField.closest('.question-item');
+    if (!questionItem) {
+        return questionId;
+    }
+
+    const derivedIndex = questions.indexOf(questionItem);
+    return derivedIndex >= 0 ? derivedIndex + 1 : questionId;
+}
+
+function normalizeFormIndexesBeforeSubmit() {
+    const sections = Array.from(document.querySelectorAll('.section-block'));
+
+    sections.forEach((section, sectionIndex) => {
+        const newSectionId = String(sectionIndex + 1);
+        section.setAttribute('data-section-id', newSectionId);
+
+        const sectionFields = section.querySelectorAll('[name*="sections["]');
+        sectionFields.forEach((field) => {
+            if (!field.name) {
+                return;
+            }
+
+            field.name = field.name.replace(/sections\[[^\]]+\]/, `sections[${newSectionId}]`);
+        });
+
+        const questionsContainer = section.querySelector('[id^="questions-"]');
+        if (questionsContainer) {
+            questionsContainer.id = `questions-${newSectionId}`;
+        }
+
+        const questions = Array.from(section.querySelectorAll('.question-item'));
+        questions.forEach((question, questionIndex) => {
+            const newQuestionId = String(questionIndex + 1);
+            question.setAttribute('data-question-id', newQuestionId);
+            question.setAttribute('data-question-number', `Q${newQuestionId}`);
+
+            const header = question.querySelector('.question-header h6');
+            if (header) {
+                header.textContent = `Pertanyaan ${newQuestionId}`;
+            }
+
+            const questionFields = question.querySelectorAll('[name]');
+            questionFields.forEach((field) => {
+                if (!field.name) {
+                    return;
+                }
+
+                field.name = field.name.replace(
+                    /sections\[[^\]]+\]\[questions\]\[[^\]]+\]/,
+                    `sections[${newSectionId}][questions][${newQuestionId}]`
+                );
+            });
+
+            const optionsContainer = question.querySelector('[id^="optionsContainer-"]');
+            if (optionsContainer) {
+                optionsContainer.id = `optionsContainer-${newSectionId}-${newQuestionId}`;
+            }
+
+            const optionsList = question.querySelector('[id^="optionsList-"]');
+            if (optionsList) {
+                optionsList.id = `optionsList-${newSectionId}-${newQuestionId}`;
+            }
+
+            const typeSelect = question.querySelector('select[name*="[type]"]');
+            if (typeSelect) {
+                typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${newSectionId}, ${newQuestionId}, this.value)`);
+            }
+
+            const addAfterButton = question.querySelector('.add-question-after-btn');
+            if (addAfterButton) {
+                addAfterButton.setAttribute('onclick', `addQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const cloneButton = question.querySelector('button[onclick*="cloneQuestion("]');
+            if (cloneButton) {
+                cloneButton.setAttribute('onclick', `cloneQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const deleteButton = question.querySelector('button[onclick*="deleteQuestion("]');
+            if (deleteButton) {
+                deleteButton.setAttribute('onclick', `deleteQuestion(${newSectionId}, ${newQuestionId})`);
+            }
+
+            const addOptionButton = question.querySelector('button[onclick*="addOption("]');
+            if (addOptionButton) {
+                addOptionButton.setAttribute('onclick', `addOption(${newSectionId}, ${newQuestionId})`);
+            }
+        });
+    });
+}
 </script>
 @endpush
 
 @endsection
+
+
+
