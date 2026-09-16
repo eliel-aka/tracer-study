@@ -19,18 +19,21 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-200 selection:text-blue-900">
+    <!-- Top accent bar -->
+    <div class="h-2 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500"></div>
+    
     <div class="min-h-screen flex flex-col">
         <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
+        <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clipboard-check text-blue-600 text-2xl"></i>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+                            <i class="fas fa-chart-pie text-lg"></i>
                         </div>
-                        <div class="ml-3">
-                            <h1 class="text-lg font-semibold text-gray-900">
+                        <div>
+                            <h1 class="text-xl font-bold text-slate-800 leading-tight">
                                 {{ config('app.name', 'Tracer Study') }}
                             </h1>
                         </div>

@@ -58,6 +58,9 @@ class AnswerQuestionRequest extends FormRequest
                     ->map(fn ($id) => (string) $id)
                     ->toArray();
 
+                $configuredScaleCount = is_array($question->grid_columns) ? count(array_filter($question->grid_columns)) : 0;
+                $maxScale = $configuredScaleCount >= 1 ? $configuredScaleCount : 5;
+
                 return [
                     'answer_grid' => [
                         'required',
@@ -79,7 +82,7 @@ class AnswerQuestionRequest extends FormRequest
                             }
                         },
                     ],
-                    'answer_grid.*' => 'required|integer|between:1,5',
+                    'answer_grid.*' => "required|integer|min:1|max:{$maxScale}",
                 ];
 
             case 'checkbox':
@@ -133,7 +136,8 @@ class AnswerQuestionRequest extends FormRequest
             'answer_grid.array' => 'Format jawaban Multiple Choice Grid tidak valid.',
             'answer_grid.*.required' => 'Setiap baris Multiple Choice Grid wajib dipilih.',
             'answer_grid.*.integer' => 'Pilihan jawaban grid tidak valid.',
-            'answer_grid.*.between' => 'Skala jawaban grid harus antara 1 sampai 5.',
+            'answer_grid.*.min' => 'Skala jawaban grid minimal bernilai 1.',
+            'answer_grid.*.max' => 'Pilihan kolom pada grid tidak valid.',
             'value.required' => 'Jawaban wajib diisi.',
             'value.string' => 'Jawaban harus berupa teks.',
             'value.max' => 'Jawaban terlalu panjang.',

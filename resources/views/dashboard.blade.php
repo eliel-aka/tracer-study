@@ -38,7 +38,7 @@
 
     <!-- ====== Navbar Section Start -->
     <div
-      class="ud-header absolute left-0 top-0 z-40 flex w-full items-center bg-transparent"
+      class="absolute left-0 top-0 z-40 flex w-full items-center bg-transparent"
     >
       <div class="container">
         <div class="relative -mx-4 flex items-center justify-between">

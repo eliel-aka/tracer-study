@@ -1,7 +1,8 @@
 <input type="text" 
        name="value" 
        value="{{ old('value', $existingAnswer ? $existingAnswer->jawaban : '') }}"
-       class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+       {{ !empty($isIdentity) ? 'readonly' : '' }}
+       class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm {{ !empty($isIdentity) ? 'bg-gray-100 cursor-not-allowed text-gray-700 font-medium' : '' }}"
        placeholder="Masukkan jawaban Anda...">
 
 @error('value')

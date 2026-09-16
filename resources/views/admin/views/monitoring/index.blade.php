@@ -4,8 +4,8 @@
 @section('content')
     <!-- table 1 -->
     <div class="flex flex-wrap -mx-3">
-        <div class="flex-none w-full max-w-full px-3">
-            <div class="relative flex flex-col min-w-0 mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border">
+        <div class="flex-none w-full max-w-full px-3 min-w-0">
+            <div class="relative flex flex-col min-w-0 w-full max-w-full mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border overflow-hidden">
                 
                 <!-- Header & Filter -->
                 <div class="p-4 pb-0 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent">
@@ -111,9 +111,9 @@
                     </div>
                 </div>
 
-                <div class="flex-auto px-0 pt-0 pb-2">
+                <div class="flex-auto px-0 pt-0 pb-2 min-w-0 w-full max-w-full">
                     <!-- TABEL DENGAN SCROLL HORIZONTAL -->
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto w-full max-w-full min-w-0 block">
                         <table class="items-center w-full mb-0 align-top border-collapse dark:border-white/40 text-slate-500 min-w-[800px]"> <!-- min-w-[800px] memaksa scroll -->
                             <thead class="align-bottom">
                                 <tr>
@@ -179,13 +179,12 @@
                                                 {{ $srvy->filtered_completed }} / {{ $srvy->filtered_total }}
                                             </div>
                                         </td>
-
-                                        <td class="p-1.5 align-middle bg-transparent border-b dark:border-white/40 whitespace-nowrap shadow-transparent">
-                                            <div class="flex items-center justify-center">
-                                                <a href="{{ route('admin.monitoring.export', $srvy->id) }}" class="icon-link p-2 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-full" data-tooltip="Export Hasil Survei">
-                                                    <i class="fas fa-file-excel text-emerald-500"></i>
-                                                </a>
-                                            </div>
+                                        <td class="p-2 text-center align-middle bg-transparent border-b whitespace-nowrap dark:border-white/40">
+                                            <a href="{{ route('admin.monitoring.export', $srvy->id) }}"
+                                                class="text-xs font-semibold leading-tight text-slate-400 dark:text-white dark:opacity-80">
+                                                <i class="fas fa-file-excel text-emerald-500 mr-1" aria-hidden="true"></i>
+                                                Export Hasil Survei
+                                            </a>
                                         </td>
                                     </tr>
                                 @endforeach

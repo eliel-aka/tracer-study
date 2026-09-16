@@ -76,14 +76,14 @@
 
 
         <div class="flex flex-wrap mt-6 -mx-3">
-          <div class="w-full max-w-full px-3 mt-0 mb-6 lg:mb-0 lg:w-full lg:flex-none">
-            <div class="relative flex flex-col min-w-0 break-words bg-white border-0 border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl dark:bg-gray-950 border-black-125 rounded-2xl bg-clip-border">
+          <div class="w-full max-w-full px-3 mt-0 mb-6 lg:mb-0 lg:w-full lg:flex-none min-w-0">
+            <div class="relative flex flex-col min-w-0 w-full max-w-full break-words bg-white border-0 border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl dark:bg-gray-950 border-black-125 rounded-2xl bg-clip-border overflow-hidden">
               <div class="p-4 pb-0 mb-0 rounded-t-4">
                 <div class="flex justify-between">
                   <h6 class="mb-2 dark:text-white">Persentase Pengerjaan Survei</h6>
                 </div>
               </div>
-              <div class="overflow-x-auto">
+              <div class="overflow-x-auto w-full max-w-full min-w-0 block">
                 <table class="items-center w-full mb-4 align-top border-collapse border-gray-200 dark:border-white/40">
                   <thead class="align-bottom">
                     <tr>
@@ -132,10 +132,24 @@
                           </div>
                         </td>
                         <td class="p-2 text-center align-middle bg-transparent border-b whitespace-nowrap dark:border-white/40">
-                          <a href="{{ route('admin.dashboard.grafik', $survey->id) }}"
-                            class="inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-600 rounded hover:bg-blue-50">
-                            <i class="fas fa-chart-bar mr-1"></i> Lihat Grafik
-                          </a>
+                          <div class="flex flex-col gap-2">
+                            <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                              <a href="{{ route('admin.dashboard.grafik', $survey->id) }}"
+                                class="inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors">
+                                <i class="fas fa-chart-bar mr-1"></i> Grafik
+                              </a>
+                              <a href="{{ route('admin.dashboard.analitik', $survey->id) }}"
+                                class="inline-flex items-center px-3 py-1 text-xs font-semibold text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50 transition-colors">
+                                <i class="fas fa-table mr-1"></i> Analitik
+                              </a>
+                            </div>
+                            <div class="flex justify-center">
+                              <a href="{{ route('admin.monitoring.export', $survey->id) }}"
+                                class="inline-flex items-center px-3 py-1 text-xs font-semibold text-emerald-600 border border-emerald-600 rounded hover:bg-emerald-50 transition-colors w-full sm:w-auto justify-center">
+                                <i class="fas fa-file-excel mr-1"></i> Export Excel
+                              </a>
+                            </div>
+                          </div>
                         </td>
                       </tr>
                   @endforeach

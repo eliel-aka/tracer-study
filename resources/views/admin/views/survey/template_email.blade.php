@@ -52,7 +52,7 @@
                 <!-- Template Forms -->
                 <!-- Invitation Template -->
                 <div id="invitation-tab" class="tab-content">
-                    <form action="{{ route('admin.template_email.update') }}" method="POST" class="mt-6">
+                    <form action="{{ route('admin.template_email.update') }}" method="POST" enctype="multipart/form-data" class="mt-6">
                         @csrf
                         <input type="hidden" name="type" value="survey_invitation">
 
@@ -66,6 +66,26 @@
                             <label for="invitation_body" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Content</label>
                             <textarea name="body" id="invitation_body" rows="15"
                                 class="ckeditor focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">{{ $templates['invitation']->body ?? '' }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="invitation_attachments" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Attachments (Opsional, Bisa pilih banyak)</label>
+                            <input type="file" name="attachments[]" id="invitation_attachments" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple
+                                class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                            @if(isset($templates['invitation']) && !empty($templates['invitation']->attachments))
+                                <div class="mt-2 space-y-2">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-white/80">File saat ini:</p>
+                                    @foreach($templates['invitation']->attachments as $path)
+                                        <div class="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
+                                            <span class="text-gray-600 truncate mr-2">{{ basename($path) }}</span>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="remove_attachments[]" value="{{ $path }}" class="form-checkbox h-4 w-4 text-red-600 transition duration-150 ease-in-out">
+                                                <span class="ml-2 text-red-600 font-medium whitespace-nowrap text-xs">Hapus</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
                         <div class="flex justify-between items-center">
@@ -85,7 +105,7 @@
 
                 <!-- Reminder Template -->
                 <div id="reminder-tab" class="tab-content hidden">
-                    <form action="{{ route('admin.template_email.update') }}" method="POST" class="mt-6">
+                    <form action="{{ route('admin.template_email.update') }}" method="POST" enctype="multipart/form-data" class="mt-6">
                         @csrf
                         <input type="hidden" name="type" value="survey_reminder">
 
@@ -101,6 +121,26 @@
                                 class="ckeditor focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">{{ $templates['reminder']->body ?? '' }}</textarea>
                         </div>
 
+                        <div class="mb-4">
+                            <label for="reminder_attachments" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Attachments (Opsional, Bisa pilih banyak)</label>
+                            <input type="file" name="attachments[]" id="reminder_attachments" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple
+                                class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                            @if(isset($templates['reminder']) && !empty($templates['reminder']->attachments))
+                                <div class="mt-2 space-y-2">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-white/80">File saat ini:</p>
+                                    @foreach($templates['reminder']->attachments as $path)
+                                        <div class="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
+                                            <span class="text-gray-600 truncate mr-2">{{ basename($path) }}</span>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="remove_attachments[]" value="{{ $path }}" class="form-checkbox h-4 w-4 text-red-600 transition duration-150 ease-in-out">
+                                                <span class="ml-2 text-red-600 font-medium whitespace-nowrap text-xs">Hapus</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
                         <div class="flex justify-between items-center">
                             <button type="button" class="preview-btn px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200" data-type="survey_reminder">
                                 Preview
@@ -114,7 +154,7 @@
 
                 <!-- Appreciation Template -->
                 <div id="appreciation-tab" class="tab-content hidden">
-                    <form action="{{ route('admin.template_email.update') }}" method="POST" class="mt-6">
+                    <form action="{{ route('admin.template_email.update') }}" method="POST" enctype="multipart/form-data" class="mt-6">
                         @csrf
                         <input type="hidden" name="type" value="survey_appreciation">
 
@@ -128,6 +168,26 @@
                             <label for="appreciation_body" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Content</label>
                             <textarea name="body" id="appreciation_body" rows="15"
                                 class="ckeditor focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">{{ $templates['appreciation']->body ?? '' }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="appreciation_attachments" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Attachments (Opsional, Bisa pilih banyak)</label>
+                            <input type="file" name="attachments[]" id="appreciation_attachments" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple
+                                class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                            @if(isset($templates['appreciation']) && !empty($templates['appreciation']->attachments))
+                                <div class="mt-2 space-y-2">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-white/80">File saat ini:</p>
+                                    @foreach($templates['appreciation']->attachments as $path)
+                                        <div class="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
+                                            <span class="text-gray-600 truncate mr-2">{{ basename($path) }}</span>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="remove_attachments[]" value="{{ $path }}" class="form-checkbox h-4 w-4 text-red-600 transition duration-150 ease-in-out">
+                                                <span class="ml-2 text-red-600 font-medium whitespace-nowrap text-xs">Hapus</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
                         <div class="flex justify-between items-center">

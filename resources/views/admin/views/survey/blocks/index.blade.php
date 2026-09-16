@@ -60,8 +60,8 @@
     </div>
 
     <!-- Blocks Table -->
-    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+    <div class="bg-white shadow-sm rounded-lg overflow-hidden min-w-0 w-full max-w-full">
+        <div class="overflow-x-auto w-full max-w-full min-w-0 block">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>

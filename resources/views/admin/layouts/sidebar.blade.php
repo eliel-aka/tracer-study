@@ -1,104 +1,98 @@
-<!-- sidenav  -->
+<!-- YouTube-style Admin Sidenav -->
 <aside
-  class="fixed inset-y-0 flex-wrap items-center justify-between block w-full p-0 my-4 overflow-y-auto antialiased transition-transform duration-200 -translate-x-full bg-white border-0 shadow-xl dark:shadow-none dark:bg-slate-850 max-w-64 ease-nav-brand z-990 lg:ml-6 rounded-2xl lg:left-0 lg:translate-x-0"
+  class="admin-sidenav fixed inset-y-0 left-0 flex flex-col w-64 p-0 m-0 overflow-hidden antialiased transition-transform duration-200 -translate-x-full border-0 z-990 lg:translate-x-0"
   aria-expanded="false">
-  <div class="h-19">
-    <i class="absolute top-0 right-0 p-4 opacity-50 cursor-pointer fas fa-times dark:text-white text-slate-400 lg:hidden"
-      sidenav-close></i>
-    <a class="block px-8 py-6 m-0 text-sm whitespace-nowrap dark:text-white text-slate-700" href="" target="_blank">
+  
+  <!-- Brand Header (YouTube style top bar) -->
+  <div class="flex items-center justify-between h-16 px-4 shrink-0 border-b border-slate-200/60 dark:border-slate-800/80" style="border-bottom-color: var(--admin-border) !important;">
+    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 no-underline">
       <img src="{{ asset('assets/images/logo/logo.png') }}"
-        class="inline h-full max-w-full transition-all duration-200 dark:hidden ease-nav-brand max-h-8"
-        alt="main_logo" />
-      <img src="{{ asset('assets/images/logo/logo.png') }}"
-        class="hidden h-full max-w-full transition-all duration-200 dark:inline ease-nav-brand max-h-8"
-        alt="main_logo" />
-      <span class="ml-1 font-semibold transition-all duration-200 ease-nav-brand">{{ __('Tracer Study') }}</span>
+        class="h-8 w-8 object-contain transition-all duration-200 ease-nav-brand"
+        alt="Tracer Study Logo" />
+      <div class="flex flex-col">
+        <div class="flex items-center gap-1.5">
+          <span class="text-sm font-bold tracking-tight admin-text-primary leading-tight">{{ __('Tracer Study') }}</span>
+          <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/15 px-1.5 py-0.5 rounded leading-none">Admin</span>
+        </div>
+        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium leading-tight">Politeknik Statistika STIS</span>
+      </div>
     </a>
+    <!-- Close button for mobile screen -->
+    <button type="button" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hidden rounded-lg focus:outline-none" sidenav-close aria-label="Close sidebar">
+      <i class="fas fa-times text-base"></i>
+    </button>
   </div>
 
-  <div class="items-center block w-auto h-auto grow basis-full">
-    <ul class="flex flex-col pl-0 mb-0 gap-y-0.5">
+  <!-- Navigation list (Scrollable) -->
+  <div class="flex-1 py-3 overflow-y-auto">
+    <!-- Menu Utama -->
+    <div class="px-1">
+      <a href="{{ route('admin.dashboard') }}" class="sidebar-nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-tv-2 text-emerald-500"></i>
+        </span>
+        <span class="truncate">{{ __('Dashboard') }}</span>
+      </a>
 
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
+      <a href="{{ route('admin.monitoring.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.monitoring.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-world-2 text-red-500"></i>
+        </span>
+        <span class="truncate">{{ __('Monitoring') }}</span>
+      </a>
+    </div>
 
-      <li class="w-full">
-        <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center fill-current stroke-0 text-center">
-            <i class="text-sm leading-normal text-emerald-500 ni ni-tv-2"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Dashboard') }}</span>
-        </a>
-      </li>
+    <!-- Divider & Section: Tracer Study -->
+    <div class="sidebar-section-divider"></div>
+    <div class="sidebar-section-title">{{ __('Tracer Study') }}</div>
+    <div class="px-1">
+      <a href="{{ route('admin.survey.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.survey.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-calendar-grid-58 text-orange-500"></i>
+        </span>
+        <span class="truncate">{{ __('Manajemen Survei') }}</span>
+      </a>
 
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
+      <a href="{{ route('admin.manajemenSatker.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.manajemenSatker.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-building text-cyan-500"></i>
+        </span>
+        <span class="truncate">{{ __('Manajemen Satker') }}</span>
+      </a>
 
-      <li class="w-full">
-        <a href="{{ route('admin.monitoring.index') }}" class="{{ request()->routeIs('admin.monitoring.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center stroke-0 text-center">
-            <i class="text-sm leading-normal text-red-600 ni ni-world-2"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Monitoring') }}</span>
-        </a>
-      </li>
+      <a href="{{ route('admin.lulusan.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.lulusan.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="fas fa-user-graduate text-emerald-500"></i>
+        </span>
+        <span class="truncate">{{ __('Manajemen Lulusan') }}</span>
+      </a>
 
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
+      <a href="{{ route('admin.penggunaLulusan.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.penggunaLulusan.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="fas fa-briefcase text-teal-500"></i>
+        </span>
+        <span class="truncate">{{ __('Manajemen Pengguna Lulusan') }}</span>
+      </a>
+    </div>
 
-      <li class="w-full">
-        <a href="{{ route('admin.survey.index') }}" class="{{ request()->routeIs('admin.survey.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center stroke-0 text-center">
-            <i class="text-sm leading-normal text-orange-500 ni ni-calendar-grid-58"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Manajemen Survei') }}</span>
-        </a>
-      </li>
+    <!-- Divider & Section: Pengaturan -->
+    <div class="sidebar-section-divider"></div>
+    <div class="sidebar-section-title">{{ __('Pengaturan') }}</div>
+    <div class="px-1">
+      <a href="{{ route('admin.template_email.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.template_email.*') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-email-83 text-blue-500"></i>
+        </span>
+        <span class="truncate">{{ __('Template Email') }}</span>
+      </a>
 
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
-
-      <li class="w-full">
-        <a href="{{ route('admin.template_email.index') }}" class="{{ request()->routeIs('admin.template_email.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center stroke-0 text-center">
-            <i class="text-sm leading-normal text-blue-500 ni ni-email-83"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Template Email') }}</span>
-        </a>
-      </li>
-
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
-
-      <li class="w-full">
-        <a href="{{ route('admin.lulusan.index') }}" class="{{ request()->routeIs('admin.lulusan.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center fill-current stroke-0 text-center">
-            <i class="text-sm leading-normal text-emerald-500 ni ni-credit-card"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Manajemen Lulusan') }}</span>
-        </a>
-      </li>
-
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
-
-      <li class="w-full">
-        <a href="{{ route('admin.penggunaLulusan.index') }}" class="{{ request()->routeIs('admin.penggunaLulusan.*') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center fill-current stroke-0 text-center">
-            <i class="text-sm leading-normal text-emerald-500 ni ni-credit-card"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Manajemen Pengguna Lulusan') }}</span>
-        </a>
-      </li>
-
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
-
-      <li class="w-full">
-        <a href="{{ route('admin.profile.edit') }}" class="{{ request()->routeIs('admin.profile.edit') ? 'bg-blue-500/13' : '' }} py-2 dark:text-white dark:opacity-80 text-sm ease-nav-brand my-0 mx-2 flex items-center whitespace-nowrap rounded-lg px-3 font-semibold text-slate-700 transition-colors">
-          <div class="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-center stroke-0 text-center">
-            <i class="text-sm leading-normal text-purple-500 ni ni-single-02"></i>
-          </div>
-          <span class="duration-300 opacity-100 pointer-events-none ease truncate">{{ __('Manajemen Profil Admin') }}</span>
-        </a>
-      </li>
-
-      <hr class="h-px my-1 mx-4 bg-transparent bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/30" />
-
-    </ul>
+      <a href="{{ route('admin.profile.edit') }}" class="sidebar-nav-item {{ request()->routeIs('admin.profile.edit') ? 'active' : '' }}">
+        <span class="sidebar-nav-icon">
+          <i class="ni ni-single-02 text-purple-500"></i>
+        </span>
+        <span class="truncate">{{ __('Manajemen Profil Admin') }}</span>
+      </a>
+    </div>
   </div>
 </aside>
 <!-- end sidenav -->

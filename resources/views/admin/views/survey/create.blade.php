@@ -311,10 +311,10 @@
                           </div>
                           <div class="w-full max-w-full px-3 shrink-0 md:w-4/12 md:flex-0">
                                 <label for="type_survei" class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Tipe <span class="text-red-500">*</span></label>
-                                <select name="type_survei" required class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
-                                    <option value="" disabled selected hidden>Pilih Tipe</option>
+                                <select name="type_survei" id="type_survei" required class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                                    <option value="" disabled {{ old('type_survei') ? '' : 'selected' }} hidden>Pilih Tipe</option>
                                     <option value="penggunaLulusan" {{ old('type_survei') == 'penggunaLulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
-                                    <option value="lulusan" {{ old('type_survei') == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
+                                    <option value="lulusan" {{ old('type_survei', 'lulusan') == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
                                 </select>
                                 @error('type_survei')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -367,9 +367,202 @@
 <script>
 let sectionCounter = 0;
 
+const respondentAttributes = {
+    lulusan: [
+        { label: 'Nama Lengkap', type: 'text', description: 'Nama lengkap lulusan' },
+        { label: 'Jenis Kelamin', type: 'text', description: 'Jenis kelamin responden' },
+        { label: 'NIP Baru (18 Digit)', type: 'text', description: 'Nomor Induk Pegawai 18 digit' },
+        { label: 'NIP Lama (9 Digit)', type: 'text', description: 'Nomor Induk Pegawai 9 digit' },
+        { label: 'Email', type: 'text', description: 'Alamat email aktif' },
+        { label: 'Program Studi', type: 'text', description: 'Program studi kelulusan di STIS' },
+        { label: 'Jabatan', type: 'text', description: 'Posisi / jabatan saat ini' },
+        { label: 'Satuan Kerja', type: 'text', description: 'Instansi / satuan kerja penempatan' },
+        { label: 'Unit Kerja', type: 'text', description: 'Bagian / unit kerja saat ini' },
+        { label: 'No. HP', type: 'text', description: 'Nomor handphone / WhatsApp' },
+        { label: 'Tanggal Lahir', type: 'date', description: 'Tanggal lahir responden' },
+        { label: 'Tahun Lulus', type: 'text', description: 'Tahun kelulusan dari Politeknik Statistika STIS' },
+        { label: 'NIP Baru Pengguna Lulusan', type: 'text', description: 'NIP 18 digit atasan langsung / pengguna lulusan' },
+        { label: 'NIP Lama Pengguna Lulusan', type: 'text', description: 'NIP 9 digit atasan langsung / pengguna lulusan' }
+    ],
+    penggunaLulusan: [
+        { label: 'Nama Lengkap', type: 'text', description: 'Nama lengkap pengguna lulusan' },
+        { label: 'Jenis Kelamin', type: 'text', description: 'Jenis kelamin pengguna lulusan' },
+        { label: 'NIP Baru (18 Digit)', type: 'text', description: 'Nomor Induk Pegawai 18 digit' },
+        { label: 'NIP Lama (9 Digit)', type: 'text', description: 'Nomor Induk Pegawai 9 digit' },
+        { label: 'Email', type: 'text', description: 'Alamat email aktif' },
+        { label: 'Jabatan', type: 'text', description: 'Posisi / jabatan di instansi' },
+        { label: 'Satuan Kerja', type: 'text', description: 'Instansi / satuan kerja' },
+        { label: 'Unit Kerja', type: 'text', description: 'Bagian / unit kerja' },
+        { label: 'No. HP', type: 'text', description: 'Nomor handphone / WhatsApp' }
+    ]
+};
+
+function renderIdentityBlock(type) {
+    const normType = (type === 'penggunaLulusan' || type === 'pengguna_lulusan') ? 'penggunaLulusan' : 'lulusan';
+    const attrs = respondentAttributes[normType] || respondentAttributes.lulusan;
+    const typeTitle = normType === 'lulusan' ? 'Lulusan' : 'Pengguna Lulusan';
+
+    let block1 = document.querySelector('.section-block[data-is-identity="true"]') || document.querySelector('.section-block[data-section-id="1"]');
+
+    if (!block1) {
+        sectionCounter = Math.max(sectionCounter, 1);
+        const sectionHtml = `
+            <div class="section-block p-6 bg-white rounded-lg block-color-odd border-2 border-blue-400" data-section-id="1" data-is-identity="true">
+                <div class="block-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-lg font-semibold text-white">Block 1: Identitas Responden</h4>
+                            <span class="bg-amber-400 text-amber-950 text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm flex items-center gap-1">
+                                <i class="fas fa-lock"></i> Terkunci Otomatis
+                            </span>
+                        </div>
+                        <div class="text-xs text-blue-100 italic">
+                            <i class="fas fa-shield-alt mr-1"></i> Data profil terisi otomatis untuk responden
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <!-- Notice -->
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-user-check text-blue-600 text-xl mt-0.5"></i>
+                            <div>
+                                <h5 class="text-sm font-bold text-blue-900 mb-1" id="identityBlockTitle">Blok Identitas Responden (${typeTitle})</h5>
+                                <p class="text-xs text-blue-700">
+                                    Seluruh atribut di bawah ini terisi otomatis dari profil akun responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei. Blok ini wajib ada dan tidak dapat dihapus.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h5 class="text-sm font-medium text-gray-700 mb-3">Nama Block <span class="text-red-500">*</span></h5>
+                        <input type="text" name="sections[1][section_name]" value="Identitas Responden" readonly
+                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-semibold text-gray-700 outline-none cursor-not-allowed" />
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h5 class="text-sm font-medium text-gray-700 mb-3">Deskripsi Block</h5>
+                        <textarea name="sections[1][section_description]" rows="2" readonly
+                                  class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-normal text-gray-700 outline-none cursor-not-allowed">Data identitas responden yang telah tersimpan di sistem.</textarea>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h5 class="text-sm font-medium text-gray-700 mb-3">Navigasi Block</h5>
+                        <select name="sections[1][navigation_type]" class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none navigation-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Questions Section -->
+                    <div class="border-t-2 border-gray-200 pt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h5 class="text-md font-bold text-gray-800">
+                                Daftar Atribut Responden (<span id="identityQuestionsCount">${attrs.length}</span> Atribut)
+                            </h5>
+                            <span class="text-xs text-gray-500 italic bg-gray-100 px-2 py-1 rounded">
+                                <i class="fas fa-lock mr-1"></i> Pertanyaan identitas terkunci
+                            </span>
+                        </div>
+
+                        <div id="questionsContainer-1" class="questions-container space-y-3">
+                            <!-- Questions will be injected below -->
+                        </div>
+
+                        <!-- Add Block Button -->
+                        <div class="add-block-section mt-6 pt-4">
+                            <div class="flex justify-center">
+                                <button type="button" onclick="addSectionAfter(1)" class="inline-block px-6 py-3 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-gradient-to-r from-green-500 to-green-600 border-0 rounded-lg shadow-lg cursor-pointer text-sm tracking-tight-rem hover:shadow-xl hover:-translate-y-1 active:opacity-85 hover:from-green-600 hover:to-green-700">
+                                    <i class="fas fa-plus-circle mr-2"></i> Tambah Block Pertanyaan Berikutnya
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('sectionsContainer').insertAdjacentHTML('afterbegin', sectionHtml);
+        block1 = document.querySelector('.section-block[data-is-identity="true"]') || document.querySelector('.section-block[data-section-id="1"]');
+    } else {
+        block1.setAttribute('data-is-identity', 'true');
+        const headerTitle = block1.querySelector('.block-header h4');
+        if (headerTitle) headerTitle.textContent = `Block 1: Identitas Responden`;
+        const identityTitle = block1.querySelector('#identityBlockTitle');
+        if (identityTitle) identityTitle.textContent = `Blok Identitas Responden (${typeTitle})`;
+        const countSpan = block1.querySelector('#identityQuestionsCount');
+        if (countSpan) countSpan.textContent = attrs.length;
+    }
+
+    const questionsContainer = block1.querySelector('#questionsContainer-1');
+    if (questionsContainer) {
+        let qHtml = '';
+        attrs.forEach((attr, idx) => {
+            const qNum = idx + 1;
+            qHtml += `
+                <div class="question-item bg-gray-50 border border-gray-200" data-question-id="${qNum}" data-question-number="Q${qNum}" data-section-id="1">
+                    <div class="question-header py-2 px-3 bg-gray-100 flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs text-blue-800">Q${qNum}</span>
+                            <h6 class="text-sm font-semibold text-gray-700">${attr.label}</h6>
+                        </div>
+                        <span class="text-[11px] bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded">
+                            <i class="fas fa-lock text-[10px] mr-1"></i> Profil Responden
+                        </span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div>
+                            <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Teks Pertanyaan</label>
+                            <textarea name="sections[1][questions][${qNum}][question]" rows="1" readonly
+                                      class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-1.5 font-medium text-gray-800 cursor-not-allowed">${attr.label}</textarea>
+                        </div>
+                        <div>
+                            <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Deskripsi / Keterangan</label>
+                            <textarea name="sections[1][questions][${qNum}][description]" rows="1" readonly
+                                      class="focus:shadow-primary-outline text-xs leading-5.6 ease block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1 text-gray-500 cursor-not-allowed">${attr.description}</textarea>
+                        </div>
+                        <div class="flex items-center justify-between pt-1">
+                            <div>
+                                <input type="hidden" name="sections[1][questions][${qNum}][type]" value="${attr.type}">
+                                <span class="text-xs text-gray-500 font-medium">Tipe Input: <span class="uppercase font-mono text-gray-700">${attr.type}</span></span>
+                            </div>
+                            <div>
+                                <input type="hidden" name="sections[1][questions][${qNum}][required]" value="1">
+                                <span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                    <i class="fas fa-check-circle mr-1"></i> Wajib & Otomatis Terisi
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        questionsContainer.innerHTML = qHtml;
+    }
+
+    updateSectionNumbers();
+    updateNavigationOptions();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Add first section by default
-    addSection();
+    // Determine survey type
+    const typeSelect = document.getElementById('type_survei');
+    const initialType = (typeSelect && typeSelect.value) ? typeSelect.value : 'lulusan';
+    if (typeSelect && !typeSelect.value) {
+        typeSelect.value = 'lulusan';
+    }
+
+    // Auto-populate Block 1 as locked Identity Block
+    renderIdentityBlock(initialType);
+
+    // Listen to survey type changes
+    if (typeSelect) {
+        typeSelect.addEventListener('change', function() {
+            renderIdentityBlock(this.value);
+        });
+    }
 
     // Add section button event
     document.getElementById('addSectionBtn').addEventListener('click', addSection);
@@ -424,6 +617,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Error response with JSON data
+                    if (status === 419 || (data && data.message && data.message.includes('CSRF token mismatch'))) {
+                        throw new Error('Sesi Anda telah berakhir (CSRF token expired). Silakan refresh halaman (tekan F5) lalu coba simpan kembali.');
+                    }
                     if (status === 422 && data.errors) {
                         throw new Error(buildFriendlyValidationMessage(data.errors));
                     }
@@ -489,6 +685,31 @@ function addSection() {
                     <select name="sections[${sectionCounter}][navigation_type]" class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none navigation-select">
                         <!-- Navigation options will be populated by updateNavigationOptions() -->
                     </select>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="kompetensi_${sectionCounter}" name="sections[${sectionCounter}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${sectionCounter}, this)">
+                        <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                    </div>
+                    <div id="kompetensi_info_${sectionCounter}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-blue-800 mb-1">Pertanyaan Utama <span class="text-red-500">*</span></label>
+                            <input type="text" name="sections[${sectionCounter}][pertanyaan_utama]" placeholder="Contoh: Bagaimana tingkat kompetensi [indikator] Anda?" class="text-sm w-full border border-gray-300 rounded px-2 py-1 focus:border-blue-500 outline-none">
+                            <p class="text-[10px] text-blue-600 mt-1">Gunakan kata <strong>[indikator]</strong> di dalam kalimat agar posisi indikator diganti otomatis (opsional).</p>
+                        </div>
+                        <p class="text-xs text-blue-800 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
+                        </p>
+                        <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
+                            <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
+                            <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
+                            <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- Questions Section -->
@@ -567,6 +788,31 @@ function addSectionAfter(afterSectionId) {
                     </select>
                 </div>
 
+                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="kompetensi_${sectionCounter}" name="sections[${sectionCounter}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${sectionCounter}, this)">
+                        <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                    </div>
+                    <div id="kompetensi_info_${sectionCounter}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-blue-800 mb-1">Pertanyaan Utama <span class="text-red-500">*</span></label>
+                            <input type="text" name="sections[${sectionCounter}][pertanyaan_utama]" placeholder="Contoh: Bagaimana tingkat kompetensi [indikator] Anda?" class="text-sm w-full border border-gray-300 rounded px-2 py-1 focus:border-blue-500 outline-none">
+                            <p class="text-[10px] text-blue-600 mt-1">Gunakan kata <strong>[indikator]</strong> di dalam kalimat agar posisi indikator diganti otomatis (opsional).</p>
+                        </div>
+                        <p class="text-xs text-blue-800 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
+                        </p>
+                        <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
+                            <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
+                            <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
+                            <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- Questions Section -->
                 <div class="border-t-2 border-gray-200 pt-4">
                     <div class="flex justify-between items-center mb-4">
@@ -611,13 +857,18 @@ function addSectionAfter(afterSectionId) {
 }
 
 function deleteSection(sectionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Block 1 (Identitas Responden) wajib ada dan tidak dapat dihapus.');
+        return;
+    }
+
     if (document.querySelectorAll('.section-block').length <= 1) {
         alert('Minimal harus ada 1 block!');
         return;
     }
 
     if (confirm('Apakah Anda yakin ingin menghapus block ini?')) {
-        const section = document.querySelector(`[data-section-id="${sectionId}"]`);
         if (section) {
             section.remove();
             updateSectionNumbers();
@@ -628,6 +879,10 @@ function deleteSection(sectionId) {
 
 function cloneSection(sectionId) {
     const originalSection = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (originalSection && (originalSection.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Block Identitas Responden tidak dapat diduplikasi.');
+        return;
+    }
     if (originalSection) {
         sectionCounter++;
         const colorClass = (sectionCounter % 2 === 0) ? 'block-color-even' : 'block-color-odd';
@@ -674,7 +929,8 @@ function getFormDataFromSection(sectionElement, sectionId) {
             type: questionEl.querySelector(`select[name*="[type]"]`)?.value || 'text',
             required: questionEl.querySelector(`input[name*="[required]"]`)?.checked || false,
             visualization: questionEl.querySelector(`select[name*="[visualization]"]`)?.value || '',
-            options: []
+            options: [],
+            grid_columns: []
         };
 
         // Get options
@@ -682,6 +938,13 @@ function getFormDataFromSection(sectionElement, sectionId) {
         optionInputs.forEach(input => {
             if (input.value.trim()) {
                 questionData.options.push(input.value.trim());
+            }
+        });
+
+        const gridColumnInputs = questionEl.querySelectorAll('input[name*="[grid_columns]"]');
+        gridColumnInputs.forEach(input => {
+            if (input.value.trim()) {
+                questionData.grid_columns.push(input.value.trim());
             }
         });
 
@@ -777,6 +1040,18 @@ function restoreFormDataToSection(sectionId, data) {
                             }
                         }, 300);
                     }
+
+                    if (questionData.type === 'multiple_choice_grid' && Array.isArray(questionData.grid_columns) && questionData.grid_columns.length > 0) {
+                        setTimeout(() => {
+                            const gridColumnsList = questionEl.querySelector(`#gridColumnsList-${sectionId}-${questionCount}`);
+                            if (gridColumnsList) {
+                                gridColumnsList.innerHTML = '';
+                                questionData.grid_columns.forEach((columnLabel) => {
+                                    addGridColumnOption(sectionId, questionCount, columnLabel);
+                                });
+                            }
+                        }, 350);
+                    }
                 }
             }, 200 * (index + 1)); // Stagger the restoration
         });
@@ -788,7 +1063,11 @@ function updateSectionNumbers() {
     sections.forEach((section, index) => {
         const header = section.querySelector('.block-header h4');
         if (header) {
-            header.textContent = `Block ${index + 1}`;
+            if (section.getAttribute('data-is-identity') === 'true' || index === 0) {
+                header.textContent = `Block ${index + 1}: Identitas Responden`;
+            } else {
+                header.textContent = `Block ${index + 1}`;
+            }
         }
 
         // Update color class
@@ -869,11 +1148,11 @@ function addQuestion(sectionId, afterQuestionId = null) {
     const temporaryQuestionId = Date.now();
 
     const questionHtml = `
-        <div class="question-item" data-question-id="${temporaryQuestionId}" data-question-number="Q${temporaryQuestionId}">
+        <div class="question-item" data-question-id="${temporaryQuestionId}" data-question-number="Q${temporaryQuestionId}" data-section-id="${sectionId}">
             <div class="question-header">
                 <div class="flex justify-between items-start">
                     <h6 class="text-sm font-medium text-gray-600">Pertanyaan ${temporaryQuestionId}</h6>
-                    <div class="icon-container">
+                    <div class="icon-container question-controls">
                         <button type="button" onclick="addQuestion(${sectionId}, ${temporaryQuestionId})" class="icon-link add-question-after-btn" title="Tambah Pertanyaan di Bawah">
                             <i class="fas fa-plus text-green-600"></i>
                         </button>
@@ -888,7 +1167,7 @@ function addQuestion(sectionId, afterQuestionId = null) {
             </div>
 
             <div class="space-y-3">
-                <div>
+                <div class="question-textarea-container">
                     <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Teks Pertanyaan <span class="text-red-500">*</span></label>
                     <textarea name="sections[${sectionId}][questions][${temporaryQuestionId}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"></textarea>
@@ -902,8 +1181,7 @@ function addQuestion(sectionId, afterQuestionId = null) {
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div>
-                        <select name="sections[${sectionId}][questions][${temporaryQuestionId}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${temporaryQuestionId}, this.value)"
-                                class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                        <select name="sections[${sectionId}][questions][${temporaryQuestionId}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${temporaryQuestionId}, this.value)" class="question-type-select focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                             <option value="text">Text Input</option>
                             <option value="textarea">Text Area</option>
                             <option value="radio">Radio Button</option>
@@ -912,6 +1190,7 @@ function addQuestion(sectionId, afterQuestionId = null) {
                             <option value="multiple_choice_grid">Multiple Choice Grid</option>
                             <option value="file">File Upload</option>
                             <option value="date">Date</option>
+                            <option value="gaji">Gaji</option>
                         </select>
                     </div>
 
@@ -924,11 +1203,16 @@ function addQuestion(sectionId, afterQuestionId = null) {
                         </select>
                     </div>
 
-                    <div class="flex items-center justify-center">
+                    <div class="flex flex-col gap-2 pt-2">
                         <label class="inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="sections[${sectionId}][questions][${temporaryQuestionId}][required]" value="1" class="sr-only peer">
-                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                            <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Required</span>
+                            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">Wajib diisi</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${temporaryQuestionId}][is_analytic_table]" value="1" class="sr-only peer">
+                            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">Tabel Analitik</span>
                         </label>
                     </div>
                 </div>
@@ -942,6 +1226,25 @@ function addQuestion(sectionId, afterQuestionId = null) {
                     </div>
                     <button type="button" onclick="addOption(${sectionId}, ${temporaryQuestionId})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
                         <i class="fas fa-plus mr-1"></i> Tambah Pilihan
+                    </button>
+
+                    <div id="gridColumnsContainer-${sectionId}-${temporaryQuestionId}" class="mt-4 pt-4 border-t border-gray-200" style="display: none;">
+                        <h6 class="text-sm font-medium text-gray-600 mb-2">Kolom Grid</h6>
+                        <div id="gridColumnsList-${sectionId}-${temporaryQuestionId}" class="space-y-2"></div>
+                        <button type="button" onclick="addGridColumnOption(${sectionId}, ${temporaryQuestionId})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            <i class="fas fa-plus mr-1"></i> Tambah Kolom
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kompetensi Indikator Container (Hidden by default) -->
+                <div id="indikatorContainer-${sectionId}-${temporaryQuestionId}" class="kompetensi-indikator-area mt-4 border-t pt-3" style="display: none;">
+                    <label class="block text-xs font-medium text-purple-700 mb-2"><i class="fas fa-list-ol mr-1"></i> Daftar Indikator</label>
+                    <div class="indikator-list space-y-2" id="indikatorList-${sectionId}-${temporaryQuestionId}">
+                        <!-- indicators will be added here -->
+                    </div>
+                    <button type="button" onclick="addIndikatorItem(${sectionId}, ${temporaryQuestionId})" class="mt-2 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs hover:bg-purple-200 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Tambah Indikator
                     </button>
                 </div>
             </div>
@@ -1003,6 +1306,16 @@ function updateQuestionNumbers(sectionId) {
             optionsList.id = `optionsList-${sectionId}-${newQuestionId}`;
         }
 
+        const gridColumnsContainer = question.querySelector(`[id^="gridColumnsContainer-${sectionId}-"]`);
+        if (gridColumnsContainer) {
+            gridColumnsContainer.id = `gridColumnsContainer-${sectionId}-${newQuestionId}`;
+        }
+
+        const gridColumnsList = question.querySelector(`[id^="gridColumnsList-${sectionId}-"]`);
+        if (gridColumnsList) {
+            gridColumnsList.id = `gridColumnsList-${sectionId}-${newQuestionId}`;
+        }
+
         const typeSelect = question.querySelector('select[name*="[type]"]');
         if (typeSelect) {
             typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${sectionId}, ${newQuestionId}, this.value)`);
@@ -1011,6 +1324,26 @@ function updateQuestionNumbers(sectionId) {
         const addOptionButton = question.querySelector('button[onclick^="addOption("]');
         if (addOptionButton) {
             addOptionButton.setAttribute('onclick', `addOption(${sectionId}, ${newQuestionId})`);
+        }
+
+        const addGridColumnButton = question.querySelector('button[onclick^="addGridColumnOption("]');
+        if (addGridColumnButton) {
+            addGridColumnButton.setAttribute('onclick', `addGridColumnOption(${sectionId}, ${newQuestionId})`);
+        }
+
+        const indikatorContainer = question.querySelector(`[id^="indikatorContainer-${sectionId}-"]`);
+        if (indikatorContainer) {
+            indikatorContainer.id = `indikatorContainer-${sectionId}-${newQuestionId}`;
+        }
+
+        const indikatorList = question.querySelector(`[id^="indikatorList-${sectionId}-"]`);
+        if (indikatorList) {
+            indikatorList.id = `indikatorList-${sectionId}-${newQuestionId}`;
+        }
+
+        const addIndikatorButton = question.querySelector('button[onclick^="addIndikatorItem("]');
+        if (addIndikatorButton) {
+            addIndikatorButton.setAttribute('onclick', `addIndikatorItem(${sectionId}, ${newQuestionId})`);
         }
 
         const cloneButton = question.querySelector('button[onclick^="cloneQuestion("]');
@@ -1031,8 +1364,14 @@ function updateQuestionNumbers(sectionId) {
 }
 
 function deleteQuestion(sectionId, questionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Pertanyaan pada Blok Identitas Responden tidak dapat dihapus.');
+        return;
+    }
+
     const questionsContainer = document.getElementById(`questionsContainer-${sectionId}`);
-    const questions = questionsContainer.querySelectorAll('.question-item');
+    const questions = questionsContainer ? questionsContainer.querySelectorAll('.question-item') : [];
 
     if (questions.length <= 1) {
         alert('Setiap block minimal harus memiliki 1 pertanyaan!');
@@ -1050,6 +1389,12 @@ function deleteQuestion(sectionId, questionId) {
 }
 
 function cloneQuestion(sectionId, questionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Pertanyaan pada Blok Identitas Responden tidak dapat diduplikasi.');
+        return;
+    }
+
     const originalQuestion = document.querySelector(`#questionsContainer-${sectionId} [data-question-id="${questionId}"]`);
     if (originalQuestion) {
         console.log('Cloning question:', questionId);
@@ -1061,7 +1406,8 @@ function cloneQuestion(sectionId, questionId) {
             type: originalQuestion.querySelector(`select[name*="[type]"]`)?.value || 'text',
             required: originalQuestion.querySelector(`input[name*="[required]"]`)?.checked || false,
             visualization: originalQuestion.querySelector(`select[name*="[visualization]"]`)?.value || '',
-            options: []
+            options: [],
+            grid_columns: []
         };
 
         // Get options
@@ -1069,6 +1415,13 @@ function cloneQuestion(sectionId, questionId) {
         optionInputs.forEach(input => {
             if (input.value.trim()) {
                 originalData.options.push(input.value.trim());
+            }
+        });
+
+        const gridColumnInputs = originalQuestion.querySelectorAll('input[name*="[grid_columns]"]');
+        gridColumnInputs.forEach(input => {
+            if (input.value.trim()) {
+                originalData.grid_columns.push(input.value.trim());
             }
         });
 
@@ -1151,6 +1504,31 @@ function cloneQuestion(sectionId, questionId) {
                         }
                     }, 300);
                 }
+
+                if (originalData.type === 'multiple_choice_grid' && originalData.grid_columns.length > 0) {
+                    setTimeout(() => {
+                        const gridColumnsList = newQuestion.querySelector(`div[id*="gridColumnsList"]`);
+                        if (gridColumnsList) {
+                            gridColumnsList.innerHTML = '';
+                            const questionTextarea = newQuestion.querySelector('textarea[name*="[question]"]');
+                            if (!questionTextarea) {
+                                return;
+                            }
+
+                            const matches = questionTextarea.name.match(/sections\[(\d+)\]\[questions\]\[(\d+)\]/);
+                            if (!matches) {
+                                return;
+                            }
+
+                            const newSectionId = matches[1];
+                            const newQuestionId = matches[2];
+
+                            originalData.grid_columns.forEach((label) => {
+                                addGridColumnOption(newSectionId, newQuestionId, label);
+                            });
+                        }
+                    }, 350);
+                }
             }
         }, 200);
     }
@@ -1158,6 +1536,7 @@ function cloneQuestion(sectionId, questionId) {
 
 function handleQuestionTypeChange(sectionId, questionId, type) {
     const optionsContainer = document.getElementById(`optionsContainer-${sectionId}-${questionId}`);
+    const gridColumnsContainer = document.getElementById(`gridColumnsContainer-${sectionId}-${questionId}`);
 
     if (!optionsContainer) {
         console.error(`Options container not found: optionsContainer-${sectionId}-${questionId}`);
@@ -1166,6 +1545,11 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
 
     if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(type)) {
         optionsContainer.style.display = 'block';
+
+        if (gridColumnsContainer) {
+            gridColumnsContainer.style.display = type === 'multiple_choice_grid' ? 'block' : 'none';
+        }
+
         // Add default options if none exist
         const optionsList = document.getElementById(`optionsList-${sectionId}-${questionId}`);
         
@@ -1177,6 +1561,7 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         if (optionsList.children.length === 0) {
             if (type === 'multiple_choice_grid') {
                 addDefaultMultipleChoiceGridOptions(sectionId, questionId);
+                addDefaultGridColumns(sectionId, questionId);
             } else {
                 addOption(sectionId, questionId);
                 addOption(sectionId, questionId);
@@ -1185,9 +1570,44 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
             // Update existing options to add/remove navigation based on type
             updateExistingOptionsNavigation(sectionId, questionId, type);
         }
+
+        if (type === 'multiple_choice_grid') {
+            const gridColumnsList = document.getElementById(`gridColumnsList-${sectionId}-${questionId}`);
+            if (gridColumnsList && gridColumnsList.children.length === 0) {
+                addDefaultGridColumns(sectionId, questionId);
+            }
+        }
     } else {
         optionsContainer.style.display = 'none';
+        if (gridColumnsContainer) {
+            gridColumnsContainer.style.display = 'none';
+        }
     }
+}
+
+function addGridColumnOption(sectionId, questionId, value = '') {
+    const list = document.getElementById(`gridColumnsList-${sectionId}-${questionId}`);
+    if (!list) return;
+
+    const index = list.children.length + 1;
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 grid-column-item';
+    row.innerHTML = `
+        <i class="far fa-circle text-gray-400 text-xs"></i>
+        <input type="text" name="sections[${sectionId}][questions][${questionId}][grid_columns][]"
+               placeholder="Column ${index}"
+               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+        <button type="button" onclick="this.closest('.grid-column-item').remove()" class="text-red-500 hover:text-red-700 p-2">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    row.querySelector('input').value = value;
+    list.appendChild(row);
+}
+
+function addDefaultGridColumns(sectionId, questionId) {
+    const defaults = ['Column 1', 'Column 2'];
+    defaults.forEach((label) => addGridColumnOption(sectionId, questionId, label));
 }
 
 function updateExistingOptionsNavigation(sectionId, questionId, type) {
@@ -1514,11 +1934,25 @@ function validateForm() {
             if (questionType && ['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionType.value)) {
                 const options = question.querySelectorAll('input[name*="[options]"]');
                 const filledOptions = Array.from(options).filter(opt => opt.value.trim());
-                if (filledOptions.length < 2) {
-                    errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe ${questionType.value} harus memiliki minimal 2 pilihan`);
+                const isGrid = questionType.value === 'multiple_choice_grid';
+                const minRows = isGrid ? 1 : 2;
+
+                if (filledOptions.length < minRows) {
+                    errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe ${questionType.value} harus memiliki minimal ${minRows} pilihan`);
                     options.forEach(opt => markFieldError(opt));
                 } else {
                     options.forEach(opt => markFieldValid(opt));
+                }
+
+                if (isGrid) {
+                    const columns = question.querySelectorAll('input[name*="[grid_columns]"]');
+                    const filledColumns = Array.from(columns).filter(col => col.value.trim());
+                    if (filledColumns.length < 1) {
+                        errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe multiple_choice_grid harus memiliki minimal 1 kolom`);
+                        columns.forEach(col => markFieldError(col));
+                    } else {
+                        columns.forEach(col => markFieldValid(col));
+                    }
                 }
             }
         });
@@ -1881,6 +2315,163 @@ function normalizeFormIndexesBeforeSubmit() {
         });
     });
 }
+
+window.toggleKompetensiBlock = function(sectionId, checkbox) {
+    const infoDiv = document.getElementById(`kompetensi_info_${sectionId}`);
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    const questionsContainer = document.getElementById(`questionsContainer-${sectionId}`);
+    
+    if (checkbox.checked) {
+        // KOMPETENSI MODE ON
+        infoDiv.classList.remove('hidden');
+        
+        // Sembunyikan tombol "Tambah Pertanyaan" di level section
+        if (section) {
+            const addBtns = section.querySelectorAll('button[onclick*="addQuestion"][type="button"]');
+            addBtns.forEach(btn => {
+                if (btn.textContent.includes('Tambah Pertanyaan')) {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+        
+        // Pastikan hanya ada 1 pertanyaan
+        const questions = questionsContainer.querySelectorAll('.question-item');
+        if (questions.length === 0) {
+            addQuestion(sectionId);
+        } else if (questions.length > 1) {
+            for (let i = 1; i < questions.length; i++) {
+                questions[i].remove();
+            }
+        }
+        
+        setTimeout(() => {
+            const question = questionsContainer.querySelector('.question-item');
+            if (question) {
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'none';
+
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect) {
+                    if (!typeSelect.hasAttribute('data-original-html')) {
+                        typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
+                    }
+                    const allowedTypes = ['radio', 'multiple_choice_grid'];
+                    let newHtml = '';
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
+                    Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
+                        if (allowedTypes.includes(opt.value)) {
+                            newHtml += opt.outerHTML;
+                        }
+                    });
+                    typeSelect.innerHTML = newHtml;
+                    if (!allowedTypes.includes(typeSelect.value)) {
+                        typeSelect.value = 'radio';
+                        const qId = question.getAttribute('data-question-id');
+                        handleQuestionTypeChange(sectionId, qId, 'radio');
+                    }
+                }
+
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'block';
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'none';
+                        const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
+                        if (list && list.children.length === 0) {
+                            const existingLines = questionTextarea.value.split('\n').filter(l => l.trim());
+                            if (existingLines.length > 0) {
+                                existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
+                            } else {
+                                addIndikatorItem(sectionId, qId);
+                            }
+                        }
+                    }
+                }
+            }
+        }, 100);
+
+    } else {
+        infoDiv.classList.add('hidden');
+
+        // Tampilkan kembali tombol "Tambah Pertanyaan" di level section
+        if (section) {
+            const addBtns = section.querySelectorAll('button[onclick*="addQuestion"][type="button"]');
+            addBtns.forEach(btn => {
+                if (btn.textContent.includes('Tambah Pertanyaan')) {
+                    btn.style.display = 'inline-block';
+                }
+            });
+        }
+
+        setTimeout(() => {
+            const questions = questionsContainer.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'flex';
+
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
+                    const currentVal = typeSelect.value;
+                    typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
+                    typeSelect.value = currentVal;
+                }
+
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'none';
+                    // Tampilkan kembali textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'block';
+                    }
+                }
+            });
+        }, 100);
+    }
+}
+
+window.addIndikatorItem = function(sectionId, questionId, value = '') {
+    const list = document.getElementById(`indikatorList-${sectionId}-${questionId}`);
+    if (!list) return;
+    const index = list.children.length + 1;
+    const html = `
+        <div class="flex items-center gap-2 indikator-item mb-2">
+            <span class="text-xs text-gray-500 w-5">${index}.</span>
+            <input type="text" class="flex-1 text-xs border border-gray-300 rounded px-2 py-1 indikator-input" placeholder="Indikator ${index}" value="${value.replace(/"/g, '&quot;')}" oninput="syncIndikators(${sectionId}, ${questionId})">
+            <button type="button" onclick="this.parentElement.remove(); syncIndikators(${sectionId}, ${questionId});" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    list.insertAdjacentHTML('beforeend', html);
+    syncIndikators(sectionId, questionId);
+};
+
+window.syncIndikators = function(sectionId, questionId) {
+    const list = document.getElementById(`indikatorList-${sectionId}-${questionId}`);
+    if (!list) return;
+    const inputs = list.querySelectorAll('.indikator-input');
+    const values = Array.from(inputs).map(input => input.value.trim()).filter(v => v !== '');
+    
+    // Update the hidden textarea
+    const textarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${questionId}][question]"]`);
+    if (textarea) {
+        textarea.value = values.join('\\n');
+    }
+    
+    // Re-number the indicators
+    Array.from(list.children).forEach((child, idx) => {
+        const numSpan = child.querySelector('span');
+        if (numSpan) numSpan.textContent = (idx + 1) + '.';
+        const input = child.querySelector('input');
+        if (input && !input.value) input.placeholder = 'Indikator ' + (idx + 1);
+    });
+};
 </script>
 @endpush
 

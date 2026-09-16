@@ -1,6 +1,6 @@
 <!-- ====== Footer Section Start -->
 <footer
-      class="wow fadeInUp relative z-10 bg-[#090E34] pt-20 lg:pt-[100px]"
+  class="wow fadeInUp relative z-10 bg-[#090E34] pt-12 lg:pt-16 theme-footer"
       data-wow-delay=".15s"
     >
       <div class="container">
@@ -17,13 +17,13 @@
                   class="max-w-full"
                 />
               </a>
-              <p class="mb-8 max-w-[270px] text-base text-gray-7">
+              <p class="mb-8 max-w-[270px] text-base theme-footer-muted">
                 Pelaksanaan survei Tracer Study bagi lulusan dan pengguna lulusan di instansi tempat lulusan bekerja.
               </p>
               <div class="-mx-3 flex items-center">
                 <a
                   href="https://www.facebook.com/stis.ac.id"
-                  class="px-3 text-gray-7 hover:text-white"
+                  class="px-3 theme-footer-link"
                 >
                   <svg
                     width="22"
@@ -40,7 +40,7 @@
                 </a>
                 <a
                   href="https://x.com/PolstatSTIS"
-                  class="px-3 text-gray-7 hover:text-white"
+                  class="px-3 theme-footer-link"
                 >
                   <svg
                     width="22"
@@ -57,7 +57,7 @@
                 </a>
                 <a
                   href="https://www.instagram.com/polstatstis/"
-                  class="px-3 text-gray-7 hover:text-white"
+                  class="px-3 theme-footer-link"
                 >
                   <svg
                     width="22"
@@ -80,7 +80,7 @@
                 </a>
                 <a
                   href="https://id.linkedin.com/school/politeknik-statistika-stis/"
-                  class="px-3 text-gray-7 hover:text-white"
+                  class="px-3 theme-footer-link"
                 >
                   <svg
                     width="22"
@@ -102,7 +102,7 @@
           
           <div class="w-full px-4 lg:w-4/12">
             <div class="mb-10 w-full">
-              <h4 class="mb-9 text-lg font-semibold text-white">
+              <h4 class="mb-9 text-lg font-semibold theme-text-primary">
                 Lokasi Kami
               </h4>
               <div class="mb-6">
@@ -123,14 +123,14 @@
 
           <div class="w-full px-4 lg:w-4/12">
             <div class="mb-10 w-full">
-              <h4 class="mb-9 text-lg font-semibold text-white">
+              <h4 class="mb-9 text-lg font-semibold theme-text-primary">
                 Tautan Terkait
               </h4>
               <ul>
                 <li>
                   <a
                     href="https://www.bps.go.id/"
-                    class="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    class="mb-3 inline-block text-base theme-footer-link"
                   >
                     Badan Pusat Statistik
                   </a>
@@ -138,7 +138,7 @@
                 <li>
                   <a
                     href="https://www.stis.ac.id/"
-                    class="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    class="mb-3 inline-block text-base theme-footer-link"
                   >
                     Politeknik Statistika STIS
                   </a>
@@ -146,7 +146,7 @@
                 <li>
                   <a
                     href="https://spmb.stis.ac.id/"
-                    class="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    class="mb-3 inline-block text-base theme-footer-link"
                   >
                     SPMB STIS
                   </a>
@@ -154,7 +154,7 @@
                 <li>
                   <a
                     href="https://spm.stis.ac.id/"
-                    class="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    class="mb-3 inline-block text-base theme-footer-link"
                   >
                     SPM STIS
                   </a>
@@ -162,7 +162,7 @@
                 <li>
                   <a
                     href="https://pppm.stis.ac.id/"
-                    class="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    class="mb-3 inline-block text-base theme-footer-link"
                   >
                     PPPM STIS
                   </a>
@@ -175,7 +175,7 @@
       </div>
 
       <div
-        class="mt-12 border-t border-[#8890A4] border-opacity-40 py-8 lg:mt-[60px]"
+        class="mt-12 border-t border-[#8890A4] border-opacity-40 py-8 lg:mt-[60px] theme-border"
       >
         <div class="container">
           <div class="-mx-4 flex flex-wrap">
@@ -207,13 +207,13 @@
             </div>
             <div class="w-full px-4 md:w-1/3 lg:w-1/2">
               <div class="my-1 flex justify-center md:justify-end">
-                <p class="text-base text-gray-7">
+                <p class="text-base theme-footer-muted">
                   Designed and Developed by
                   <a
                     href="https://spm.stis.ac.id/"
                     rel="nofollow noopner"
                     target="_blank"
-                    class="text-gray-1 hover:underline"
+                    class="theme-footer-link hover:underline"
                   >
                     SPM STIS
                   </a>

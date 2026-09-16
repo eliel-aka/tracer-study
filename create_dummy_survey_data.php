@@ -105,24 +105,9 @@ try {
         'id_survey' => $survey->id,
         'block_id' => $block1->id,
         'pertanyaan' => 'Jenis Kelamin',
-        'deskripsi_pertanyaan' => 'Pilih jenis kelamin Anda',
-        'tipe' => 'radio',
+        'deskripsi_pertanyaan' => 'Jenis kelamin responden',
+        'tipe' => 'text',
         'is_required' => true,
-        'urutan' => 2
-    ]);
-
-    // Options for Jenis Kelamin
-    TemplateJawaban::create([
-        'id_template_pertanyaan' => $q2->id,
-        'pilihan_jawaban' => 'Laki-laki',
-        'navigation_target' => null, // normal flow
-        'urutan' => 1
-    ]);
-
-    TemplateJawaban::create([
-        'id_template_pertanyaan' => $q2->id,
-        'pilihan_jawaban' => 'Perempuan',
-        'navigation_target' => null, // normal flow
         'urutan' => 2
     ]);
 

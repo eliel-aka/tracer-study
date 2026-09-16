@@ -33,13 +33,17 @@ class SurveyBlock extends Model
         'is_terminal',
         'navigation_type',
         'target_section_id',
-        'metadata'
+        'metadata',
+        'is_kompetensi_mode',
+        'kompetensi_config'
     ];
 
     protected $casts = [
         'is_terminal' => 'boolean',
         'urutan' => 'integer',
-        'metadata' => 'array'
+        'metadata' => 'array',
+        'is_kompetensi_mode' => 'boolean',
+        'kompetensi_config' => 'array'
     ];
 
     /**

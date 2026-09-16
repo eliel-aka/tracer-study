@@ -5,7 +5,7 @@
 
     <!-- table 1 -->
     <div class="flex flex-wrap -mx-3">
-        <div class="flex-none w-full max-w-full px-3">
+        <div class="flex-none w-full max-w-full px-3 min-w-0">
             <div class="font-bold">
                 @if(session('success'))
                 <div class="bg-green-100 border-t-4 border-green-500 rounded-b text-green-900 px-4 py-3 shadow-md alert alert-success mb-6" role="alert">
@@ -37,39 +37,50 @@
                 @endif
             </div>
 
-            <div class="relative flex flex-col min-w-0 mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border">
+            <div class="relative flex flex-col min-w-0 w-full max-w-full mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border overflow-hidden">
 
                 <!-- HEADER: Stack di mobile, Row di desktop -->
                 <div class="p-4 pb-0 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h6 class="dark:text-white text-sm font-bold">Daftar User Lulusan</h6>
+                    <h6 class="dark:text-white text-sm font-bold">Daftar User Pengguna Lulusan</h6>
                     
-                    <!-- Search Bar: Full width di mobile -->
-                    <div class="relative flex items-center w-full md:w-auto">
-                        <div class="relative flex items-stretch w-full">
-                            <form action="{{ route('admin.penggunaLulusan.index') }}" method="GET" class="flex items-center w-full">
+                    <!-- Search Bar + Filter -->
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <form action="{{ route('admin.penggunaLulusan.index') }}" method="GET" class="flex items-center gap-2 w-full md:w-auto">
+                            <div class="relative flex items-stretch flex-1 md:flex-none">
                                 <span class="text-sm ease leading-5.6 absolute z-50 flex h-full items-center whitespace-nowrap rounded-lg rounded-tr-none rounded-br-none border border-r-0 border-transparent bg-transparent py-2 px-2.5 text-center font-normal text-slate-500 transition-all">
                                     <i class="fas fa-search"></i>
                                 </span>
                                 <input type="text" name="search" value="{{ request('search') }}"
                                     class="pl-9 w-full text-xs focus:shadow-primary-outline ease leading-5.6 relative block min-w-0 flex-auto rounded-lg border border-solid border-gray-300 dark:bg-slate-850 dark:text-white bg-white bg-clip-padding py-1.5 pr-3 text-gray-700 transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:transition-shadow"
                                     placeholder="Search nama atau NIP..." />
-                                @if(request('search'))
-                                    <a href="{{ route('admin.penggunaLulusan.index') }}" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 mr-2 md:mr-0 md:static md:transform-none ml-2">
-                                        <i class="fas fa-times"></i>
-                                    </a>
-                                @endif
-                            </form>
-                        </div>
+                            </div>
+                            <select name="status_data" onchange="this.form.submit()"
+                                class="text-xs rounded-lg border border-solid border-gray-300 dark:bg-slate-850 dark:text-white bg-white py-1.5 px-2 text-gray-700 focus:border-blue-500 focus:outline-none">
+                                <option value="">Semua Status</option>
+                                <option value="lengkap" {{ request('status_data') == 'lengkap' ? 'selected' : '' }}>Data Lengkap</option>
+                                <option value="tidak_lengkap" {{ request('status_data') == 'tidak_lengkap' ? 'selected' : '' }}>Data Tidak Lengkap</option>
+                            </select>
+                            @if(request('search') || request('status_data'))
+                                <a href="{{ route('admin.penggunaLulusan.index') }}" class="text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            @endif
+                        </form>
                     </div>
                 </div>
 
-                <!-- BUTTONS: Grid 2 kolom di mobile, Flex di desktop -->
+                <!-- BUTTONS -->
                 @if(!auth()->user()->hasRole('supervisor'))
-                <div class="px-4 py-2 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent grid grid-cols-2 sm:grid-cols-4 gap-2 md:flex md:items-center md:gap-2 md:flex-wrap">
+                <div class="px-4 py-2 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent flex flex-wrap items-center gap-2">
 
-                    <button type="button" id="openModal"
-                        class="inline-block w-full px-4 py-2 md:w-auto md:px-8 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
-                        <i class="fas fa-file-upload mr-2"></i> <span class="hidden sm:inline">Import Excel</span><span class="sm:hidden">Import</span>
+                    <a href="{{ route('admin.penggunaLulusan.create') }}" class="w-full sm:w-auto">
+                        <button type="button" class="inline-flex justify-center items-center w-full px-4 py-2 font-bold text-white transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
+                            <i class="fas fa-plus mr-2"></i> Tambah Manual
+                        </button>
+                    </a>
+
+                    <button type="button" id="openModal" class="inline-flex justify-center items-center w-full sm:w-auto px-4 py-2 font-bold text-white transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
+                        <i class="fas fa-file-upload mr-2"></i> Import Data
                     </button>
 
                     <!-- pop up modal import  -->
@@ -94,27 +105,25 @@
                         </div>
                     </form>
 
-                    <a href="{{ route('admin.penggunaLulusan.export') }}" class="block w-full md:w-auto">
-                        <button type="button"
-                            class="inline-block w-full px-4 py-2 md:px-8 md:py-2 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-green-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
-                            <i class="fas fa-file-excel mr-2"></i> <span class="hidden sm:inline">Export Excel</span><span class="sm:hidden">Export</span>
+                    <a href="{{ route('admin.penggunaLulusan.export') }}" class="w-full sm:w-auto">
+                        <button type="button" class="inline-flex justify-center items-center w-full px-4 py-2 font-bold text-white transition-all ease-in bg-green-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
+                            <i class="fas fa-file-excel mr-2"></i> Export Data
                         </button>
                     </a>
 
-                    <a href="{{ route('admin.penggunaLulusan.create') }}" class="block w-full md:w-auto col-span-2 sm:col-span-1">
-                        <button type="button"
-                            class="inline-block w-full px-4 py-2 md:px-8 md:py-2 font-bold leading-normal text-center text-white align-middle transition-all ease-in bg-blue-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
-                            <i class="fas fa-plus mr-2"></i> <span class="hidden sm:inline">Tambah Pengguna Lulusan</span><span class="sm:hidden">Tambah</span>
+                    <a href="{{ route('admin.penggunaLulusan.template') }}" class="w-full sm:w-auto">
+                        <button type="button" class="inline-flex justify-center items-center w-full px-4 py-2 font-bold text-white transition-all ease-in bg-green-500 border-0 rounded-lg shadow-md cursor-pointer text-xs tracking-tight-rem hover:shadow-xs hover:-translate-y-px active:opacity-85">
+                            <i class="fas fa-download mr-2"></i> Template Excel
                         </button>
                     </a>
 
                 </div>
                 @endif
 
-                <div class="flex-auto px-0 pt-0 pb-2">
-                    <div class="p-0">
+                <div class="flex-auto px-0 pt-0 pb-2 min-w-0 w-full max-w-full">
+                    <div class="p-0 min-w-0 w-full max-w-full">
                         <!-- TABEL DENGAN SCROLL HORIZONTAL -->
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto w-full max-w-full min-w-0 block">
                             <table class="items-center w-full mb-0 align-top border-collapse dark:border-white/40 text-slate-500 min-w-[900px]"> <!-- min-w-[900px] agar tabel bisa di-scroll -->
                                 <thead class="align-bottom">
                                     <tr>
@@ -135,6 +144,8 @@
                                         <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
                                             No HP</th>
                                         <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
+                                            Status Data</th>
+                                        <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
                                             Aksi</th>
                                     </tr>
                                 </thead>
@@ -146,7 +157,10 @@
                                                 <h6 class="mb-0 text-xs leading-normal dark:text-white font-semibold whitespace-nowrap">{{ $penggunaLulusan->nama }}</h6>
                                             </td>
                                             <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
-                                                <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $penggunaLulusan->nip }}</span>
+                                                <div class="flex flex-col text-xs leading-tight text-slate-400 dark:text-white dark:opacity-80 whitespace-nowrap">
+                                                    <span>Baru: {{ $penggunaLulusan->nip_baru ?? '-' }}</span>
+                                                    <span>Lama: {{ $penggunaLulusan->nip_lama ?? '-' }}</span>
+                                                </div>
                                             </td>
                                             <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                                 <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $penggunaLulusan->email }}</span>
@@ -162,6 +176,13 @@
                                             </td>
                                             <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                                 <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $penggunaLulusan->no_hp }}</span>
+                                            </td>
+                                            <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
+                                                @if($penggunaLulusan->status_data === 'Data Lengkap')
+                                                    <span class="bg-gradient-to-tl from-emerald-500 to-teal-400 px-2.5 text-xs rounded-1.8 py-1.4 inline-block whitespace-nowrap text-center align-baseline font-bold uppercase leading-none text-white">Lengkap</span>
+                                                @else
+                                                    <span class="bg-gradient-to-tl from-red-600 to-red-400 px-2.5 text-xs rounded-1.8 py-1.4 inline-block whitespace-nowrap text-center align-baseline font-bold uppercase leading-none text-white">Tidak Lengkap</span>
+                                                @endif
                                             </td>
                                             <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                                 <div class="flex items-center justify-center gap-2">

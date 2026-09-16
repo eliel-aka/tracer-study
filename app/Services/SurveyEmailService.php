@@ -9,6 +9,7 @@ use App\Models\SurveyUser;
 use App\Mail\SendEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class SurveyEmailService
@@ -55,9 +56,14 @@ class SurveyEmailService
                 'survey_description' => $survey->deskripsi,
                 'survey_start_date' => $survey->tanggal_mulai,
                 'survey_end_date' => $survey->tanggal_selesai,
+                'attachments' => $template->attachments,
             ];
 
             Mail::to($user->email)->send(new SendEmail($emailData));
+
+            SurveyUser::where('user_id', $user->id)
+                ->where('survey_id', $survey->id)
+                ->update(['invitation_email_sent_at' => now()]);
 
             Log::info("Survey invitation sent to {$user->email} for survey: {$survey->nama}");
             
@@ -110,9 +116,17 @@ class SurveyEmailService
                 'survey_description' => $survey->deskripsi,
                 'survey_start_date' => $survey->tanggal_mulai,
                 'survey_end_date' => $survey->tanggal_selesai,
+                'attachments' => $template->attachments,
             ];
 
             Mail::to($user->email)->send(new SendEmail($emailData));
+
+            SurveyUser::where('user_id', $user->id)
+                ->where('survey_id', $survey->id)
+                ->update([
+                    'last_reminder_email_sent_at' => now(),
+                    'reminder_email_count' => \Illuminate\Support\Facades\DB::raw('reminder_email_count + 1')
+                ]);
 
             Log::info("Survey reminder sent to {$user->email} for survey: {$survey->nama}");
             
@@ -147,6 +161,7 @@ class SurveyEmailService
                 'body' => $body,
                 'survey_name' => $survey->nama,
                 'survey_description' => $survey->deskripsi,
+                'attachments' => $template->attachments,
             ];
 
             Mail::to($user->email)->send(new SendEmail($emailData));
@@ -331,22 +346,43 @@ class SurveyEmailService
     /**
      * Update email template
      */
-    public function updateTemplate(string $type, string $subject, string $body)
+    public function updateTemplate(string $type, string $subject, string $body, array $attachmentPaths = [], array $removeAttachments = [])
     {
         try {
             $template = TemplateEmail::where('type', $type)->first();
             
+            $data = [
+                'subject' => $subject,
+                'body' => $body
+            ];
+
+            $currentAttachments = $template ? ($template->attachments ?? []) : [];
+
+            // Remove requested attachments
+            if (!empty($removeAttachments)) {
+                $updatedAttachments = [];
+                foreach ($currentAttachments as $path) {
+                    if (in_array($path, $removeAttachments)) {
+                        Storage::disk('public')->delete($path);
+                    } else {
+                        $updatedAttachments[] = $path;
+                    }
+                }
+                $currentAttachments = $updatedAttachments;
+            }
+
+            // Add new attachments
+            if (!empty($attachmentPaths)) {
+                $currentAttachments = array_merge($currentAttachments, $attachmentPaths);
+            }
+
+            $data['attachments'] = $currentAttachments;
+
             if ($template) {
-                $template->update([
-                    'subject' => $subject,
-                    'body' => $body
-                ]);
+                $template->update($data);
             } else {
-                TemplateEmail::create([
-                    'type' => $type,
-                    'subject' => $subject,
-                    'body' => $body
-                ]);
+                $data['type'] = $type;
+                TemplateEmail::create($data);
             }
 
             return true;

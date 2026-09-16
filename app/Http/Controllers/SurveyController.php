@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\LulusanImport;
 use App\Imports\PenggunaLulusanImport;
@@ -69,25 +71,32 @@ class SurveyController extends Controller
             'nama' => 'required|string|max:255',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
-            'type_survei' => 'required|string',
+            'type_survei' => 'required|in:lulusan,penggunaLulusan,pengguna_lulusan',
             'deskripsi' => 'nullable|string',
             'sections' => 'nullable|array',
             'sections.*.section_name' => 'required_with:sections|string|max:255',
             'sections.*.section_description' => 'nullable|string|max:500',
             'sections.*.navigation_type' => 'nullable|string',
+            'sections.*.is_kompetensi' => 'nullable|boolean',
+            'sections.*.pertanyaan_utama' => 'nullable|string|max:500',
             'sections.*.questions' => 'required_with:sections|array|min:1',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date,gaji',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
+            'sections.*.questions.*.min_gaji' => 'nullable|numeric|min:0',
+            'sections.*.questions.*.is_analytic_table' => 'nullable|boolean',
             'sections.*.questions.*.options' => 'nullable|array',
             'sections.*.questions.*.options.*' => 'string|max:255',
+            'sections.*.questions.*.grid_columns' => 'nullable|array|max:10',
+            'sections.*.questions.*.grid_columns.*' => 'string|max:100',
             'sections.*.questions.*.option_navigation' => 'nullable|array',
             'sections.*.questions.*.option_navigation.*' => 'string|max:255',
         ]);
 
         try {
+            $this->validateCompetencyBlocks($validatedData['sections'] ?? []);
             DB::beginTransaction();
 
             // Create the survey
@@ -95,8 +104,8 @@ class SurveyController extends Controller
                 'nama' => $validatedData['nama'],
                 'tanggal_mulai' => $validatedData['tanggal_mulai'],
                 'tanggal_selesai' => $validatedData['tanggal_selesai'],
-                'type_survei' => $validatedData['type_survei'],
-                'deskripsi' => $validatedData['deskripsi'],
+                'type_survei' => $this->normalizeSurveyTypeInput($validatedData['type_survei']),
+                'deskripsi' => $validatedData['deskripsi'] ?? null,
                 'created_by' => Auth::id(),
             ]);
 
@@ -104,6 +113,9 @@ class SurveyController extends Controller
             if (isset($validatedData['sections']) && is_array($validatedData['sections'])) {
                 $this->createFormBuilderContent($survey, $validatedData['sections']);
             }
+
+            // Always ensure Block 1 is the identity block populated with respondent profile attributes
+            \App\Services\RespondentAttributeService::ensureIdentityBlock($survey);
 
             DB::commit();
 
@@ -165,6 +177,8 @@ class SurveyController extends Controller
             $kode = 'BLOCK_' . str_pad(($sectionIndex + 1), 2, '0', STR_PAD_LEFT);
             $blockNumber = $sectionIndex + 1;
 
+            $isIdentityBlock = (!empty($sectionData['metadata']['is_identity_block'])) || (stripos($sectionData['section_name'] ?? '', 'identitas') !== false);
+
             $blockData = [
                 'survey_id' => $survey->id,
                 'kode' => $kode,
@@ -174,6 +188,11 @@ class SurveyController extends Controller
                 'navigation_type' => $sectionData['navigation_type'] ?? 'next',
                 'is_terminal' => false,
                 'target_section_id' => null, // Will be updated in PASS 3
+                'metadata' => [
+                    'is_kompetensi' => isset($sectionData['is_kompetensi']) && $sectionData['is_kompetensi'] == '1',
+                    'pertanyaan_utama' => $sectionData['pertanyaan_utama'] ?? '',
+                    'is_identity_block' => $isIdentityBlock,
+                ],
                 'created_at' => now(),
                 'updated_at' => now()
             ];
@@ -206,6 +225,21 @@ class SurveyController extends Controller
                 // Reindex questions array to ensure sequential order (0, 1, 2, 3...)
                 $questions = array_values($sectionData['questions']);
                 
+                $isKompetensi = isset($block->metadata['is_kompetensi']) && $block->metadata['is_kompetensi'];
+
+                if ($isKompetensi && count($questions) > 0) {
+                    $baseQuestionData = $questions[0];
+                    $indikators = array_filter(array_map('trim', explode("\n", $baseQuestionData['question'])));
+                    
+                    $expandedQuestions = [];
+                    foreach ($indikators as $ind) {
+                        $qData = $baseQuestionData;
+                        $qData['question'] = $ind;
+                        $expandedQuestions[] = $qData;
+                    }
+                    $questions = $expandedQuestions;
+                }
+
                 foreach ($questions as $questionIndex => $questionData) {
                     $question = \App\Models\TemplatePertanyaan::create([
                         'id_survey' => $survey->id,
@@ -215,7 +249,10 @@ class SurveyController extends Controller
                         'tipe' => $questionData['type'],
                         'urutan' => $questionIndex + 1,
                         'is_required' => isset($questionData['required']) ? (bool)$questionData['required'] : false,
-                        'visualisasi' => $questionData['visualization'] ?? 'bar',
+                        'visualisasi' => $this->normalizeVisualizationValue($questionData['visualization'] ?? null),
+                        'is_analytic_table' => $isKompetensi ? true : (isset($questionData['is_analytic_table']) ? (bool)$questionData['is_analytic_table'] : false),
+                        'grid_columns' => $this->normalizeGridColumns($questionData),
+                        'min_gaji' => $questionData['min_gaji'] ?? null,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
@@ -353,6 +390,25 @@ class SurveyController extends Controller
         ]);
     }
 
+    private function normalizeGridColumns(array $questionData): ?array
+    {
+        if (($questionData['type'] ?? '') !== 'multiple_choice_grid') {
+            return null;
+        }
+
+        $columns = collect($questionData['grid_columns'] ?? [])
+            ->map(fn ($column) => is_string($column) ? trim($column) : '')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (count($columns) >= 1) {
+            return $columns;
+        }
+
+        return ['Sangat Tidak Setuju', 'Tidak Setuju', 'Netral', 'Setuju', 'Sangat Setuju'];
+    }
+
     /**
      * Simple navigation resolver - Clean approach using pre-created blocks
      */
@@ -444,11 +500,15 @@ class SurveyController extends Controller
         ]);
 
         try {
-            // Step 1: Completely delete existing survey data
-            $this->deleteExistingSurveyData($survey->id);
+            if ($this->surveyHasResponses($survey->id)) {
+                $this->syncFormBuilderContentPreservingResponses($survey, $sections);
+            } else {
+                // Step 1: Completely delete existing survey data
+                $this->deleteExistingSurveyData($survey->id);
 
-            // Step 2: Create new content using the same two-pass method as create
-            $this->createFormBuilderContent($survey, $sections);
+                // Step 2: Create new content using the same two-pass method as create
+                $this->createFormBuilderContent($survey, $sections);
+            }
 
             Log::info('Form builder content updated successfully', [
                 'survey_id' => $survey->id
@@ -464,6 +524,226 @@ class SurveyController extends Controller
         }
     }
 
+    private function syncFormBuilderContentPreservingResponses($survey, $sections)
+    {
+        Log::info('Syncing form builder content with ID matching', [
+            'survey_id' => $survey->id,
+            'sections_count' => count($sections)
+        ]);
+
+        $sections = array_values($sections);
+        
+        // 1. Get all current block IDs for this survey
+        $currentBlockIds = \App\Models\SurveyBlock::where('survey_id', $survey->id)->pluck('id')->toArray();
+        $newBlockIdsFromRequest = collect($sections)->pluck('id')->filter()->map(fn($id) => (int)$id)->toArray();
+        
+        // Delete blocks that are no longer in the request
+        $blocksToDelete = array_diff($currentBlockIds, $newBlockIdsFromRequest);
+        if (!empty($blocksToDelete)) {
+            \App\Models\SurveyBlock::whereIn('id', $blocksToDelete)->delete();
+            Log::info('Deleted blocks no longer in survey', ['block_ids' => $blocksToDelete]);
+        }
+
+        // Temporarily clear codes of existing blocks to avoid unique constraint violations during reordering/insertion
+        // Kode length is 20, so we use a short prefix
+        \App\Models\SurveyBlock::withTrashed()->where('survey_id', $survey->id)->update([
+            'kode' => DB::raw("CONCAT('T', id)")
+        ]);
+
+        $syncedBlocks = [];
+
+        // First pass: Create or update blocks
+        foreach ($sections as $sectionIndex => $sectionData) {
+            $blockId = isset($sectionData['id']) && !empty($sectionData['id']) ? (int)$sectionData['id'] : null;
+            $block = $blockId ? \App\Models\SurveyBlock::find($blockId) : null;
+
+            $isIdentityBlock = (!empty($sectionData['metadata']['is_identity_block'])) || (!empty($block->metadata['is_identity_block'])) || (stripos($sectionData['section_name'] ?? '', 'identitas') !== false);
+
+            $blockData = [
+                'survey_id' => $survey->id,
+                'kode' => 'BLOCK_' . str_pad(($sectionIndex + 1), 2, '0', STR_PAD_LEFT),
+                'nama' => $sectionData['section_name'],
+                'deskripsi' => $sectionData['section_description'] ?? '',
+                'urutan' => $sectionIndex + 1,
+                'navigation_type' => $sectionData['navigation_type'] ?? 'next',
+                'is_terminal' => false,
+                'target_section_id' => null,
+                'metadata' => [
+                    'is_kompetensi' => isset($sectionData['is_kompetensi']) && $sectionData['is_kompetensi'] == '1',
+                    'pertanyaan_utama' => $sectionData['pertanyaan_utama'] ?? '',
+                    'is_identity_block' => $isIdentityBlock,
+                ],
+                'updated_at' => now(),
+            ];
+
+            if ($block) {
+                $block->update($blockData);
+            } else {
+                $block = \App\Models\SurveyBlock::create($blockData + ['created_at' => now()]);
+            }
+
+            $syncedBlocks[$sectionIndex] = $block;
+        }
+
+        // Second pass: Update navigation and sync questions
+        foreach ($sections as $sectionIndex => $sectionData) {
+            $block = $syncedBlocks[$sectionIndex] ?? null;
+            if (!$block) continue;
+
+            // Update navigation target
+            $navigationType = $sectionData['navigation_type'] ?? 'next';
+            $targetSectionId = null;
+
+            if ($navigationType === 'next') {
+                $targetSectionId = $syncedBlocks[$sectionIndex + 1]->id ?? null;
+            } elseif ($navigationType === 'end') {
+                $targetSectionId = null;
+            } elseif (strpos($navigationType, 'block_') === 0) {
+                $targetIndex = (int) substr($navigationType, 6) - 1;
+                $targetSectionId = $syncedBlocks[$targetIndex]->id ?? null;
+            }
+
+            $block->update([
+                'target_section_id' => $targetSectionId,
+                'is_terminal' => $navigationType === 'end',
+            ]);
+
+            // Sync questions in this block
+            $questionsData = array_values($sectionData['questions'] ?? []);
+            
+            $isKompetensi = isset($block->metadata['is_kompetensi']) && $block->metadata['is_kompetensi'];
+
+            if ($isKompetensi && count($questionsData) > 0) {
+                $baseQuestionData = $questionsData[0];
+                $indikators = array_filter(array_map('trim', explode("\n", $baseQuestionData['question'])));
+                
+                $existingQuestions = \App\Models\TemplatePertanyaan::where('block_id', $block->id)->orderBy('urutan')->get()->toArray();
+                
+                $expandedQuestions = [];
+                foreach ($indikators as $idx => $ind) {
+                    $qData = $baseQuestionData;
+                    $qData['question'] = $ind;
+                    
+                    $matchedId = null;
+                    $matchIndex = -1;
+                    
+                    // Match by exact text first
+                    foreach ($existingQuestions as $eIdx => $eq) {
+                        if ($eq && trim($eq['pertanyaan']) === $ind) {
+                            $matchedId = $eq['id'];
+                            $matchIndex = $eIdx;
+                            break;
+                        }
+                    }
+                    
+                    // Fallback to index
+                    if (!$matchedId && isset($existingQuestions[$idx]) && $existingQuestions[$idx]) {
+                        $matchedId = $existingQuestions[$idx]['id'];
+                        $matchIndex = $idx;
+                    }
+                    
+                    if ($matchedId) {
+                        $qData['id'] = $matchedId;
+                        $existingQuestions[$matchIndex] = null; // Mark as used
+                    } else {
+                        unset($qData['id']); // New indicator
+                    }
+                    
+                    $expandedQuestions[] = $qData;
+                }
+                $questionsData = $expandedQuestions;
+            }
+
+            // Get current question IDs in this block
+            $currentQuestionIds = \App\Models\TemplatePertanyaan::where('block_id', $block->id)->pluck('id')->toArray();
+            $newQuestionIdsFromRequest = collect($questionsData)->pluck('id')->filter()->map(fn($id) => (int)$id)->toArray();
+            
+            // Delete questions no longer in this block
+            $questionsToDelete = array_diff($currentQuestionIds, $newQuestionIdsFromRequest);
+            if (!empty($questionsToDelete)) {
+                \App\Models\TemplatePertanyaan::whereIn('id', $questionsToDelete)->delete();
+                Log::info('Deleted questions no longer in block', ['question_ids' => $questionsToDelete, 'block_id' => $block->id]);
+            }
+
+            foreach ($questionsData as $questionIndex => $questionData) {
+                $qId = isset($questionData['id']) && !empty($questionData['id']) ? (int)$questionData['id'] : null;
+                $question = $qId ? \App\Models\TemplatePertanyaan::find($qId) : null;
+
+                $questionPayload = [
+                    'id_survey' => $survey->id,
+                    'block_id' => $block->id,
+                    'pertanyaan' => $questionData['question'],
+                    'deskripsi_pertanyaan' => $questionData['description'] ?? '',
+                    'tipe' => $questionData['type'],
+                    'urutan' => $questionIndex + 1,
+                    'is_required' => isset($questionData['required']) ? (bool) $questionData['required'] : false,
+                    'visualisasi' => $this->normalizeVisualizationValue($questionData['visualization'] ?? null),
+                    'is_analytic_table' => $isKompetensi ? true : (isset($questionData['is_analytic_table']) ? (bool)$questionData['is_analytic_table'] : false),
+                    'grid_columns' => $this->normalizeGridColumns($questionData),
+                    'min_gaji' => $questionData['min_gaji'] ?? null,
+                    'updated_at' => now(),
+                ];
+
+                if ($question) {
+                    $question->update($questionPayload);
+                } else {
+                    $question = \App\Models\TemplatePertanyaan::create($questionPayload + ['created_at' => now()]);
+                }
+
+                // Sync template answers for choice types
+                if (in_array($questionData['type'], ['radio', 'checkbox', 'select', 'multiple_choice_grid']) &&
+                    isset($questionData['options']) && is_array($questionData['options'])) {
+                    
+                    $newOptions = array_filter(array_map('trim', $questionData['options']));
+                    $existingOptions = \App\Models\TemplateJawaban::where('id_template_pertanyaan', $question->id)->get();
+                    
+                    // Delete options that are no longer present
+                    foreach ($existingOptions as $existingOpt) {
+                        if (!in_array($existingOpt->pilihan_jawaban, $newOptions)) {
+                            $existingOpt->delete();
+                        }
+                    }
+                    
+                    // Add or update options
+                    foreach ($newOptions as $optionIndex => $optionText) {
+                        \App\Models\TemplateJawaban::updateOrCreate(
+                            [
+                                'id_template_pertanyaan' => $question->id,
+                                'pilihan_jawaban' => $optionText
+                            ],
+                            [
+                                'urutan' => $optionIndex + 1,
+                                'updated_at' => now()
+                            ]
+                        );
+                    }
+                } else {
+                    // Not a choice type anymore, delete all template answers
+                    \App\Models\TemplateJawaban::where('id_template_pertanyaan', $question->id)->delete();
+                }
+            }
+        }
+
+        Log::info('Preserved response data while syncing form builder content using ID matching', [
+            'survey_id' => $survey->id,
+            'blocks_synced' => count($syncedBlocks)
+        ]);
+    }
+
+    private function surveyHasResponses(int $surveyId): bool
+    {
+        // Check if there are any answers
+        $hasAnswers = \App\Models\SurveyUserJawaban::query()
+            ->join('survey_user', 'survey_user.id', '=', 'survey_user_jawaban.survey_user_id')
+            ->where('survey_user.survey_id', $surveyId)
+            ->exists();
+
+        if ($hasAnswers) return true;
+
+        // Also check if any user has started but not answered yet
+        return \App\Models\SurveyUser::where('survey_id', $surveyId)->exists();
+    }
+
     /**
      * Delete all existing survey data (blocks, questions, answers)
      */
@@ -473,7 +753,7 @@ class SurveyController extends Controller
 
         try {
             // Disable foreign key checks for clean deletion
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            Schema::disableForeignKeyConstraints();
 
             // Delete in correct order: answers -> questions -> blocks
             $deletedAnswers = DB::table('template_jawaban')
@@ -492,7 +772,7 @@ class SurveyController extends Controller
                 ->delete();
 
             // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            Schema::enableForeignKeyConstraints();
 
             Log::info('Successfully deleted existing survey data', [
                 'survey_id' => $surveyId,
@@ -502,7 +782,7 @@ class SurveyController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            Schema::enableForeignKeyConstraints();
             Log::error('Failed to delete existing survey data', [
                 'survey_id' => $surveyId,
                 'error' => $e->getMessage()
@@ -526,6 +806,8 @@ class SurveyController extends Controller
     {
         try {
             $survey = Survey::findOrFail($id);
+            \App\Services\RespondentAttributeService::ensureIdentityBlock($survey);
+            $survey->type_survei = $this->normalizeSurveyTypeInput($survey->type_survei);
             $survey->tanggal_mulai = Carbon::parse($survey->tanggal_mulai)->format("Y-m-d");
             $survey->tanggal_selesai = Carbon::parse($survey->tanggal_selesai)->format("Y-m-d");
 
@@ -541,33 +823,69 @@ class SurveyController extends Controller
             if ($surveyBlocks->count() > 0) {
                 foreach ($surveyBlocks as $index => $block) {
                     $formBuilderData[$index + 1] = [
+                        'id' => $block->id,
                         'section_name' => $block->nama,
                         'section_description' => $block->deskripsi ?? '',
                         'navigation_type' => $block->navigation_type ?? 'next',
+                        'metadata' => $block->metadata,
                         'questions' => []
                     ];
 
-                    foreach ($block->questions as $qIndex => $question) {
+                    $isKompetensi = isset($block->metadata['is_kompetensi']) && $block->metadata['is_kompetensi'];
+
+                    if ($isKompetensi && $block->questions->count() > 0) {
+                        $firstQuestion = $block->questions->first();
+                        $indikators = $block->questions->pluck('pertanyaan')->implode("\n");
+                        
                         $questionData = [
-                            'question' => $question->pertanyaan,
-                            'description' => $question->deskripsi_pertanyaan ?? '',
-                            'type' => $question->tipe,
-                            'required' => $question->is_required ? '1' : '0',
-                            'visualization' => $question->visualisasi ?? 'bar'
+                            'id' => $firstQuestion->id,
+                            'question' => $indikators,
+                            'description' => '',
+                            'type' => $firstQuestion->tipe,
+                            'required' => $firstQuestion->is_required ? '1' : '0',
+                            'visualization' => $this->normalizeVisualizationValueForForm($firstQuestion->visualisasi),
+                            'is_analytic_table' => '1',
+                            'grid_columns' => $firstQuestion->grid_columns ?? [],
+                            'min_gaji' => $firstQuestion->min_gaji,
                         ];
-
-                        if (in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
-                            $questionData['options'] = [];
-                            $questionData['option_navigation'] = [];
-                            foreach ($question->templateJawaban as $answer) {
-                                $questionData['options'][] = $answer->pilihan_jawaban;
-                                // Transform block ID back to block_x format for editing
-                                $navigationValue = $this->reverseNavigationTransform($answer->navigation_target, $surveyBlocks);
-                                $questionData['option_navigation'][] = $navigationValue;
-                            }
+                        
+                        $questionData['options'] = [];
+                        $questionData['option_navigation'] = [];
+                        foreach ($firstQuestion->templateJawaban as $answer) {
+                            $questionData['options'][] = $answer->pilihan_jawaban;
+                            $navigationValue = $this->reverseNavigationTransform($answer->navigation_target, $surveyBlocks);
+                            $questionData['option_navigation'][] = $navigationValue;
                         }
-
-                        $formBuilderData[$index + 1]['questions'][$qIndex + 1] = $questionData;
+                        
+                        $formBuilderData[$index + 1]['questions'] = [1 => $questionData];
+                        $formBuilderData[$index + 1]['pertanyaan_utama'] = $block->metadata['pertanyaan_utama'] ?? '';
+                    } else {
+                        foreach ($block->questions as $qIndex => $question) {
+                            $questionData = [
+                                'id' => $question->id,
+                                'question' => $question->pertanyaan,
+                                'description' => $question->deskripsi_pertanyaan ?? '',
+                                'type' => $question->tipe,
+                                'required' => $question->is_required ? '1' : '0',
+                                'visualization' => $this->normalizeVisualizationValueForForm($question->visualisasi),
+                                'is_analytic_table' => $question->is_analytic_table ? '1' : '0',
+                                'grid_columns' => $question->grid_columns ?? [],
+                                'min_gaji' => $question->min_gaji,
+                            ];
+    
+                            if (in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
+                                $questionData['options'] = [];
+                                $questionData['option_navigation'] = [];
+                                foreach ($question->templateJawaban as $answer) {
+                                    $questionData['options'][] = $answer->pilihan_jawaban;
+                                    // Transform block ID back to block_x format for editing
+                                    $navigationValue = $this->reverseNavigationTransform($answer->navigation_target, $surveyBlocks);
+                                    $questionData['option_navigation'][] = $navigationValue;
+                                }
+                            }
+    
+                            $formBuilderData[$index + 1]['questions'][$qIndex + 1] = $questionData;
+                        }
                     }
                 }
             }
@@ -592,25 +910,34 @@ class SurveyController extends Controller
             'nama' => 'required|string|max:255',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
-            'type_survei' => 'required|string',
+            'type_survei' => 'required|in:lulusan,penggunaLulusan,pengguna_lulusan',
             'deskripsi' => 'nullable|string',
             'sections' => 'nullable|array',
+            'sections.*.id' => 'nullable|integer',
             'sections.*.section_name' => 'required_with:sections|string|max:255',
             'sections.*.section_description' => 'nullable|string|max:500',
             'sections.*.navigation_type' => 'nullable|string',
+            'sections.*.is_kompetensi' => 'nullable|boolean',
+            'sections.*.pertanyaan_utama' => 'nullable|string|max:500',
             'sections.*.questions' => 'required_with:sections|array|min:1',
+            'sections.*.questions.*.id' => 'nullable|integer',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date,gaji',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
+            'sections.*.questions.*.min_gaji' => 'nullable|numeric|min:0',
+            'sections.*.questions.*.is_analytic_table' => 'nullable|boolean',
             'sections.*.questions.*.options' => 'nullable|array',
             'sections.*.questions.*.options.*' => 'string|max:255',
+            'sections.*.questions.*.grid_columns' => 'nullable|array|max:10',
+            'sections.*.questions.*.grid_columns.*' => 'string|max:100',
             'sections.*.questions.*.option_navigation' => 'nullable|array',
             'sections.*.questions.*.option_navigation.*' => 'string|max:255',
         ]);
 
         try {
+            $this->validateCompetencyBlocks($validatedData['sections'] ?? []);
             DB::beginTransaction();
 
             $survey = Survey::findOrFail($id);
@@ -620,14 +947,17 @@ class SurveyController extends Controller
                 'nama' => $validatedData['nama'],
                 'tanggal_mulai' => $validatedData['tanggal_mulai'],
                 'tanggal_selesai' => $validatedData['tanggal_selesai'],
-                'type_survei' => $validatedData['type_survei'],
-                'deskripsi' => $validatedData['deskripsi'],
+                'type_survei' => $this->normalizeSurveyTypeInput($validatedData['type_survei']),
+                'deskripsi' => $validatedData['deskripsi'] ?? null,
             ]);
 
             // If sections are provided, update form builder content
             if (isset($validatedData['sections']) && is_array($validatedData['sections'])) {
                 $this->updateFormBuilderContent($survey, $validatedData['sections']);
             }
+
+            // Always ensure Block 1 is the identity block populated with respondent profile attributes
+            \App\Services\RespondentAttributeService::ensureIdentityBlock($survey);
 
             DB::commit();
 
@@ -667,7 +997,7 @@ class SurveyController extends Controller
     public function details($id)
     {
         $survey = Survey::findOrFail($id);
-        $survey_user = SurveyUser::getSurveyUser($id);
+        $survey_user = SurveyUser::getUser($id);
 
         $surveyBlocks = \App\Models\SurveyBlock::with([
             'questions.templateJawaban' => function ($query) {
@@ -750,7 +1080,10 @@ class SurveyController extends Controller
                         'tipe' => $originalQuestion->tipe,
                         'urutan' => $originalQuestion->urutan,
                         'is_required' => $originalQuestion->is_required,
-                        'visualisasi' => $originalQuestion->visualisasi,
+                        'visualisasi' => $this->normalizeVisualizationValue($originalQuestion->visualisasi),
+                        'is_analytic_table' => $originalQuestion->is_analytic_table,
+                        'grid_columns' => $originalQuestion->grid_columns,
+                        'min_gaji' => $originalQuestion->min_gaji,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
@@ -874,6 +1207,121 @@ class SurveyController extends Controller
 
             return redirect()->route('admin.survey.index')->with('error', 'Gagal menghapus survey: ' . $e->getMessage());
         }
+    }
+
+    private function normalizeSurveyTypeInput(?string $surveyType): string
+    {
+        $normalized = strtolower(trim((string) $surveyType));
+
+        if ($normalized === 'pengguna_lulusan' || $normalized === 'penggunalulusan') {
+            return 'penggunaLulusan';
+        }
+
+        if ($normalized === 'lulusan') {
+            return 'lulusan';
+        }
+
+        return 'penggunaLulusan';
+    }
+
+    private function normalizeVisualizationValue($value): ?string
+    {
+        $normalized = strtolower(trim((string) $value));
+
+        return in_array($normalized, ['bar', 'pie'], true) ? $normalized : null;
+    }
+
+    private function normalizeVisualizationValueForForm($value): string
+    {
+        return $this->normalizeVisualizationValue($value) ?? '';
+    }
+
+    private function validateCompetencyBlocks(array $sections): void
+    {
+        $errors = [];
+        $allowedTypes = ['radio', 'checkbox', 'select', 'multiple_choice_grid'];
+
+        foreach ($sections as $sectionIndex => $sectionData) {
+            $isKompetensi = !empty($sectionData['is_kompetensi']) && $sectionData['is_kompetensi'] !== '0';
+            if (!$isKompetensi) {
+                continue;
+            }
+
+            $sectionLabel = 'Block ' . ($sectionIndex + 1);
+            $mainQuestion = trim((string) ($sectionData['pertanyaan_utama'] ?? ''));
+            if ($mainQuestion === '') {
+                $errors['sections.' . $sectionIndex . '.pertanyaan_utama'] = 'Pertanyaan utama pada ' . $sectionLabel . ' wajib diisi.';
+            }
+
+            $questions = array_values($sectionData['questions'] ?? []);
+            if (empty($questions)) {
+                $errors['sections.' . $sectionIndex . '.questions'] = $sectionLabel . ' harus memiliki minimal 1 pertanyaan indikator.';
+                continue;
+            }
+
+            $referenceType = null;
+            $referenceOptions = null;
+            $referenceGridColumns = null;
+
+            foreach ($questions as $questionIndex => $questionData) {
+                $questionLabel = $sectionLabel . ', pertanyaan ' . ($questionIndex + 1);
+                $type = $questionData['type'] ?? '';
+
+                if (!in_array($type, $allowedTypes, true)) {
+                    $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.type'] = $questionLabel . ' hanya boleh menggunakan tipe Radio Button, Checkbox, Dropdown, atau Multiple Choice Grid.';
+                    continue;
+                }
+
+                $indicatorLabel = trim((string) ($questionData['question'] ?? ''));
+                if ($indicatorLabel === '') {
+                    $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.question'] = $questionLabel . ' wajib memiliki label indikator.';
+                }
+
+                $options = $this->normalizeSubmittedValues($questionData['options'] ?? []);
+                $gridColumns = $this->normalizeSubmittedValues($questionData['grid_columns'] ?? []);
+
+                if ($referenceType === null) {
+                    $referenceType = $type;
+                    $referenceOptions = $options;
+                    $referenceGridColumns = $gridColumns;
+                } else {
+                    if ($type !== $referenceType) {
+                        $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.type'] = $questionLabel . ' harus menggunakan tipe yang sama dengan pertanyaan indikator pertama pada blok ini.';
+                    }
+
+                    if ($options !== $referenceOptions) {
+                        $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.options'] = $questionLabel . ' harus menggunakan template pilihan jawaban yang sama dengan pertanyaan indikator pertama pada blok ini.';
+                    }
+
+                    if ($type === 'multiple_choice_grid' && $gridColumns !== $referenceGridColumns) {
+                        $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.grid_columns'] = $questionLabel . ' harus menggunakan kolom grid yang sama dengan pertanyaan indikator pertama pada blok ini.';
+                    }
+                }
+
+                if (in_array($type, ['radio', 'checkbox', 'select'], true) && count($options) < 2) {
+                    $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.options'] = $questionLabel . ' harus memiliki minimal 2 pilihan jawaban.';
+                }
+
+                if ($type === 'multiple_choice_grid' && count($gridColumns) < 1) {
+                    $errors['sections.' . $sectionIndex . '.questions.' . $questionIndex . '.grid_columns'] = $questionLabel . ' harus memiliki minimal 1 kolom grid.';
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function normalizeSubmittedValues($values): array
+    {
+        return collect(is_array($values) ? $values : [])
+            ->map(function ($value) {
+                return is_string($value) ? trim($value) : trim((string) $value);
+            })
+            ->filter(fn ($value) => $value !== '')
+            ->values()
+            ->all();
     }
 }
 

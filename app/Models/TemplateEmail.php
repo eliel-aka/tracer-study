@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class TemplateEmail extends Model
 {
     protected $table = 'template_email';
-    protected $fillable = ['type', 'subject', 'body'];
+    protected $fillable = ['type', 'subject', 'body', 'attachments'];
+    
+    protected $casts = [
+        'attachments' => 'array'
+    ];
     
 }

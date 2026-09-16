@@ -50,6 +50,17 @@ class SendEmail extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        $attachments = [];
+        
+        if (isset($this->data['attachments']) && is_array($this->data['attachments'])) {
+            foreach ($this->data['attachments'] as $attachment) {
+                $path = storage_path('app/public/' . $attachment);
+                if (file_exists($path)) {
+                    $attachments[] = \Illuminate\Mail\Mailables\Attachment::fromPath($path);
+                }
+            }
+        }
+        
+        return $attachments;
     }
 }

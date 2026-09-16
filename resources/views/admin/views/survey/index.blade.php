@@ -4,7 +4,7 @@
     @section('content')
         <!-- table 1 -->
         <div class="flex flex-wrap -mx-3">
-            <div class="flex-none w-full max-w-full px-3">
+            <div class="flex-none w-full max-w-full px-3 min-w-0">
                 <div class="font-bold">
                     @if(session('success'))
                     <div class="bg-green-100 border-t-4 border-green-500 rounded-b text-green-900 px-4 py-3 shadow-md alert alert-success mb-6" role="alert">
@@ -36,7 +36,7 @@
                     @endif
                 </div>
 
-                <div class="relative flex flex-col min-w-0 mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border">
+                <div class="relative flex flex-col min-w-0 w-full max-w-full mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border overflow-hidden">
 
                     <!-- HEADER: Stack di mobile, Row di desktop -->
                     <div class="p-4 pb-0 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -73,10 +73,10 @@
                     </div>
                 </div>
 
-                    <div class="flex-auto px-0 pt-0 pb-2">
-                        <div class="p-0">
+                    <div class="flex-auto px-0 pt-0 pb-2 min-w-0 w-full max-w-full">
+                        <div class="p-0 min-w-0 w-full max-w-full">
                             <!-- TABEL DENGAN SCROLL HORIZONTAL -->
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto w-full max-w-full min-w-0 block">
                                 <table class="items-center w-full mb-0 align-top border-collapse dark:border-white/40 text-slate-500 min-w-[800px]"> <!-- min-w-[800px] memaksa scroll -->
                                     <thead class="align-bottom">
                                         <tr>

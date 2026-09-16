@@ -82,17 +82,30 @@ class DummyDataSeeder extends Seeder
             $user->assignRole('lulusan');
 
             // Create lulusan record
+            $nipBaru = '19900101201501' . str_pad($i, 4, '0', STR_PAD_LEFT);
+            $nipLama = '3400' . str_pad($i, 5, '0', STR_PAD_LEFT);
+            $plIdx = ($i % 20) + 1;
+            $nipBaruPl = '19800101200501' . str_pad($plIdx, 4, '0', STR_PAD_LEFT);
+            $nipLamaPl = '3400' . str_pad(1000 + $plIdx, 5, '0', STR_PAD_LEFT);
+
             $lulusan[] = Lulusan::firstOrCreate(
                 ['user_id' => $user->id],
                 [
                     'nama' => 'Lulusan ' . $i,
-                    'nip' => '1990' . str_pad($i, 6, '0', STR_PAD_LEFT),
+                    'nip' => $nipBaru,
+                    'nip_baru' => $nipBaru,
+                    'nip_lama' => $nipLama,
                     'email' => 'Lulusan ' . $i . '@example.com',
+                    'prodi' => $prodi,
                     'jabatan' => ['Staff', 'Supervisor', 'Manager'][rand(0, 2)],
                     'satuan_kerja' => 'Satker ' . ceil($i / 5),
                     'unit_kerja' => 'Unit ' . ceil($i / 3),
                     'no_hp' => '08' . rand(1000000000, 9999999999),
-                    'kepala_bps' => rand(0, 1) ? 'Ya' : 'Tidak',
+                    'nip_pengguna_lulusan' => $nipBaruPl,
+                    'nip_baru_pengguna_lulusan' => $nipBaruPl,
+                    'nip_lama_pengguna_lulusan' => $nipLamaPl,
+                    'tanggal_lahir' => '1995-05-15',
+                    'tahun_lulus' => $year,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
                 ]
@@ -108,7 +121,7 @@ class DummyDataSeeder extends Seeder
                 [
                     'name' => 'Pengguna Lulusan ' . $i,
                     'password' => Hash::make('password'),
-                    'role' => 'penggunaLulusan',
+                    'role' => 'pengguna_lulusan',
                     'remember_token' => Str::random(10),
                 ]
             );
@@ -116,11 +129,16 @@ class DummyDataSeeder extends Seeder
             $user->assignRole('penggunaLulusan');
 
             // Create penggunaLulusan record
+            $nipBaruPl = '19800101200501' . str_pad($i, 4, '0', STR_PAD_LEFT);
+            $nipLamaPl = '3400' . str_pad(1000 + $i, 5, '0', STR_PAD_LEFT);
+
             $penggunaLulusans[] = PenggunaLulusan::firstOrCreate(
                 ['user_id' => $user->id],
                 [
                     'nama' => 'Pengguna Lulusan ' . $i,
-                    'nip' => '1980' . str_pad($i, 6, '0', STR_PAD_LEFT),
+                    'nip' => $nipBaruPl,
+                    'nip_baru' => $nipBaruPl,
+                    'nip_lama' => $nipLamaPl,
                     'email' => 'penggunaLulusan' . $i . '@example.com',
                     'jabatan' => ['Manager', 'Supervisor', 'Director', 'Team Lead'][rand(0, 3)],
                     'satuan_kerja' => 'Satker ' . ceil($i / 2),

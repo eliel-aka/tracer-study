@@ -321,6 +321,10 @@ class MonitoringController extends Controller
     private function buildDynamicResponseRateChartData(Survey $survey, ?string $selectedGraduationYear, ?string $selectedStudyProgram): array
     {
         $baseQuery = $this->buildSurveyUserLulusanBaseQuery($survey);
+        $dimensionLabelPool = [
+            'prodi' => $this->getDimensionLabels($this->buildSurveyUserLulusanBaseQuery($survey), 'prodi'),
+            'tahun_lulus' => $this->getDimensionLabels($this->buildSurveyUserLulusanBaseQuery($survey), 'tahun_lulus'),
+        ];
 
         if (!empty($selectedGraduationYear)) {
             $baseQuery->where('lulusan.tahun_lulus', $selectedGraduationYear);
@@ -342,10 +346,16 @@ class MonitoringController extends Controller
             $scenario = 'year_only';
             $xAxisTitle = 'Program Studi';
             $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'prodi');
+            if (empty($rows)) {
+                $rows = $this->buildZeroResponseRateRows($dimensionLabelPool['prodi']);
+            }
         } elseif (!empty($selectedStudyProgram)) {
             $scenario = 'program_only';
             $xAxisTitle = 'Tahun Lulus';
             $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'tahun_lulus');
+            if (empty($rows)) {
+                $rows = $this->buildZeroResponseRateRows($dimensionLabelPool['tahun_lulus']);
+            }
             usort($rows, function (array $left, array $right) {
                 return (int) $left['label'] <=> (int) $right['label'];
             });
@@ -353,6 +363,9 @@ class MonitoringController extends Controller
             $scenario = 'all';
             $xAxisTitle = 'Program Studi';
             $rows = $this->buildResponseRateRowsByDimension($baseQuery, 'prodi');
+            if (empty($rows)) {
+                $rows = $this->buildZeroResponseRateRows($dimensionLabelPool['prodi']);
+            }
         }
 
         $overallSummary = $this->buildSummaryResponseRateRow(
@@ -373,6 +386,47 @@ class MonitoringController extends Controller
             'scenario' => $scenario,
             'showChart' => count($rows) > 0,
         ];
+    }
+
+    private function buildZeroResponseRateRows(array $labels): array
+    {
+        return collect($labels)
+            ->map(function ($label) {
+                return [
+                    'label' => (string) $label,
+                    'target' => 0,
+                    'responded' => 0,
+                    'rate' => 0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function getDimensionLabels(Builder $query, string $dimension): array
+    {
+        $dimension = in_array($dimension, ['prodi', 'tahun_lulus'], true) ? $dimension : 'prodi';
+
+        $labels = (clone $query)
+            ->whereNotNull('lulusan.' . $dimension)
+            ->where('lulusan.' . $dimension, '!=', '')
+            ->selectRaw('DISTINCT lulusan.' . $dimension . ' as dimension_label')
+            ->get()
+            ->pluck('dimension_label')
+            ->map(fn ($value) => trim((string) $value))
+            ->filter(fn ($value) => $value !== '')
+            ->values()
+            ->all();
+
+        if ($dimension === 'tahun_lulus') {
+            usort($labels, function (string $left, string $right): int {
+                return (int) $right <=> (int) $left;
+            });
+        } else {
+            sort($labels, SORT_NATURAL | SORT_FLAG_CASE);
+        }
+
+        return array_values(array_unique($labels));
     }
 
     private function normalizeSurveyType(?string $surveyType): string

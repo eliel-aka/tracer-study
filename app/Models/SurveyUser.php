@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SurveyUser extends Model
 {
     protected $table = 'survey_user';
-    protected $fillable = ['survey_id', 'user_id', 'status', 'current_question_id', 'guest_token', 'tanggal_mengisi'];
+    protected $fillable = ['survey_id', 'user_id', 'status', 'current_question_id', 'guest_token', 'tanggal_mengisi', 'invitation_email_sent_at', 'last_reminder_email_sent_at', 'reminder_email_count'];
     
     // Set default values
     protected $attributes = [
@@ -106,7 +106,7 @@ class SurveyUser extends Model
 
         if ($query) {
             return $query
-                ->select('a.*', 'survey_user.*')
+                ->select('a.*', 'survey_user.*', 'survey_user.id as survey_user_id')
                 ->get();
         }
 

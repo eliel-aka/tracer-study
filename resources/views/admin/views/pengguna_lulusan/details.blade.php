@@ -11,14 +11,14 @@
         <!-- table 2 -->
 
         <div class="flex flex-wrap -mx-3">
-          <div class="flex-none w-full max-w-full px-3">
-            <div class="relative flex flex-col min-w-0 mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border">
+          <div class="flex-none w-full max-w-full px-3 min-w-0">
+            <div class="relative flex flex-col min-w-0 w-full max-w-full mb-6 break-words bg-white border-0 border-transparent border-solid shadow-xl dark:bg-slate-850 dark:shadow-dark-xl rounded-2xl bg-clip-border overflow-hidden">
               <div class="p-6 pb-0 mb-0 border-b-0 border-b-solid rounded-t-2xl border-b-transparent flex items-center justify-between">
                 <h6 class="dark:text-white">Daftar Pengguna Lulusan</h6>
               </div>
 
-              <div class="flex-auto px-0 pt-0 pb-2">
-                <div class="p-0 overflow-x-auto">
+              <div class="flex-auto px-0 pt-0 pb-2 min-w-0 w-full max-w-full">
+                <div class="p-0 overflow-x-auto w-full max-w-full min-w-0 block">
                   <table class="items-center w-full mb-0 align-top border-collapse dark:border-white/40 text-slate-500">
                     <thead class="align-bottom">
                       <tr>
@@ -40,9 +40,10 @@
                       </td>
 
                       <td class="p-2 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
-                        <span class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400 break-words whitespace-normal">
-                          {{ $lulusanus->nip }}
-                        </span>
+                        <div class="flex flex-col text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400">
+                          <span>Baru: {{ $lulusanus->nip_baru ?? '-' }}</span>
+                          <span>Lama: {{ $lulusanus->nip_lama ?? '-' }}</span>
+                        </div>
                       </td>
 
                       <td class="p-2 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">

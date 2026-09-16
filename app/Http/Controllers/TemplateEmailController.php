@@ -45,12 +45,23 @@ class TemplateEmailController extends Controller
             'type' => 'required|in:survey_invitation,survey_reminder,survey_appreciation',
             'subject' => 'required|string|max:255',
             'body' => 'required|string',
+            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
+
+        $attachmentPaths = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $attachmentPaths[] = $file->storeAs('email_attachments', $filename, 'public');
+            }
+        }
 
         $success = $this->emailService->updateTemplate(
             $request->type,
             $request->subject,
-            $request->body
+            $request->body,
+            $attachmentPaths,
+            $request->input('remove_attachments', [])
         );
 
         if ($success) {

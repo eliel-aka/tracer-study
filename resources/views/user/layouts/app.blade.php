@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{{asset('assets/css/swiper-bundle.min.css')}}" />
     <link rel="stylesheet" href="{{asset('assets/css/animate.css')}}" />
     <link rel="stylesheet" href="{{asset('assets/css/tailwind.css')}}" />
+    @include('user.layouts.theme')
 
     <!-- ==== WOW JS ==== -->
     <script src="{{asset('assets/js/wow.min.js')}}"></script>
@@ -23,7 +24,7 @@
     </script>
   </head>
 
-  <body>
+  <body class="user-theme">
 
     <!-- Preloader -->
     <div class="preloader">

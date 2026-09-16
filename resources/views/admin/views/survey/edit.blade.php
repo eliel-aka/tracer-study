@@ -307,7 +307,7 @@
                                         class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                                     <option value="">Pilih Tipe Survey</option>
                                     <option value="lulusan" {{ $survey->type_survei == 'lulusan' ? 'selected' : '' }}>Lulusan</option>
-                                    <option value="penggunaLulusan" {{ $survey->type_survei == 'penggunaLulusan' ? 'selected' : '' }}>Pengguna Lulusan</option>
+                                    <option value="penggunaLulusan" {{ in_array($survey->type_survei, ['penggunaLulusan', 'pengguna_lulusan'], true) ? 'selected' : '' }}>Pengguna Lulusan</option>
                                 </select>
                                 @error('type_survei')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -444,6 +444,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Error response with JSON data
+                    if (status === 419 || (data && data.message && data.message.includes('CSRF token mismatch'))) {
+                        throw new Error('Sesi Anda telah berakhir (CSRF token expired). Silakan refresh halaman (tekan F5) lalu coba simpan kembali.');
+                    }
                     if (status === 422 && data.errors) {
                         throw new Error(buildFriendlyValidationMessage(data.errors));
                     }
@@ -472,40 +475,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load existing sections from backend data
 function loadExistingSections() {
-    Object.keys(formBuilderData).forEach(sectionId => {
+    Object.keys(formBuilderData).forEach((sectionId, sectionIdx) => {
         const sectionData = formBuilderData[sectionId];
         sectionCounter++;
+        const isIdentity = (sectionCounter === 1) || (sectionIdx === 0) || (sectionData.metadata && sectionData.metadata.is_identity_block);
 
         const colorClass = (sectionCounter % 2 === 0) ? 'block-color-even' : 'block-color-odd';
 
         const sectionHtml = `
-            <div class="section-block p-6 ${colorClass}" data-section-id="${sectionCounter}">
-                <div class="block-header">
+            <div class="section-block p-6 ${colorClass} ${isIdentity ? 'border-2 border-blue-400' : ''}" data-section-id="${sectionCounter}" data-is-identity="${isIdentity ? 'true' : 'false'}">
+                <div class="block-header" ${isIdentity ? 'style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;"' : ''}>
                     <div class="flex justify-between items-center">
-                        <h4 class="block-title">Block ${sectionCounter}</h4>
+                        <div class="flex items-center gap-2">
+                            <h4 class="block-title font-semibold text-white">${isIdentity ? `Block ${sectionCounter}: Identitas Responden` : `Block ${sectionCounter}`}</h4>
+                            ${isIdentity ? '<span class="bg-amber-400 text-amber-950 text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm"><i class="fas fa-lock mr-1"></i>Terkunci Otomatis</span>' : ''}
+                        </div>
                         <div class="icon-container">
-                            <button type="button" onclick="cloneSection(${sectionCounter})" class="icon-link" title="Clone Block">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                            <button type="button" onclick="deleteSection(${sectionCounter})" class="icon-link" title="Delete Block">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            ${isIdentity ? `
+                                <span class="text-xs text-blue-100 italic">
+                                    <i class="fas fa-shield-alt mr-1"></i> Data profil terisi otomatis untuk responden
+                                </span>
+                            ` : `
+                                <button type="button" onclick="cloneSection(${sectionCounter})" class="icon-link" title="Clone Block">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" onclick="deleteSection(${sectionCounter})" class="icon-link" title="Delete Block">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            `}
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <!-- Block Info -->
+                    <input type="hidden" name="sections[${sectionCounter}][id]" value="${sectionData.id || ''}">
+                    ${isIdentity ? `
+                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-user-check text-blue-600 text-xl mt-0.5"></i>
+                                <div>
+                                    <h5 class="text-sm font-bold text-blue-900 mb-1">Blok Identitas Responden</h5>
+                                    <p class="text-xs text-blue-700">
+                                        Seluruh atribut di bawah ini terisi otomatis dari profil responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei. Blok ini terpasang permanen pada survei.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
                         <h5 class="text-sm font-medium text-gray-700 mb-3">Nama Block <span class="text-red-500">*</span></h5>
                         <input type="text" name="sections[${sectionCounter}][section_name]" value="${sectionData.section_name || ''}" placeholder="Tulis nama blok disini..." required
-                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                               ${isIdentity ? 'readonly' : ''}
+                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 font-semibold cursor-not-allowed text-gray-700' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
                         <h5 class="text-sm font-medium text-gray-700 mb-3">Deskripsi Block</h5>
                         <textarea name="sections[${sectionCounter}][section_description]" rows="2" placeholder="Tulis deskripsi blok disini..."
-                                  class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${sectionData.section_description || ''}</textarea>
+                                  ${isIdentity ? 'readonly' : ''}
+                                  class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 cursor-not-allowed text-gray-700' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${sectionData.section_description || ''}</textarea>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
@@ -516,13 +545,43 @@ function loadExistingSections() {
                         </select>
                     </div>
 
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200" ${isIdentity ? 'style="display:none;"' : ''}>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="kompetensi_${sectionCounter}" name="sections[${sectionCounter}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${sectionCounter}, this)" ${sectionData.metadata && sectionData.metadata.is_kompetensi ? 'checked' : ''}>
+                            <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                        </div>
+                        <div id="kompetensi_info_${sectionCounter}" class="${sectionData.metadata && sectionData.metadata.is_kompetensi ? '' : 'hidden'} mt-3 bg-white p-3 rounded border border-blue-100">
+                              <div class="mb-3">
+                                  <label class="block text-xs font-medium text-blue-800 mb-1">Pertanyaan Utama <span class="text-red-500">*</span></label>
+                                  <input type="text" name="sections[${sectionCounter}][pertanyaan_utama]" value="${sectionData.pertanyaan_utama || ''}" placeholder="Contoh: Bagaimana tingkat kompetensi [indikator] Anda?" class="text-sm w-full border border-gray-300 rounded px-2 py-1 focus:border-blue-500 outline-none">
+                                  <p class="text-[10px] text-blue-600 mt-1">Gunakan kata <strong>[indikator]</strong> di dalam kalimat agar posisi indikator diganti otomatis (opsional).</p>
+                              </div>
+                            <p class="text-xs text-blue-800 mb-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
+                            </p>
+                            <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
+                                <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
+                                <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
+                                <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                                <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <!-- Questions Container -->
                     <div class="questions-container" data-section-id="${sectionCounter}">
                         <div class="flex justify-between items-center mb-4">
-                            <h5 class="text-sm font-medium text-gray-700">Pertanyaan</h5>
-                            <button type="button" onclick="addQuestion(${sectionCounter})" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors">
-                                <i class="fas fa-plus mr-1"></i>Tambah Pertanyaan
-                            </button>
+                            <h5 class="text-sm font-bold text-gray-700">Pertanyaan ${isIdentity ? '(Terkunci dari Profil)' : ''}</h5>
+                            ${isIdentity ? `
+                                <span class="text-xs text-gray-500 italic bg-gray-100 px-2 py-1 rounded">
+                                    <i class="fas fa-lock mr-1"></i> Pertanyaan identitas terkunci
+                                </span>
+                            ` : `
+                                <button type="button" onclick="addQuestion(${sectionCounter})" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-plus mr-1"></i>Tambah Pertanyaan
+                                </button>
+                            `}
                         </div>
                         <div class="questions-list space-y-3" id="questions-${sectionCounter}">
                             <!-- Questions will be loaded here -->
@@ -547,8 +606,13 @@ function loadExistingSections() {
         if (sectionData.questions) {
             Object.keys(sectionData.questions).forEach(questionId => {
                 const questionData = sectionData.questions[questionId];
-                loadExistingQuestion(sectionCounter, questionData);
+                loadExistingQuestion(sectionCounter, questionData, isIdentity);
             });
+        }
+        
+        if (!isIdentity && sectionData.metadata && sectionData.metadata.is_kompetensi) {
+            const checkbox = document.getElementById(`kompetensi_${sectionCounter}`);
+            if (checkbox) toggleKompetensiBlock(sectionCounter, checkbox, sectionData.pertanyaan_utama || '');
         }
     });
 
@@ -556,70 +620,109 @@ function loadExistingSections() {
 }
 
 // Load existing question
-function loadExistingQuestion(sectionId, questionData) {
+function loadExistingQuestion(sectionId, questionData, isIdentity = false) {
     questionCounter++;
 
     const questionHtml = `
-        <div class="question-item" data-question-id="${questionCounter}" data-question-number="Q${questionCounter}">
+        <div class="question-item ${isIdentity ? 'bg-gray-50 border border-gray-200' : ''}" data-question-id="${questionCounter}" data-question-number="Q${questionCounter}" data-section-id="${sectionId}">
             <div class="flex justify-between items-center mb-3">
-                <h6 class="text-sm font-semibold">Pertanyaan ${questionCounter}</h6>
-                <div class="flex space-x-2">
-                    <button type="button" onclick="addQuestion(${sectionId}, ${questionCounter})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCounter})" class="text-blue-500 hover:text-blue-700" title="Clone Question">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button type="button" onclick="deleteQuestion(${sectionId}, ${questionCounter})" class="text-red-500 hover:text-red-700" title="Delete Question">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <div class="flex items-center gap-2">
+                    <h6 class="text-sm font-semibold">Pertanyaan ${questionCounter}</h6>
+                    ${isIdentity ? '<span class="text-xs font-semibold text-gray-600">(' + (questionData.question || '') + ')</span>' : ''}
+                </div>
+                <div class="flex space-x-2 question-controls">
+                    ${isIdentity ? `
+                        <span class="text-[11px] bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded">
+                            <i class="fas fa-lock text-[10px] mr-1"></i> Profil Responden
+                        </span>
+                    ` : `
+                        <button type="button" onclick="addQuestion(${sectionId}, ${questionCounter})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCounter})" class="text-blue-500 hover:text-blue-700" title="Clone Question">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button type="button" onclick="deleteQuestion(${sectionId}, ${questionCounter})" class="text-red-500 hover:text-red-700" title="Delete Question">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `}
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <div>
+                <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][id]" value="${questionData.id || ''}">
+                <div class="question-textarea-container">
                     <label class="block text-xs font-medium text-gray-700 mb-1">Pertanyaan <span class="text-red-500">*</span></label>
-                    <textarea name="sections[${sectionId}][questions][${questionCounter}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
-                              class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.question || ''}</textarea>
+                    <textarea name="sections[${sectionId}][questions][${questionCounter}][question]" rows="1" placeholder="Tulis pertanyaan disini..." required
+                              ${isIdentity ? 'readonly' : ''}
+                              class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 font-medium text-gray-800 cursor-not-allowed' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.question || ''}</textarea>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
-                    <textarea name="sections[${sectionId}][questions][${questionCounter}][description]" rows="2" placeholder="Deskripsi pertanyaan (opsional)"
-                              class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.description || ''}</textarea>
+                    <textarea name="sections[${sectionId}][questions][${questionCounter}][description]" rows="1" placeholder="Deskripsi pertanyaan (opsional)"
+                              ${isIdentity ? 'readonly' : ''}
+                              class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.description || ''}</textarea>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
-                    <select name="sections[${sectionId}][questions][${questionCounter}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${questionCounter}, this.value)" required
-                            class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
-                        <option value="text" ${questionData.type === 'text' ? 'selected' : ''}>Text Input</option>
-                        <option value="textarea" ${questionData.type === 'textarea' ? 'selected' : ''}>Text Area</option>
-                        <option value="radio" ${questionData.type === 'radio' ? 'selected' : ''}>Radio Button</option>
-                        <option value="checkbox" ${questionData.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
-                        <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Dropdown</option>
-                        <option value="multiple_choice_grid" ${questionData.type === 'multiple_choice_grid' ? 'selected' : ''}>Multiple Choice Grid</option>
-                        <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
-                        <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Visualisasi</label>
-                    <select name="sections[${sectionId}][questions][${questionCounter}][visualization]"
-                            class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
-                        <option value="" ${questionData.visualization === '' ? 'selected' : ''}>Tidak ada visualisasi</option>
-                        <option value="bar" ${questionData.visualization === 'bar' ? 'selected' : ''}>Bar Chart</option>
-                        <option value="pie" ${questionData.visualization === 'pie' ? 'selected' : ''}>Pie Chart</option>
-                    </select>
-                </div>
-                <div class="flex items-center pt-6">
-                    <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required === '1' ? 'checked' : ''}
-                           class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
-                </div>
+                ${isIdentity ? `
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][type]" value="${questionData.type === 'date' ? 'date' : 'text'}">
+                        <input type="text" value="${questionData.type === 'date' ? 'Date' : 'Text Input'}" readonly
+                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-mono text-gray-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][visualization]" value="">
+                    </div>
+                    <div class="flex items-center pt-4">
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1">
+                        <span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i> Wajib & Otomatis Terisi
+                        </span>
+                    </div>
+                ` : `
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
+                        <select name="sections[${sectionId}][questions][${questionCounter}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${questionCounter}, this.value)" required
+                                class="question-type-select focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                            <option value="text" ${questionData.type === 'text' ? 'selected' : ''}>Text Input</option>
+                            <option value="textarea" ${questionData.type === 'textarea' ? 'selected' : ''}>Text Area</option>
+                            <option value="radio" ${questionData.type === 'radio' ? 'selected' : ''}>Radio Button</option>
+                            <option value="checkbox" ${questionData.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
+                            <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Dropdown</option>
+                            <option value="multiple_choice_grid" ${questionData.type === 'multiple_choice_grid' ? 'selected' : ''}>Multiple Choice Grid</option>
+                            <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
+                            <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
+                            <option value="gaji" ${questionData.type === 'gaji' ? 'selected' : ''}>Gaji (Angka)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Visualisasi</label>
+                        <select name="sections[${sectionId}][questions][${questionCounter}][visualization]"
+                                class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                            <option value="" ${!questionData.visualization ? 'selected' : ''}>Tidak ada visualisasi</option>
+                            <option value="bar" ${questionData.visualization === 'bar' ? 'selected' : ''}>Bar Chart</option>
+                            <option value="pie" ${questionData.visualization === 'pie' ? 'selected' : ''}>Pie Chart</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1 pt-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required == '1' ? 'checked' : ''}
+                                   class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                        </div>
+                        <div class="flex items-center mt-1">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][is_analytic_table]" value="1" ${questionData.is_analytic_table == '1' ? 'checked' : ''}
+                                   class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <label class="text-xs font-medium text-gray-700">Tabel Analitik</label>
+                        </div>
+                    </div>
+                `}
             </div>
 
+            ${isIdentity ? '' : `
             <!-- Options Container -->
             <div class="options-container" id="optionsContainer-${sectionId}-${questionCounter}" style="display: ${['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) ? 'block' : 'none'};">
                 <div class="flex justify-between items-center mb-2">
@@ -631,17 +734,54 @@ function loadExistingQuestion(sectionId, questionData) {
                 <div class="options-list space-y-2" id="optionsList-${sectionId}-${questionCounter}">
                     <!-- Options will be loaded here -->
                 </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-200" id="gridColumnsContainer-${sectionId}-${questionCounter}" style="display: ${questionData.type === 'multiple_choice_grid' ? 'block' : 'none'};">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-medium text-gray-700">Kolom Grid</label>
+                        <button type="button" onclick="addGridColumnOption(${sectionId}, ${questionCounter})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Tambah Kolom
+                        </button>
+                    </div>
+                    <div class="space-y-2" id="gridColumnsList-${sectionId}-${questionCounter}"></div>
+                </div>
             </div>
+
+            <!-- Min Gaji Container -->
+            <div class="min-gaji-container mt-4 pt-4 border-t border-gray-200" id="minGajiContainer-${sectionId}-${questionCounter}" style="display: ${questionData.type === 'gaji' ? 'block' : 'none'};">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                <input type="number" name="sections[${sectionId}][questions][${questionCounter}][min_gaji]" value="${questionData.min_gaji || ''}" class="w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+            </div>
+
+            <!-- Kompetensi Indikator Container (Hidden by default) -->
+            <div id="indikatorContainer-${sectionId}-${questionCounter}" class="kompetensi-indikator-area mt-4 border-t pt-3" style="display: none;">
+                <label class="block text-xs font-medium text-purple-700 mb-2"><i class="fas fa-list-ol mr-1"></i> Daftar Indikator</label>
+                <div class="indikator-list space-y-2" id="indikatorList-${sectionId}-${questionCounter}">
+                    <!-- indicators will be added here -->
+                </div>
+                <button type="button" onclick="addIndikatorItem(${sectionId}, ${questionCounter})" class="mt-2 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs hover:bg-purple-200 transition-colors">
+                    <i class="fas fa-plus mr-1"></i>Tambah Indikator
+                </button>
+            </div>
+            `}
         </div>
     `;
 
     document.getElementById(`questions-${sectionId}`).insertAdjacentHTML('beforeend', questionHtml);
 
-    // Load options for this question if it's a choice-based question
-    if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) && questionData.options) {
-        questionData.options.forEach((option, index) => {
-            loadExistingOption(sectionId, questionCounter, option, questionData.option_navigation ? questionData.option_navigation[index] : 'next');
-        });
+    if (!isIdentity) {
+        // Load options for this question if it's a choice-based question
+        if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) && questionData.options) {
+            questionData.options.forEach((option, index) => {
+                loadExistingOption(sectionId, questionCounter, option, questionData.option_navigation ? questionData.option_navigation[index] : 'next');
+            });
+        }
+
+        if (questionData.type === 'multiple_choice_grid') {
+            const savedColumns = Array.isArray(questionData.grid_columns) && questionData.grid_columns.length > 0
+                ? questionData.grid_columns
+                : ['Column 1', 'Column 2'];
+            savedColumns.forEach((column) => addGridColumnOption(sectionId, questionCounter, column));
+        }
     }
 }
 
@@ -653,7 +793,7 @@ function loadExistingOption(sectionId, questionId, optionText, navigationValue) 
     // Check if this question type supports navigation
     const questionTypeSelect = document.querySelector(`select[name="sections[${sectionId}][questions][${questionId}][type]"]`);
     const questionType = questionTypeSelect ? questionTypeSelect.value : 'text';
-    const showNavigationToggle = ['radio', 'select', 'multiple_choice_grid'].includes(questionType);
+    const showNavigationToggle = ['radio', 'select'].includes(questionType);
 
     // Determine if custom navigation is being used
     // Custom navigation is active if navigationValue is not null, undefined, empty, or 'next' (default)
@@ -770,6 +910,26 @@ function addSection() {
                     </select>
                 </div>
 
+                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="kompetensi_${sectionCounter}" name="sections[${sectionCounter}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${sectionCounter}, this)">
+                        <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                    </div>
+                    <div id="kompetensi_info_${sectionCounter}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <p class="text-xs text-blue-800 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
+                        </p>
+                        <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
+                            <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
+                            <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
+                            <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- Questions Container -->
                 <div class="questions-container" data-section-id="${sectionCounter}">
                     <div class="flex justify-between items-center mb-4">
@@ -804,10 +964,10 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
     const tempQuestionId = Date.now();
 
     const questionHtml = `
-        <div class="question-item" data-question-id="${tempQuestionId}" data-question-number="Q${tempQuestionId}">
+        <div class="question-item" data-question-id="${tempQuestionId}" data-question-number="Q${tempQuestionId}" data-section-id="${sectionId}">
             <div class="flex justify-between items-center mb-3">
                 <h6 class="text-sm font-semibold">Pertanyaan ${tempQuestionId}</h6>
-                <div class="flex space-x-2">
+                <div class="flex space-x-2 question-controls">
                     <button type="button" onclick="addQuestion(${sectionId}, ${tempQuestionId})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
                         <i class="fas fa-plus"></i>
                     </button>
@@ -821,7 +981,7 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <div>
+                <div class="question-textarea-container">
                     <label class="block text-xs font-medium text-gray-700 mb-1">Pertanyaan <span class="text-red-500">*</span></label>
                     <textarea name="sections[${sectionId}][questions][${tempQuestionId}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"></textarea>
@@ -836,8 +996,7 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
-                    <select name="sections[${sectionId}][questions][${tempQuestionId}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${tempQuestionId}, this.value)" required
-                            class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                    <select name="sections[${sectionId}][questions][${tempQuestionId}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${tempQuestionId}, this.value)" required class="question-type-select focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
                         <option value="text">Text Input</option>
                         <option value="textarea">Text Area</option>
                         <option value="radio">Radio Button</option>
@@ -846,6 +1005,7 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
                         <option value="multiple_choice_grid">Multiple Choice Grid</option>
                         <option value="file">File Upload</option>
                         <option value="date">Date</option>
+                        <option value="gaji">Gaji (Angka)</option>
                     </select>
                 </div>
                 <div>
@@ -857,10 +1017,17 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
                         <option value="pie">Pie Chart</option>
                     </select>
                 </div>
-                <div class="flex items-center pt-6">
-                    <input type="checkbox" name="sections[${sectionId}][questions][${tempQuestionId}][required]" value="1"
-                           class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                <div class="flex flex-col gap-1 pt-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${tempQuestionId}][required]" value="1"
+                               class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                    </div>
+                    <div class="flex items-center mt-1">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${tempQuestionId}][is_analytic_table]" value="1"
+                               class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Tabel Analitik</label>
+                    </div>
                 </div>
             </div>
 
@@ -875,6 +1042,33 @@ function addQuestion(sectionId, insertAfterQuestionId = null) {
                 <div class="options-list space-y-2" id="optionsList-${sectionId}-${tempQuestionId}">
                     <!-- Options will be added here -->
                 </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-200" id="gridColumnsContainer-${sectionId}-${tempQuestionId}" style="display: none;">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-medium text-gray-700">Kolom Grid</label>
+                        <button type="button" onclick="addGridColumnOption(${sectionId}, ${tempQuestionId})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Tambah Kolom
+                        </button>
+                    </div>
+                    <div class="space-y-2" id="gridColumnsList-${sectionId}-${tempQuestionId}"></div>
+                </div>
+            </div>
+
+            <!-- Min Gaji Container -->
+            <div class="min-gaji-container mt-4 pt-4 border-t border-gray-200" id="minGajiContainer-${sectionId}-${tempQuestionId}" style="display: none;">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                <input type="number" name="sections[${sectionId}][questions][${tempQuestionId}][min_gaji]" class="w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+            </div>
+
+            <!-- Kompetensi Indikator Container (Hidden by default) -->
+            <div id="indikatorContainer-${sectionId}-${tempQuestionId}" class="kompetensi-indikator-area mt-4 border-t pt-3" style="display: none;">
+                <label class="block text-xs font-medium text-purple-700 mb-2"><i class="fas fa-list-ol mr-1"></i> Daftar Indikator</label>
+                <div class="indikator-list space-y-2" id="indikatorList-${sectionId}-${tempQuestionId}">
+                    <!-- indicators will be added here -->
+                </div>
+                <button type="button" onclick="addIndikatorItem(${sectionId}, ${tempQuestionId})" class="mt-2 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs hover:bg-purple-200 transition-colors">
+                    <i class="fas fa-plus mr-1"></i>Tambah Indikator
+                </button>
             </div>
         </div>
     `;
@@ -921,6 +1115,12 @@ function updateQuestionNumbers(sectionId) {
 
 function handleQuestionTypeChange(sectionId, questionId, type) {
     const optionsContainer = document.getElementById(`optionsContainer-${sectionId}-${questionId}`);
+    const gridColumnsContainer = document.getElementById(`gridColumnsContainer-${sectionId}-${questionId}`);
+    const minGajiContainer = document.getElementById(`minGajiContainer-${sectionId}-${questionId}`);
+
+    if (minGajiContainer) {
+        minGajiContainer.style.display = type === 'gaji' ? 'block' : 'none';
+    }
 
     if (!optionsContainer) {
         console.error(`Options container not found: optionsContainer-${sectionId}-${questionId}`);
@@ -929,6 +1129,10 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
 
     if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(type)) {
         optionsContainer.style.display = 'block';
+
+        if (gridColumnsContainer) {
+            gridColumnsContainer.style.display = type === 'multiple_choice_grid' ? 'block' : 'none';
+        }
 
         // Add default options if none exist
         const optionsList = document.getElementById(`optionsList-${sectionId}-${questionId}`);
@@ -941,6 +1145,7 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         if (optionsList.children.length === 0) {
             if (type === 'multiple_choice_grid') {
                 addDefaultMultipleChoiceGridOptions(sectionId, questionId);
+                addDefaultGridColumns(sectionId, questionId);
             } else {
                 addOption(sectionId, questionId);
                 addOption(sectionId, questionId);
@@ -949,9 +1154,46 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
             // Update existing options to add/remove navigation based on type
             updateExistingOptionsNavigation(sectionId, questionId, type);
         }
+
+        if (type === 'multiple_choice_grid') {
+            const gridColumnsList = document.getElementById(`gridColumnsList-${sectionId}-${questionId}`);
+            if (gridColumnsList && gridColumnsList.children.length === 0) {
+                addDefaultGridColumns(sectionId, questionId);
+            }
+        }
     } else {
         optionsContainer.style.display = 'none';
+        if (gridColumnsContainer) {
+            gridColumnsContainer.style.display = 'none';
+        }
     }
+}
+
+function addGridColumnOption(sectionId, questionId, value = '') {
+    const list = document.getElementById(`gridColumnsList-${sectionId}-${questionId}`);
+    if (!list) {
+        return;
+    }
+
+    const index = list.children.length + 1;
+    const columnRow = document.createElement('div');
+    columnRow.className = 'flex items-center gap-2 grid-column-item';
+    columnRow.innerHTML = `
+        <i class="far fa-circle text-gray-400 text-xs"></i>
+        <input type="text" name="sections[${sectionId}][questions][${questionId}][grid_columns][]"
+               placeholder="Column ${index}"
+               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+        <button type="button" onclick="this.closest('.grid-column-item').remove()" class="text-red-500 hover:text-red-700 p-2">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+
+    columnRow.querySelector('input').value = value;
+    list.appendChild(columnRow);
+}
+
+function addDefaultGridColumns(sectionId, questionId) {
+    ['Column 1', 'Column 2'].forEach((label) => addGridColumnOption(sectionId, questionId, label));
 }
 
 function addOption(sectionId, questionId) {
@@ -1170,16 +1412,30 @@ function updateExistingOptionsNavigation(sectionId, questionId, questionType) {
 }
 
 function deleteSection(sectionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Block 1 (Identitas Responden) wajib ada dan tidak dapat dihapus.');
+        return;
+    }
+
     if (confirm('Apakah Anda yakin ingin menghapus block ini?')) {
-        document.querySelector(`[data-section-id="${sectionId}"]`).remove();
-        
-        // Update all section numbers and form names to be sequential
-        updateSectionNumbers();
-        updateNavigationOptions();
+        if (section) {
+            section.remove();
+            
+            // Update all section numbers and form names to be sequential
+            updateSectionNumbers();
+            updateNavigationOptions();
+        }
     }
 }
 
 function deleteQuestion(sectionId, questionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Pertanyaan pada Blok Identitas Responden tidak dapat dihapus.');
+        return;
+    }
+
     const questionsContainer = document.getElementById(`questions-${sectionId}`);
     if (questionsContainer) {
         const questions = questionsContainer.querySelectorAll('.question-item');
@@ -1206,6 +1462,10 @@ function deleteQuestion(sectionId, questionId) {
 
 function cloneSection(sectionId) {
     const originalSection = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (originalSection && (originalSection.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Block Identitas Responden tidak dapat diduplikasi.');
+        return;
+    }
     if (originalSection) {
         // Create temporary section ID for initial creation
         const tempSectionId = Date.now(); // Use timestamp as temp ID
@@ -1247,6 +1507,12 @@ function cloneSection(sectionId) {
 }
 
 function cloneQuestion(sectionId, questionId) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (section && (section.getAttribute('data-is-identity') === 'true' || sectionId === 1 || String(sectionId) === '1')) {
+        showErrorMessage('Pertanyaan pada Blok Identitas Responden tidak dapat diduplikasi.');
+        return;
+    }
+
     const originalQuestion = document.querySelector(`#questions-${sectionId} [data-question-id="${questionId}"]`);
     if (originalQuestion) {
         console.log('Cloning question:', questionId);
@@ -1259,7 +1525,8 @@ function cloneQuestion(sectionId, questionId) {
             required: originalQuestion.querySelector(`input[name*="[required]"]`)?.checked || false,
             visualization: originalQuestion.querySelector(`select[name*="[visualization]"]`)?.value || '',
             options: [],
-            optionNavigation: []
+            optionNavigation: [],
+            grid_columns: []
         };
 
         // Get options and their navigation values
@@ -1283,6 +1550,13 @@ function cloneQuestion(sectionId, questionId) {
             }
         });
 
+        const gridColumnInputs = originalQuestion.querySelectorAll('input[name*="[grid_columns]"]');
+        gridColumnInputs.forEach((input) => {
+            if (input.value.trim()) {
+                originalData.grid_columns.push(input.value.trim());
+            }
+        });
+
         console.log('Original question data:', originalData);
 
         // Create temporary question using timestamp
@@ -1297,8 +1571,11 @@ function cloneQuestion(sectionId, questionId) {
             .replace(new RegExp(`deleteQuestion\\(${sectionId}, ${questionId}\\)`, 'g'), `deleteQuestion(${sectionId}, ${tempQuestionId})`)
             .replace(new RegExp(`handleQuestionTypeChange\\(${sectionId}, ${questionId}, this\\.value\\)`, 'g'), `handleQuestionTypeChange(${sectionId}, ${tempQuestionId}, this.value)`)
             .replace(new RegExp(`addOption\\(${sectionId}, ${questionId}\\)`, 'g'), `addOption(${sectionId}, ${tempQuestionId})`)
+            .replace(new RegExp(`addGridColumnOption\\(${sectionId}, ${questionId}\\)`, 'g'), `addGridColumnOption(${sectionId}, ${tempQuestionId})`)
             .replace(new RegExp(`options-${sectionId}-${questionId}`, 'g'), `options-${sectionId}-${tempQuestionId}`)
-            .replace(new RegExp(`optionsList-${sectionId}-${questionId}`, 'g'), `optionsList-${sectionId}-${tempQuestionId}`);
+            .replace(new RegExp(`optionsList-${sectionId}-${questionId}`, 'g'), `optionsList-${sectionId}-${tempQuestionId}`)
+            .replace(new RegExp(`gridColumnsContainer-${sectionId}-${questionId}`, 'g'), `gridColumnsContainer-${sectionId}-${tempQuestionId}`)
+            .replace(new RegExp(`gridColumnsList-${sectionId}-${questionId}`, 'g'), `gridColumnsList-${sectionId}-${tempQuestionId}`);
 
         // Insert the cloned question after the original
         originalQuestion.insertAdjacentHTML('afterend', clonedHtml);
@@ -1340,6 +1617,18 @@ function cloneQuestion(sectionId, questionId) {
                     vizSelect.value = originalData.visualization;
                 }
 
+                if (originalData.type === 'multiple_choice_grid' && originalData.grid_columns.length > 0) {
+                    const questionNameInput = clonedQuestion.querySelector('textarea[name*="[question]"]');
+                    const nameMatch = questionNameInput?.name.match(/sections\[(\d+)\]\[questions\]\[(\d+)\]/);
+                    const newSectionId = nameMatch ? nameMatch[1] : sectionId;
+                    const newQuestionId = nameMatch ? nameMatch[2] : tempQuestionId;
+                    const gridColumnsList = clonedQuestion.querySelector('div[id*="gridColumnsList"]');
+                    if (gridColumnsList) {
+                        gridColumnsList.innerHTML = '';
+                        originalData.grid_columns.forEach((label) => addGridColumnOption(newSectionId, newQuestionId, label));
+                    }
+                }
+
                 console.log('Question cloned and data restored successfully');
             }
         }, 100);
@@ -1363,7 +1652,8 @@ function getFormDataFromSection(sectionElement, sectionId) {
             type: questionEl.querySelector(`select[name*="[type]"]`)?.value || 'text',
             required: questionEl.querySelector(`input[name*="[required]"]`)?.checked || false,
             visualization: questionEl.querySelector(`select[name*="[visualization]"]`)?.value || '',
-            options: []
+            options: [],
+            grid_columns: []
         };
 
         // Get options
@@ -1371,6 +1661,13 @@ function getFormDataFromSection(sectionElement, sectionId) {
         optionInputs.forEach(input => {
             if (input.value.trim()) {
                 questionData.options.push(input.value.trim());
+            }
+        });
+
+        const gridColumnInputs = questionEl.querySelectorAll('input[name*="[grid_columns]"]');
+        gridColumnInputs.forEach(input => {
+            if (input.value.trim()) {
+                questionData.grid_columns.push(input.value.trim());
             }
         });
 
@@ -1466,6 +1763,18 @@ function restoreFormDataToSection(sectionId, data) {
                             }
                         }, 300);
                     }
+
+                    if (questionData.type === 'multiple_choice_grid' && Array.isArray(questionData.grid_columns) && questionData.grid_columns.length > 0) {
+                        setTimeout(() => {
+                            const gridColumnsList = questionEl.querySelector(`#gridColumnsList-${sectionId}-${questionCount}`);
+                            if (gridColumnsList) {
+                                gridColumnsList.innerHTML = '';
+                                questionData.grid_columns.forEach((columnLabel) => {
+                                    addGridColumnOption(sectionId, questionCount, columnLabel);
+                                });
+                            }
+                        }, 350);
+                    }
                 }
             }, 200 * (index + 1)); // Stagger the restoration
         });
@@ -1484,7 +1793,11 @@ function updateSectionNumbers() {
         // Update visual header
         const header = section.querySelector('.block-header h4');
         if (header) {
-            header.textContent = `Block ${newSectionId}`;
+            if (section.getAttribute('data-is-identity') === 'true' || newSectionId === 1) {
+                header.textContent = `Block ${newSectionId}: Identitas Responden`;
+            } else {
+                header.textContent = `Block ${newSectionId}`;
+            }
         }
 
         // Update color class
@@ -1726,6 +2039,26 @@ function addSectionAfter(afterSectionId) {
                     </select>
                 </div>
 
+                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="kompetensi_${tempSectionId}" name="sections[${tempSectionId}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${tempSectionId}, this)">
+                        <label for="kompetensi_${tempSectionId}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                    </div>
+                    <div id="kompetensi_info_${tempSectionId}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <p class="text-xs text-blue-800 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
+                        </p>
+                        <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
+                            <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
+                            <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
+                            <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- Questions Container -->
                 <div class="questions-container" data-section-id="${tempSectionId}">
                     <div class="flex justify-between items-center mb-4">
@@ -1906,11 +2239,25 @@ function validateForm() {
             if (questionType && ['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionType.value)) {
                 const options = question.querySelectorAll('input[name*="[options]"]');
                 const filledOptions = Array.from(options).filter(opt => opt.value.trim());
-                if (filledOptions.length < 2) {
-                    errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe ${questionType.value} harus memiliki minimal 2 pilihan`);
+                const isGrid = questionType.value === 'multiple_choice_grid';
+                const minRows = isGrid ? 1 : 2;
+
+                if (filledOptions.length < minRows) {
+                    errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe ${questionType.value} harus memiliki minimal ${minRows} pilihan`);
                     options.forEach(opt => markFieldError(opt));
                 } else {
                     options.forEach(opt => markFieldValid(opt));
+                }
+
+                if (isGrid) {
+                    const columns = question.querySelectorAll('input[name*="[grid_columns]"]');
+                    const filledColumns = Array.from(columns).filter(col => col.value.trim());
+                    if (filledColumns.length < 1) {
+                        errors.push(`Pertanyaan ${questionIndex + 1} di Block ${sectionIndex + 1} dengan tipe multiple_choice_grid harus memiliki minimal 1 kolom`);
+                        columns.forEach(col => markFieldError(col));
+                    } else {
+                        columns.forEach(col => markFieldValid(col));
+                    }
                 }
             }
         });
@@ -2206,6 +2553,21 @@ function normalizeFormIndexesBeforeSubmit() {
                 optionsList.id = `optionsList-${newSectionId}-${newQuestionId}`;
             }
 
+            const gridColumnsContainer = question.querySelector('[id^="gridColumnsContainer-"]');
+            if (gridColumnsContainer) {
+                gridColumnsContainer.id = `gridColumnsContainer-${newSectionId}-${newQuestionId}`;
+            }
+
+            const gridColumnsList = question.querySelector('[id^="gridColumnsList-"]');
+            if (gridColumnsList) {
+                gridColumnsList.id = `gridColumnsList-${newSectionId}-${newQuestionId}`;
+            }
+
+            const minGajiContainer = question.querySelector('[id^="minGajiContainer-"]');
+            if (minGajiContainer) {
+                minGajiContainer.id = `minGajiContainer-${newSectionId}-${newQuestionId}`;
+            }
+
             const typeSelect = question.querySelector('select[name*="[type]"]');
             if (typeSelect) {
                 typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${newSectionId}, ${newQuestionId}, this.value)`);
@@ -2230,9 +2592,200 @@ function normalizeFormIndexesBeforeSubmit() {
             if (addOptionButton) {
                 addOptionButton.setAttribute('onclick', `addOption(${newSectionId}, ${newQuestionId})`);
             }
+
+            const addGridColumnButton = question.querySelector('button[onclick*="addGridColumnOption("]');
+            if (addGridColumnButton) {
+                addGridColumnButton.setAttribute('onclick', `addGridColumnOption(${newSectionId}, ${newQuestionId})`);
+            }
         });
     });
 }
+
+window.toggleKompetensiBlock = function(sectionId, checkbox) {
+    const infoDiv = document.getElementById(`kompetensi_info_${sectionId}`);
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    const questionsContainer = document.getElementById(`questions-${sectionId}`);
+    
+    if (checkbox.checked) {
+        // KOMPETENSI MODE ON
+        infoDiv.classList.remove('hidden');
+        
+        // Sembunyikan tombol "Tambah Pertanyaan"
+        if (section) {
+            const addBtns = section.querySelectorAll('button[onclick*="addQuestion"]');
+            addBtns.forEach(btn => {
+                if (btn.textContent.includes('Tambah Pertanyaan')) {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+        
+        // Pastikan hanya ada 1 pertanyaan
+        const questions = questionsContainer.querySelectorAll('.question-item');
+        if (questions.length === 0) {
+            addQuestion(sectionId);
+        } else if (questions.length > 1) {
+            for (let i = 1; i < questions.length; i++) {
+                questions[i].remove();
+            }
+        }
+        
+        setTimeout(() => {
+            const question = questionsContainer.querySelector('.question-item');
+            if (question) {
+                // Sembunyikan tombol kontrol pertanyaan (add, copy, delete)
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'none';
+                
+                // Batasi tipe pertanyaan ke 4 tipe yang diizinkan
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect) {
+                    if (!typeSelect.hasAttribute('data-original-html')) {
+                        typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
+                    }
+                    const allowedTypes = ['radio', 'multiple_choice_grid'];
+                    let newHtml = '';
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
+                    Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
+                        if (allowedTypes.includes(opt.value)) {
+                            newHtml += opt.outerHTML;
+                        }
+                    });
+                    typeSelect.innerHTML = newHtml;
+                    // Jika tipe saat ini tidak diizinkan, set ke radio
+                    if (!allowedTypes.includes(typeSelect.value)) {
+                        typeSelect.value = 'radio';
+                        const qId = question.getAttribute('data-question-id');
+                        handleQuestionTypeChange(sectionId, qId, 'radio');
+                    }
+                }
+                
+                // Tampilkan field indikator
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'block';
+                    // Sembunyikan textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'none';
+                        // Initialize first indicator if empty
+                        const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
+                        if (list && list.children.length === 0) {
+                            const existingLines = questionTextarea.value.split('\n').filter(l => l.trim());
+                            if (existingLines.length > 0) {
+                                existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
+                            } else {
+                                addIndikatorItem(sectionId, qId);
+                            }
+                        }
+                    }
+                }
+            }
+        }, 100);
+        
+    } else {
+        // KOMPETENSI MODE OFF
+        infoDiv.classList.add('hidden');
+        
+        // Tampilkan kembali tombol "Tambah Pertanyaan"
+        if (section) {
+            const addBtns = section.querySelectorAll('button[onclick*="addQuestion"]');
+            addBtns.forEach(btn => {
+                if (btn.textContent.includes('Tambah Pertanyaan')) {
+                    btn.style.display = 'inline-block';
+                }
+            });
+        }
+        
+        setTimeout(() => {
+            const questions = questionsContainer.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                // Tampilkan kembali tombol kontrol pertanyaan
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'flex';
+                
+                // Kembalikan semua tipe pertanyaan menjadi tersedia
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
+                    const currentVal = typeSelect.value;
+                    typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
+                    typeSelect.value = currentVal;
+                }
+                
+                // Sembunyikan field indikator
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'none';
+                    // Tampilkan kembali textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'block';
+                    }
+                }
+            });
+        }, 100);
+    }
+};
+
+window.addIndikatorItem = function(sectionId, questionId, value = '') {
+    const list = document.getElementById(`indikatorList-${sectionId}-${questionId}`);
+    if (!list) return;
+    const index = list.children.length + 1;
+    const html = `
+        <div class="flex items-center gap-2 indikator-item mb-2">
+            <span class="text-xs text-gray-500 w-5">${index}.</span>
+            <input type="text" class="flex-1 text-xs border border-gray-300 rounded px-2 py-1 indikator-input" placeholder="Indikator ${index}" value="${value.replace(/"/g, '&quot;')}" oninput="syncIndikators(${sectionId}, ${questionId})">
+            <button type="button" onclick="this.parentElement.remove(); syncIndikators(${sectionId}, ${questionId});" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    list.insertAdjacentHTML('beforeend', html);
+    syncIndikators(sectionId, questionId);
+};
+
+window.syncIndikators = function(sectionId, questionId) {
+    const list = document.getElementById(`indikatorList-${sectionId}-${questionId}`);
+    if (!list) return;
+    const inputs = list.querySelectorAll('.indikator-input');
+    const values = Array.from(inputs).map(input => input.value.trim()).filter(v => v !== '');
+    
+    // Update the hidden textarea
+    const textarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${questionId}][question]"]`);
+    if (textarea) {
+        textarea.value = values.join('\n');
+    }
+    
+    // Re-number the indicators
+    Array.from(list.children).forEach((child, idx) => {
+        const numSpan = child.querySelector('span');
+        if (numSpan) numSpan.textContent = (idx + 1) + '.';
+        const input = child.querySelector('input');
+        if (input && !input.value) input.placeholder = 'Indikator ' + (idx + 1);
+    });
+};
+
+window.addIndikator = function(sectionId, questionId) {
+    const indikatorList = document.getElementById(`indikatorList-${sectionId}-${questionId}`);
+    if (!indikatorList) return;
+    
+    const index = indikatorList.children.length + 1;
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 indikator-item';
+    row.innerHTML = `
+        <i class="far fa-circle text-green-400 text-xs"></i>
+        <input type="text" name="sections[${sectionId}][questions][${questionId}][indikators][]"
+               placeholder="Masukkan indikator ${index}..."
+               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+        <button type="button" onclick="this.closest('.indikator-item').remove()" class="text-red-500 hover:text-red-700 p-2" title="Hapus indikator">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    indikatorList.appendChild(row);
+};
 </script>
 @endpush
 

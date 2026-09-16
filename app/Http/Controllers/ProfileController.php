@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Lulusan;
+use App\Models\MasterJabatan;
+use App\Models\MasterSatuanKerja;
+use App\Models\MasterUnitKerja;
 use App\Models\PenggunaLulusan;
 use App\Models\Survey;
 use App\Models\SurveyUser;
@@ -110,6 +113,9 @@ class ProfileController extends Controller
         return view('user.views.index', [
             'user' => $user,
             'survey' => $survey,
+            'masterJabatan' => MasterJabatan::orderBy('nama')->get(),
+            'masterSatuanKerja' => MasterSatuanKerja::orderBy('nama')->get(),
+            'masterUnitKerja' => MasterUnitKerja::orderBy('nama')->get(),
         ]);
     }
     // buat di indeks user

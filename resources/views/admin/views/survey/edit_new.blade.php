@@ -273,6 +273,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Error response with JSON data
+                    if (status === 419 || (data && data.message && data.message.includes('CSRF token mismatch'))) {
+                        throw new Error('Sesi Anda telah berakhir (CSRF token expired). Silakan refresh halaman (tekan F5) lalu coba simpan kembali.');
+                    }
                     throw new Error(data.message || 'Terjadi kesalahan saat mengupdate survey');
                 }
             })
@@ -323,8 +326,11 @@ function loadExistingSections() {
                     <!-- Block Info -->
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
                         <h5 class="text-sm font-medium text-gray-700 mb-3">Nama Block <span class="text-red-500">*</span></h5>
-                        <input type="text" name="sections[${sectionCounter}][section_name]" value="${sectionData.section_name || ''}" placeholder="Tulis nama blok disini..." required
-                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                        <div class="flex items-center gap-2">
+                            <input type="hidden" name="sections[${sectionCounter}][id]" value="${sectionData.id || ''}">
+                            <input type="text" name="sections[${sectionCounter}][section_name]" value="${sectionData.section_name || ''}" placeholder="Tulis nama blok disini..." required
+                                   class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                        </div>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
@@ -391,6 +397,7 @@ function loadExistingQuestion(sectionId, questionData) {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <div>
+                    <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][id]" value="${questionData.id || ''}">
                     <label class="block text-xs font-medium text-gray-700 mb-1">Pertanyaan <span class="text-red-500">*</span></label>
                     <textarea name="sections[${sectionId}][questions][${questionCounter}][question]" rows="2" placeholder="Tulis pertanyaan disini..." required
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.question || ''}</textarea>
@@ -414,6 +421,7 @@ function loadExistingQuestion(sectionId, questionData) {
                         <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Dropdown</option>
                         <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
                         <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
+                        <option value="gaji" ${questionData.type === 'gaji' ? 'selected' : ''}>Gaji</option>
                     </select>
                 </div>
                 <div>
@@ -424,10 +432,17 @@ function loadExistingQuestion(sectionId, questionData) {
                         <option value="pie" ${questionData.visualization === 'pie' ? 'selected' : ''}>Pie Chart</option>
                     </select>
                 </div>
-                <div class="flex items-center pt-6">
-                    <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required === '1' ? 'checked' : ''}
-                           class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                <div class="flex flex-col gap-1 pt-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required == '1' ? 'checked' : ''}
+                               class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                    </div>
+                    <div class="flex items-center mt-1">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][is_analytic_table]" value="1" ${questionData.is_analytic_table == '1' ? 'checked' : ''}
+                               class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Tabel Analitik</label>
+                    </div>
                 </div>
             </div>
 
@@ -442,6 +457,12 @@ function loadExistingQuestion(sectionId, questionData) {
                 <div class="options-list space-y-2" id="options-list-${sectionId}-${questionCounter}">
                     <!-- Options will be loaded here -->
                 </div>
+            </div>
+
+            <!-- Min Gaji Container -->
+            <div class="min-gaji-container mt-4 pt-4 border-t border-gray-200" id="min-gaji-${sectionId}-${questionCounter}" style="display: ${questionData.type === 'gaji' ? 'block' : 'none'};">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                <input type="number" name="sections[${sectionId}][questions][${questionCounter}][min_gaji]" value="${questionData.min_gaji || ''}" class="w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
             </div>
         </div>
     `;
@@ -604,6 +625,7 @@ function addQuestion(sectionId) {
                         <option value="select">Dropdown</option>
                         <option value="file">File Upload</option>
                         <option value="date">Date</option>
+                        <option value="gaji">Gaji</option>
                     </select>
                 </div>
                 <div>
@@ -614,10 +636,17 @@ function addQuestion(sectionId) {
                         <option value="pie">Pie Chart</option>
                     </select>
                 </div>
-                <div class="flex items-center pt-6">
-                    <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1"
-                           class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                <div class="flex flex-col gap-1 pt-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1"
+                               class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
+                    </div>
+                    <div class="flex items-center mt-1">
+                        <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][is_analytic_table]" value="1"
+                               class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label class="text-xs font-medium text-gray-700">Tabel Analitik</label>
+                    </div>
                 </div>
             </div>
 
@@ -633,6 +662,12 @@ function addQuestion(sectionId) {
                     <!-- Options will be added here -->
                 </div>
             </div>
+
+            <!-- Min Gaji Container -->
+            <div class="min-gaji-container mt-4 pt-4 border-t border-gray-200" id="min-gaji-${sectionId}-${questionCounter}" style="display: none;">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                <input type="number" name="sections[${sectionId}][questions][${questionCounter}][min_gaji]" class="w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+            </div>
         </div>
     `;
 
@@ -642,6 +677,11 @@ function addQuestion(sectionId) {
 function toggleOptions(sectionId, questionId) {
     const questionType = document.querySelector(`select[name="sections[${sectionId}][questions][${questionId}][type]"]`).value;
     const optionsContainer = document.getElementById(`options-${sectionId}-${questionId}`);
+    const minGajiContainer = document.getElementById(`min-gaji-${sectionId}-${questionId}`);
+
+    if (minGajiContainer) {
+        minGajiContainer.style.display = questionType === 'gaji' ? 'block' : 'none';
+    }
 
     if (['radio', 'checkbox', 'select'].includes(questionType)) {
         optionsContainer.style.display = 'block';

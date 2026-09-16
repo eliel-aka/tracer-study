@@ -1,15 +1,15 @@
 <!-- ====== Navbar Section Start -->
-<div class="absolute top-0 left-0 z-40 flex items-center w-full bg-transparent ud-header">
-    <div class="container">
-      <div class="relative flex items-center justify-between -mx-4">
-        <div class="max-w-full px-4 w-60">
-          <a href="index.html" class="block w-full py-5 navbar-logo">
-            <img src="{{ asset('assets/images/logo/ts.svg') }}" alt="logo" class="w-full dark:hidden" />
-            <img src="{{ asset('assets/images/logo/ts_white.svg') }}" alt="logo" class="hidden w-full dark:block" />
+<div class="relative flex items-center w-full bg-white dark:bg-dark-2 border-b border-gray-200 dark:border-dark-3 theme-border z-40">
+    <div class="container mx-auto px-4">
+      <div class="relative flex items-center justify-between py-3">
+        <div class="w-60 max-w-full flex-shrink-0">
+          <a href="{{ url('/') }}" class="block navbar-logo">
+            <img src="{{ asset('assets/images/logo/ts.svg') }}" alt="logo" class="w-full h-auto dark:hidden" style="max-height: 42px; width: auto;" />
+            <img src="{{ asset('assets/images/logo/ts_white.svg') }}" alt="logo" class="hidden w-full h-auto dark:block" style="max-height: 42px; width: auto;" />
           </a>
         </div>
-        <div class="flex items-center justify-end w-full px-4">
-          <div class="flex items-center justify-end">
+        <div class="flex items-center justify-end gap-4">
+          <div class="flex items-center gap-4">
             <label for="themeSwitcher" class="inline-flex items-center cursor-pointer" aria-label="themeSwitcher"
               name="themeSwitcher">
               <input type="checkbox" name="themeSwitcher" id="themeSwitcher" class="sr-only" />
@@ -74,21 +74,16 @@
               </span>
             </label>
 
-              @if (Route::has('login'))
+            @if (Route::has('login'))
                 <nav class="flex items-center gap-4">
                     @auth
-
-                         <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" class="m-0">
                             @csrf
-                            <button type="submit" class="px-6 py-2 text-base font-medium text-white duration-300 ease-in-out rounded-md signUpBtn bg-primary hover:bg-blue-dark">
+                            <button type="submit" class="px-6 py-2 text-base font-medium text-white duration-300 ease-in-out rounded-md signUpBtn bg-primary hover:bg-blue-dark whitespace-nowrap">
                                 {{ __('Log Out') }}
                             </button>
-                          </form>
+                        </form>
                     @else
-                        <a
-                          class="loginBtn py-2 px-[22px] text-base font-medium text-dark dark:text-white hover:opacity-70">
-                          <!-- Sign In -->
-                        </a>
                         <a href="{{ route('login') }}" class="px-6 py-2 text-sm sm:text-base font-medium text-white duration-300 ease-in-out rounded-md signUpBtn bg-primary hover:bg-blue-dark">
                           Login
                         </a>
@@ -96,10 +91,9 @@
                 </nav>
             @endif
 
-            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <!-- ====== Navbar Section End -->
+</div>
+<!-- ====== Navbar Section End -->

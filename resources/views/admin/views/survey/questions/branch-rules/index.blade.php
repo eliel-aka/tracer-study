@@ -52,13 +52,13 @@
     </div>
 
     <!-- Current Rules -->
-    <div class="bg-white shadow-sm rounded-lg overflow-hidden mb-6">
+    <div class="bg-white shadow-sm rounded-lg overflow-hidden mb-6 min-w-0 w-full max-w-full">
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Aturan yang Sudah Dibuat</h3>
         </div>
         
         @if($rules->count() > 0)
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto w-full max-w-full min-w-0 block">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>

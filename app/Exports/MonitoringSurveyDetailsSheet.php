@@ -28,17 +28,75 @@ class MonitoringSurveyDetailsSheet implements FromCollection, WithHeadings, With
     protected function prepareData(): void
     {
         Survey::findOrFail($this->surveyId);
-        $this->questions = TemplatePertanyaan::where('id_survey', $this->surveyId)->orderBy('urutan')->get();
+        $this->questions = TemplatePertanyaan::with('templateJawaban')
+            ->where('id_survey', $this->surveyId)
+            ->orderBy('urutan')
+            ->get();
         $this->users = SurveyUser::getUser($this->surveyId);
 
         if (!$this->users || $this->users->isEmpty()) {
             return;
         }
 
-        $answers = SurveyUserJawaban::whereIn('survey_user_id', $this->users->pluck('survey_user_id'))->with(['surveyUser', 'template_pertanyaan'])->get();
+        $answers = SurveyUserJawaban::whereIn('survey_user_id', $this->users->pluck('survey_user_id'))
+            ->with(['surveyUser', 'template_pertanyaan'])
+            ->get();
+
+        $optionMap = [];
+        $questionTypeMap = [];
+        $gridColumnsMap = [];
+
+        foreach ($this->questions as $question) {
+            $questionTypeMap[$question->id] = $question->tipe;
+            if (is_array($question->grid_columns)) {
+                $gridColumnsMap[$question->id] = $question->grid_columns;
+            }
+            foreach ($question->templateJawaban as $option) {
+                $optionMap[$option->id] = $option->pilihan_jawaban;
+            }
+        }
 
         foreach ($answers as $answer) {
-            $this->answers[$answer->survey_user_id][$answer->template_pertanyaan_id] = $answer->jawaban;
+            $qid = $answer->template_pertanyaan_id;
+            $type = $questionTypeMap[$qid] ?? null;
+            $rawJawaban = $answer->jawaban;
+
+            if ($type === 'checkbox') {
+                $ids = explode(',', $rawJawaban);
+                $labels = [];
+                foreach ($ids as $id) {
+                    $id = trim($id);
+                    $labels[] = $optionMap[$id] ?? $id;
+                }
+                $formattedJawaban = implode(', ', $labels);
+            } elseif ($type === 'radio' || $type === 'select') {
+                $formattedJawaban = $optionMap[$rawJawaban] ?? $rawJawaban;
+            } elseif ($type === 'multiple_choice_grid') {
+                $json = json_decode($rawJawaban, true);
+                if (is_array($json)) {
+                    $parts = [];
+                    foreach ($json as $rowId => $scaleVal) {
+                        $rowLabel = $optionMap[$rowId] ?? $rowId;
+                        $scaleLabel = $scaleVal;
+                        
+                        $gCols = $gridColumnsMap[$qid] ?? null;
+                        if (is_array($gCols)) {
+                            $idx = (int)$scaleVal - 1;
+                            if (isset($gCols[$idx])) {
+                                $scaleLabel = $gCols[$idx];
+                            }
+                        }
+                        $parts[] = $rowLabel . ': ' . $scaleLabel;
+                    }
+                    $formattedJawaban = implode('; ', $parts);
+                } else {
+                    $formattedJawaban = $rawJawaban;
+                }
+            } else {
+                $formattedJawaban = $rawJawaban;
+            }
+
+            $this->answers[$answer->survey_user_id][$answer->template_pertanyaan_id] = $formattedJawaban;
         }
     }
 

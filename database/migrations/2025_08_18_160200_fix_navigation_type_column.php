@@ -19,7 +19,9 @@ return new class extends Migration
             }
 
             // Ubah navigation_type dari ENUM ke VARCHAR
-            DB::statement('ALTER TABLE survey_blocks MODIFY COLUMN navigation_type VARCHAR(50) DEFAULT "next"');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE survey_blocks MODIFY COLUMN navigation_type VARCHAR(50) DEFAULT "next"');
+            }
 
             // Restore foreign key
             if (Schema::hasColumn('survey_blocks', 'target_section_id')) {
@@ -31,7 +33,9 @@ return new class extends Migration
 
         // Juga update untuk tabel section_navigation_rules jika ada
         if (Schema::hasTable('section_navigation_rules')) {
-            DB::statement('ALTER TABLE section_navigation_rules MODIFY COLUMN navigation_action VARCHAR(50)');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE section_navigation_rules MODIFY COLUMN navigation_action VARCHAR(50)');
+            }
         }
     }
 
@@ -47,7 +51,9 @@ return new class extends Migration
             }
 
             // Kembalikan ke ENUM
-            DB::statement('ALTER TABLE survey_blocks MODIFY COLUMN navigation_type ENUM("next", "jump", "end") DEFAULT "next"');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE survey_blocks MODIFY COLUMN navigation_type ENUM("next", "jump", "end") DEFAULT "next"');
+            }
 
             // Restore foreign key
             if (Schema::hasColumn('survey_blocks', 'target_section_id')) {
@@ -58,7 +64,9 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('section_navigation_rules')) {
-            DB::statement('ALTER TABLE section_navigation_rules MODIFY COLUMN navigation_action ENUM("next", "jump_to_section", "end_survey")');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE section_navigation_rules MODIFY COLUMN navigation_action ENUM("next", "jump_to_section", "end_survey")');
+            }
         }
     }
 };

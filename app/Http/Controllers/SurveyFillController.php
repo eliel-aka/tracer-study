@@ -42,15 +42,21 @@ class SurveyFillController extends Controller
         }
 
         try {
-            DB::beginTransaction();
-
             // Find or create SurveyUser
             $surveyUser = $this->findOrCreateSurveyUser($survey);
 
-            // If user has already completed the survey
+            // If user has already completed the survey, reopen it for editing
             if ($surveyUser->status === '1') {
-                return redirect()->route('surveys.done', $survey);
+                $editQuestion = $this->determineNextQuestion($survey, $surveyUser);
+
+                if (!$editQuestion) {
+                    return redirect()->route('surveys.done', $survey);
+                }
+
+                return redirect()->route('surveys.show-question', [$survey, $editQuestion]);
             }
+
+            DB::beginTransaction();
 
             // Determine the next question to show
             $nextQuestion = $this->determineNextQuestion($survey, $surveyUser);
@@ -107,10 +113,25 @@ class SurveyFillController extends Controller
                                            ->get();
         }
 
-        // Get existing answer if any
-        $existingAnswer = SurveyUserJawaban::where('survey_user_id', $surveyUser->id)
-                                          ->where('template_pertanyaan_id', $question->id)
-                                          ->first();
+        // Check if question belongs to identity block
+        $block = $question->block;
+        $isIdentity = $block && !empty($block->metadata['is_identity_block']);
+        if ($isIdentity && Auth::check()) {
+            $profileValues = \App\Services\RespondentAttributeService::getUserProfileValues(Auth::user());
+            $attrKey = \App\Services\RespondentAttributeService::mapQuestionToAttributeKey($question->pertanyaan, $survey->type_survei);
+            $profileValue = $attrKey ? ($profileValues[$attrKey] ?? '') : '';
+            if ($profileValue !== '') {
+                if (!$existingAnswer) {
+                    $existingAnswer = SurveyUserJawaban::create([
+                        'survey_user_id' => $surveyUser->id,
+                        'template_pertanyaan_id' => $question->id,
+                        'jawaban' => $profileValue,
+                    ]);
+                } else if ($existingAnswer->jawaban !== $profileValue) {
+                    $existingAnswer->update(['jawaban' => $profileValue]);
+                }
+            }
+        }
 
         return view('surveys.fill.question', compact(
             'survey', 
@@ -118,7 +139,8 @@ class SurveyFillController extends Controller
             'surveyUser', 
             'progress', 
             'answerOptions', 
-            'existingAnswer'
+            'existingAnswer',
+            'isIdentity'
         ));
     }
 
@@ -182,6 +204,7 @@ class SurveyFillController extends Controller
     public function done(Survey $survey)
     {
         $surveyUser = null;
+        $canEdit = $this->isSurveyActive($survey);
         
         if (Auth::check()) {
             $surveyUser = SurveyUser::where('survey_id', $survey->id)
@@ -197,7 +220,7 @@ class SurveyFillController extends Controller
             }
         }
 
-        return view('surveys.fill.done', compact('survey', 'surveyUser'));
+        return view('surveys.fill.done', compact('survey', 'surveyUser', 'canEdit'));
     }
 
     /**
@@ -305,8 +328,20 @@ class SurveyFillController extends Controller
             case 'textarea':
             case 'number':
             case 'date':
+            case 'gaji':
                 $jawaban = $request->value ?? '';
                 break;
+        }
+
+        // Tamper-proof identity values
+        $block = $question->block;
+        if ($block && !empty($block->metadata['is_identity_block']) && Auth::check()) {
+            $profileValues = \App\Services\RespondentAttributeService::getUserProfileValues(Auth::user());
+            $attrKey = \App\Services\RespondentAttributeService::mapQuestionToAttributeKey($question->pertanyaan, $survey->type_survei);
+            $profileValue = $attrKey ? ($profileValues[$attrKey] ?? '') : '';
+            if ($profileValue !== '') {
+                $jawaban = $profileValue;
+            }
         }
 
         SurveyUserJawaban::updateOrCreate([
@@ -337,6 +372,7 @@ class SurveyFillController extends Controller
             case 'textarea':
             case 'number':
             case 'date':
+            case 'gaji':
                 return ['value' => $request->value ?? ''];
             
             default:

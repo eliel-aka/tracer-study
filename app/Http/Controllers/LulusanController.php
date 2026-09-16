@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Exports\LulusanExport;
+use App\Exports\LulusanTemplateExport;
 use App\Imports\LulusanImport;
 use App\Mail\SendEmail;
 use App\Models\Lulusan;
+use App\Models\MasterJabatan;
+use App\Models\MasterSatuanKerja;
+use App\Models\MasterUnitKerja;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +27,14 @@ class LulusanController extends Controller
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
                 $q->where('nama', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('nip_baru', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('nip_lama', 'like', '%' . $searchTerm . '%')
                   ->orWhere('nip', 'like', '%' . $searchTerm . '%');
             });
+        }
+
+        if ($request->filled('status_data')) {
+            $query->statusData($request->status_data);
         }
 
         $daftarLulusan = $query->paginate(10)->appends($request->query());
@@ -34,7 +44,13 @@ class LulusanController extends Controller
 
     public function create()
     {
-        return view('admin.views.lulusan.create');
+        $masterJabatan = MasterJabatan::orderBy('nama')->get();
+        $masterSatuanKerja = MasterSatuanKerja::orderBy('nama')->get();
+        $masterUnitKerja = MasterUnitKerja::orderBy('nama')->get();
+
+        return view('admin.views.lulusan.create', compact(
+            'masterJabatan', 'masterSatuanKerja', 'masterUnitKerja'
+        ));
     }
 
     public function store(Request $request)
@@ -48,10 +64,20 @@ class LulusanController extends Controller
             $errors['nama'] = 'Nama wajib diisi.';
         }
 
-        if (empty(trim($request->nip))) {
-            $errors['nip'] = 'NIP wajib diisi.';
-        } elseif (Lulusan::where('nip', $request->nip)->exists()) {
-            $errors['nip'] = 'NIP sudah terdaftar di sistem, gunakan NIP lain.';
+        if (empty(trim($request->nip_baru))) {
+            $errors['nip_baru'] = 'NIP Baru wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru))) {
+            $errors['nip_baru'] = 'NIP Baru harus 18 digit angka.';
+        } elseif (Lulusan::where('nip_baru', $request->nip_baru)->exists()) {
+            $errors['nip_baru'] = 'NIP Baru sudah terdaftar di sistem, gunakan NIP lain.';
+        }
+
+        if (empty(trim($request->nip_lama))) {
+            $errors['nip_lama'] = 'NIP Lama wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{9}$/', trim($request->nip_lama))) {
+            $errors['nip_lama'] = 'NIP Lama harus 9 digit angka.';
+        } elseif (Lulusan::where('nip_lama', $request->nip_lama)->exists()) {
+            $errors['nip_lama'] = 'NIP Lama sudah terdaftar di sistem, gunakan NIP lain.';
         }
 
         if (empty(trim($request->email))) {
@@ -79,8 +105,16 @@ class LulusanController extends Controller
             $errors['tahun_lulus'] = 'Tahun Lulus wajib diisi.';
         }
 
-        if (empty(trim($request->nip_pengguna_lulusan))) {
-            $errors['nip_pengguna_lulusan'] = 'NIP Pengguna Lulusan wajib diisi.';
+        if (empty(trim($request->nip_baru_pengguna_lulusan))) {
+            $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru_pengguna_lulusan))) {
+            $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan harus 18 digit angka.';
+        }
+
+        if (empty(trim($request->nip_lama_pengguna_lulusan))) {
+            $errors['nip_lama_pengguna_lulusan'] = 'NIP Lama Pengguna Lulusan wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{9}$/', trim($request->nip_lama_pengguna_lulusan))) {
+            $errors['nip_lama_pengguna_lulusan'] = 'NIP Lama Pengguna Lulusan harus 9 digit angka.';
         }
 
         if (!empty($errors)) {
@@ -91,7 +125,7 @@ class LulusanController extends Controller
         // Proses simpan data
         // -------------------------
         try {
-            $nipLast2     = substr($request->nip, -2);
+            $nipLast2     = substr($request->nip_baru ?? $request->nip_lama, -2);
             $namaLast2    = strtolower(substr(preg_replace('/[^A-Za-z]/', '', $request->nama), -2));
             $tanggalLahir = str_replace('-', '', $request->tanggal_lahir ?? '01');
             $tanggalLast2 = substr($tanggalLahir, -2);
@@ -108,18 +142,22 @@ class LulusanController extends Controller
             $user->assignRole('lulusan');
 
             Lulusan::create([
-                'user_id'              => $user->id,
-                'nama'                 => $request->nama,
-                'nip'                  => $request->nip,
-                'email'                => $request->email,
-                'prodi'                => $request->prodi,
-                'jabatan'              => $request->jabatan,
-                'satuan_kerja'         => $request->satuan_kerja,
-                'unit_kerja'           => $request->unit_kerja,
-                'no_hp'                => $request->no_hp,
-                'nip_pengguna_lulusan' => $request->nip_pengguna_lulusan,
-                'tanggal_lahir'        => $request->tanggal_lahir,
-                'tahun_lulus'          => $request->tahun_lulus,
+                'user_id'                   => $user->id,
+                'nama'                      => $request->nama,
+                'nip'                       => $request->nip_baru,
+                'nip_baru'                  => $request->nip_baru,
+                'nip_lama'                  => $request->nip_lama,
+                'email'                     => $request->email,
+                'prodi'                     => $request->prodi,
+                'jabatan'                   => $request->jabatan,
+                'satuan_kerja'              => $request->satuan_kerja,
+                'unit_kerja'                => $request->unit_kerja,
+                'no_hp'                     => $request->no_hp,
+                'nip_pengguna_lulusan'      => $request->nip_baru_pengguna_lulusan,
+                'nip_baru_pengguna_lulusan' => $request->nip_baru_pengguna_lulusan,
+                'nip_lama_pengguna_lulusan' => $request->nip_lama_pengguna_lulusan,
+                'tanggal_lahir'             => $request->tanggal_lahir,
+                'tahun_lulus'               => $request->tahun_lulus,
             ]);
 
             DB::commit();
@@ -145,7 +183,13 @@ class LulusanController extends Controller
 
     public function edit(Lulusan $lulusan)
     {
-        return view('admin.views.lulusan.edit', compact('lulusan'));
+        $masterJabatan = MasterJabatan::orderBy('nama')->get();
+        $masterSatuanKerja = MasterSatuanKerja::orderBy('nama')->get();
+        $masterUnitKerja = MasterUnitKerja::orderBy('nama')->get();
+
+        return view('admin.views.lulusan.edit', compact(
+            'lulusan', 'masterJabatan', 'masterSatuanKerja', 'masterUnitKerja'
+        ));
     }
 
     public function update(Request $request, Lulusan $lulusan)
@@ -159,10 +203,20 @@ class LulusanController extends Controller
             $errors['nama'] = 'Nama wajib diisi.';
         }
 
-        if (empty(trim($request->nip))) {
-            $errors['nip'] = 'NIP wajib diisi.';
-        } elseif (Lulusan::where('nip', $request->nip)->where('id', '!=', $lulusan->id)->exists()) {
-            $errors['nip'] = 'NIP sudah digunakan oleh lulusan lain, gunakan NIP yang berbeda.';
+        if (empty(trim($request->nip_baru))) {
+            $errors['nip_baru'] = 'NIP Baru wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru))) {
+            $errors['nip_baru'] = 'NIP Baru harus 18 digit angka.';
+        } elseif (Lulusan::where('nip_baru', $request->nip_baru)->where('id', '!=', $lulusan->id)->exists()) {
+            $errors['nip_baru'] = 'NIP Baru sudah digunakan oleh lulusan lain, gunakan NIP yang berbeda.';
+        }
+
+        if (empty(trim($request->nip_lama))) {
+            $errors['nip_lama'] = 'NIP Lama wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{9}$/', trim($request->nip_lama))) {
+            $errors['nip_lama'] = 'NIP Lama harus 9 digit angka.';
+        } elseif (Lulusan::where('nip_lama', $request->nip_lama)->where('id', '!=', $lulusan->id)->exists()) {
+            $errors['nip_lama'] = 'NIP Lama sudah digunakan oleh lulusan lain, gunakan NIP yang berbeda.';
         }
 
         if (empty(trim($request->email))) {
@@ -190,8 +244,16 @@ class LulusanController extends Controller
             $errors['tahun_lulus'] = 'Tahun Lulus wajib diisi.';
         }
 
-        if (empty(trim($request->nip_pengguna_lulusan))) {
-            $errors['nip_pengguna_lulusan'] = 'NIP Pengguna Lulusan wajib diisi.';
+        if (empty(trim($request->nip_baru_pengguna_lulusan))) {
+            $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru_pengguna_lulusan))) {
+            $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan harus 18 digit angka.';
+        }
+
+        if (empty(trim($request->nip_lama_pengguna_lulusan))) {
+            $errors['nip_lama_pengguna_lulusan'] = 'NIP Lama Pengguna Lulusan wajib diisi.';
+        } elseif (!preg_match('/^[0-9]{9}$/', trim($request->nip_lama_pengguna_lulusan))) {
+            $errors['nip_lama_pengguna_lulusan'] = 'NIP Lama Pengguna Lulusan harus 9 digit angka.';
         }
 
         if (!empty($errors)) {
@@ -210,17 +272,21 @@ class LulusanController extends Controller
             ]);
 
             $lulusan->update([
-                'nama'                 => $request->nama,
-                'nip'                  => $request->nip,
-                'email'                => $request->email,
-                'prodi'                => $request->prodi,
-                'jabatan'              => $request->jabatan,
-                'satuan_kerja'         => $request->satuan_kerja,
-                'unit_kerja'           => $request->unit_kerja,
-                'no_hp'                => $request->no_hp,
-                'nip_pengguna_lulusan' => $request->nip_pengguna_lulusan,
-                'tanggal_lahir'        => $request->tanggal_lahir,
-                'tahun_lulus'          => $request->tahun_lulus,
+                'nama'                      => $request->nama,
+                'nip'                       => $request->nip_baru,
+                'nip_baru'                  => $request->nip_baru,
+                'nip_lama'                  => $request->nip_lama,
+                'email'                     => $request->email,
+                'prodi'                     => $request->prodi,
+                'jabatan'                   => $request->jabatan,
+                'satuan_kerja'              => $request->satuan_kerja,
+                'unit_kerja'                => $request->unit_kerja,
+                'no_hp'                     => $request->no_hp,
+                'nip_pengguna_lulusan'      => $request->nip_baru_pengguna_lulusan,
+                'nip_baru_pengguna_lulusan' => $request->nip_baru_pengguna_lulusan,
+                'nip_lama_pengguna_lulusan' => $request->nip_lama_pengguna_lulusan,
+                'tanggal_lahir'             => $request->tanggal_lahir,
+                'tahun_lulus'               => $request->tahun_lulus,
             ]);
 
             DB::commit();
@@ -243,6 +309,11 @@ class LulusanController extends Controller
     public function export(Excel $excel)
     {
         return $excel->download(new LulusanExport, 'lulusan.xlsx');
+    }
+
+    public function downloadTemplate(Excel $excel)
+    {
+        return $excel->download(new LulusanTemplateExport, 'template_import_lulusan.xlsx');
     }
 
     public function import(Request $request, Excel $excel)

@@ -3,6 +3,9 @@
 namespace App\Imports;
 
 use App\Models\Lulusan;
+use App\Models\MasterJabatan;
+use App\Models\MasterSatuanKerja;
+use App\Models\MasterUnitKerja;
 use App\Models\SurveyUser;
 use App\Models\User;
 use Exception;
@@ -14,10 +17,17 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class LulusanImport implements ToModel, WithHeadingRow
 {
     protected $survey_id;
+    protected $validJabatan;
+    protected $validSatker;
+    protected $validUnitKerja;
 
     public function __construct($survey_id = null)
     {
         $this->survey_id = $survey_id;
+        // Cache master data lists for validation
+        $this->validJabatan = MasterJabatan::pluck('nama')->map(fn($v) => strtolower(trim($v)))->toArray();
+        $this->validSatker = MasterSatuanKerja::pluck('nama')->map(fn($v) => strtolower(trim($v)))->toArray();
+        $this->validUnitKerja = MasterUnitKerja::pluck('nama')->map(fn($v) => strtolower(trim($v)))->toArray();
     }
     /**
      * @param array $row
@@ -68,11 +78,54 @@ class LulusanImport implements ToModel, WithHeadingRow
 
             // Clean the name before saving
             $cleanedName = $cleanName($row['nama']);
-            $prodi = $row['prodi'] ?? ($row['program_studi'] ?? null);
+
+            // Validate Program Studi against allowed values
+            $rawProdi = $row['prodi'] ?? ($row['program_studi'] ?? null);
+            $prodi = null;
+            if (!empty($rawProdi)) {
+                foreach (Lulusan::VALID_PRODI as $validOption) {
+                    if (strtolower(trim($rawProdi)) === strtolower($validOption)) {
+                        $prodi = $validOption;
+                        break;
+                    }
+                }
+            }
+
+            // Validate Jabatan against master data
+            $rawJabatan = $row['jabatan'] ?? null;
+            $jabatan = null;
+            if (!empty($rawJabatan) && in_array(strtolower(trim($rawJabatan)), $this->validJabatan)) {
+                $jabatan = trim($rawJabatan);
+            }
+
+            // Validate Satuan Kerja against master data
+            $rawSatker = $row['satuan_kerja'] ?? null;
+            $satuanKerja = null;
+            if (!empty($rawSatker) && in_array(strtolower(trim($rawSatker)), $this->validSatker)) {
+                $satuanKerja = trim($rawSatker);
+            }
+
+            // Validate Unit Kerja against master data
+            $rawUnitKerja = $row['unit_kerja'] ?? null;
+            $unitKerja = null;
+            if (!empty($rawUnitKerja) && in_array(strtolower(trim($rawUnitKerja)), $this->validUnitKerja)) {
+                $unitKerja = trim($rawUnitKerja);
+            }
+
+            $nipBaru = !empty($row['nip_baru']) ? trim($row['nip_baru']) : (isset($row['nip']) && strlen(trim($row['nip'])) === 18 ? trim($row['nip']) : null);
+            $nipLama = !empty($row['nip_lama']) ? trim($row['nip_lama']) : (isset($row['nip']) && strlen(trim($row['nip'])) === 9 ? trim($row['nip']) : null);
+            $nipBaruPl = !empty($row['nip_baru_pengguna_lulusan']) ? trim($row['nip_baru_pengguna_lulusan']) : (!empty($row['nip_pengguna_lulusan_baru']) ? trim($row['nip_pengguna_lulusan_baru']) : (isset($row['nip_pengguna_lulusan']) && strlen(trim($row['nip_pengguna_lulusan'])) === 18 ? trim($row['nip_pengguna_lulusan']) : null));
+            $nipLamaPl = !empty($row['nip_lama_pengguna_lulusan']) ? trim($row['nip_lama_pengguna_lulusan']) : (!empty($row['nip_pengguna_lulusan_lama']) ? trim($row['nip_pengguna_lulusan_lama']) : (isset($row['nip_pengguna_lulusan']) && strlen(trim($row['nip_pengguna_lulusan'])) === 9 ? trim($row['nip_pengguna_lulusan']) : null));
 
             //mengeluarkan 8 angka NIP untuk menjadi variabel tanggal_lahir
-            if($row['nip']){
-                $row['tanggal_lahir'] = \Carbon\Carbon::createFromFormat('Ymd', substr($row['nip'], 0, 8))->format('Y-m-d');
+            if ($nipBaru && empty($row['tanggal_lahir'])) {
+                try {
+                    $row['tanggal_lahir'] = \Carbon\Carbon::createFromFormat('Ymd', substr($nipBaru, 0, 8))->format('Y-m-d');
+                } catch (\Exception $e) {}
+            } elseif (!empty($row['nip']) && empty($row['tanggal_lahir'])) {
+                try {
+                    $row['tanggal_lahir'] = \Carbon\Carbon::createFromFormat('Ymd', substr($row['nip'], 0, 8))->format('Y-m-d');
+                } catch (\Exception $e) {}
             }
 
             // Process dates before creating/updating
@@ -102,14 +155,18 @@ class LulusanImport implements ToModel, WithHeadingRow
 
                 // Update existing record with new data
                 $existingLulusan->update([
-                    'nip' => $row['nip'] ?? $existingLulusan->nip,
+                    'nip' => $nipBaru ?? $nipLama ?? ($row['nip'] ?? $existingLulusan->nip),
+                    'nip_baru' => $nipBaru ?? $existingLulusan->nip_baru,
+                    'nip_lama' => $nipLama ?? $existingLulusan->nip_lama,
                     'email' => $row['email'] ?? $existingLulusan->email,
                     'prodi' => $prodi ?? $existingLulusan->prodi,
-                    'jabatan' => $row['jabatan'] ?? $existingLulusan->jabatan,
-                    'satuan_kerja' => $row['satuan_kerja'] ?? $existingLulusan->satuan_kerja,
-                    'unit_kerja' => $row['unit_kerja'] ?? $existingLulusan->unit_kerja,
+                    'jabatan' => $jabatan ?? $existingLulusan->jabatan,
+                    'satuan_kerja' => $satuanKerja ?? $existingLulusan->satuan_kerja,
+                    'unit_kerja' => $unitKerja ?? $existingLulusan->unit_kerja,
                     'no_hp' => $row['no_hp'] ?? $existingLulusan->no_hp,
-                    'nip_pengguna_lulusan' => $row['nip_pengguna_lulusan'] ?? $existingLulusan->nip_pengguna_lulusan,
+                    'nip_pengguna_lulusan' => $nipBaruPl ?? $nipLamaPl ?? ($row['nip_pengguna_lulusan'] ?? $existingLulusan->nip_pengguna_lulusan),
+                    'nip_baru_pengguna_lulusan' => $nipBaruPl ?? $existingLulusan->nip_baru_pengguna_lulusan,
+                    'nip_lama_pengguna_lulusan' => $nipLamaPl ?? $existingLulusan->nip_lama_pengguna_lulusan,
                     'tahun_lulus' => $tahunLulus ?? $existingLulusan->tahun_lulus
                 ]);
 
@@ -137,11 +194,12 @@ class LulusanImport implements ToModel, WithHeadingRow
 
             // Create new record if no existing lulusan found
             // Create the user
+            $userPassNip = $nipBaru ?? $nipLama ?? ($row['nip'] ?? '12345');
             $user = User::firstOrCreate(
                 ['email' => $row['email']],
                 [
                     'name' => $cleanedName,
-                    'password' => bcrypt(substr($row['nip'], 0, 5)),
+                    'password' => bcrypt(substr($userPassNip, 0, 5)),
                     'role' => 'lulusan',
                 ]
             );
@@ -155,14 +213,18 @@ class LulusanImport implements ToModel, WithHeadingRow
             $lulusan = Lulusan::create([
                 'user_id' => $user->id,
                 'nama' => $cleanedName,
-                'nip' => $row['nip'] ?? '',
+                'nip' => $nipBaru ?? $nipLama ?? ($row['nip'] ?? ''),
+                'nip_baru' => $nipBaru,
+                'nip_lama' => $nipLama,
                 'email' => $row['email'] ?? '',
                 'prodi' => $prodi,
-                'jabatan' => $row['jabatan'] ?? '',
-                'satuan_kerja' => $row['satuan_kerja'] ?? '',
-                'unit_kerja' => $row['unit_kerja'] ?? '',
+                'jabatan' => $jabatan,
+                'satuan_kerja' => $satuanKerja,
+                'unit_kerja' => $unitKerja,
                 'no_hp' => $row['no_hp'] ?? '',
-                'nip_pengguna_lulusan' => $row['nip_pengguna_lulusan'] ?? '',
+                'nip_pengguna_lulusan' => $nipBaruPl ?? $nipLamaPl ?? ($row['nip_pengguna_lulusan'] ?? ''),
+                'nip_baru_pengguna_lulusan' => $nipBaruPl,
+                'nip_lama_pengguna_lulusan' => $nipLamaPl,
                 'tanggal_lahir' => $tanggalLahir,
                 'tahun_lulus' => $tahunLulus,
             ]);

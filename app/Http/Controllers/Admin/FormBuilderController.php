@@ -117,6 +117,9 @@ class FormBuilderController extends Controller
             // Update survey timestamp
             $survey->touch();
 
+            // Ensure subsequent edit loads always read fresh data.
+            $this->clearSurveyCache($survey->id);
+
             DB::commit();
             
             // Log activity
@@ -206,6 +209,9 @@ class FormBuilderController extends Controller
             // Update survey timestamp to reflect changes
             $survey->touch();
 
+            // Ensure subsequent edit loads always read fresh data.
+            $this->clearSurveyCache($survey->id);
+
             DB::commit();
             
             Log::info('Questions saved successfully', [
@@ -252,17 +258,29 @@ class FormBuilderController extends Controller
             'sections' => 'required|array|min:1|max:20',
             'sections.*.section_name' => 'required|string|max:255',
             'sections.*.section_description' => 'nullable|string|max:500',
-            'sections.*.questions' => 'required|array|min:1|max:50',
+            'sections.*.questions' => 'nullable|array|max:50',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date,gaji',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array|max:20',
             'sections.*.questions.*.options.*' => 'string|max:255',
+            'sections.*.questions.*.grid_columns' => 'nullable|array|max:10',
+            'sections.*.questions.*.grid_columns.*' => 'string|max:100',
             'sections.*.navigation' => 'nullable|array',
             'sections.*.navigation.type' => 'nullable|in:next,jump,end',
             'sections.*.navigation.target_section' => 'nullable|integer|min:1',
+            // Kompetensi mode fields
+            'sections.*.is_kompetensi_mode' => 'nullable|boolean',
+            'sections.*.kompetensi_config' => 'nullable|array',
+            'sections.*.kompetensi_config.pertanyaan_utama' => 'nullable|string|max:500',
+            'sections.*.kompetensi_config.grid_rows' => 'nullable|array|min:1',
+            'sections.*.kompetensi_config.grid_rows.*' => 'string|max:255',
+            'sections.*.kompetensi_config.grid_columns' => 'nullable|array|min:1',
+            'sections.*.kompetensi_config.grid_columns.*' => 'string|max:255',
+            'sections.*.kompetensi_config.indikator' => 'nullable|array|min:1',
+            'sections.*.kompetensi_config.indikator.*' => 'string|max:255',
         ];
 
         $messages = [
@@ -271,7 +289,6 @@ class FormBuilderController extends Controller
             'sections.required' => 'Minimal harus ada 1 section',
             'sections.max' => 'Maksimal 20 sections dalam satu survey',
             'sections.*.section_name.required' => 'Nama section wajib diisi',
-            'sections.*.questions.required' => 'Setiap section harus memiliki minimal 1 pertanyaan',
             'sections.*.questions.*.question.required' => 'Teks pertanyaan wajib diisi',
             'sections.*.questions.*.type.required' => 'Tipe pertanyaan wajib dipilih',
             'sections.*.questions.*.type.in' => 'Tipe pertanyaan tidak valid',
@@ -308,11 +325,28 @@ class FormBuilderController extends Controller
 
             // Validate question options for select types
             foreach ($section['questions'] ?? [] as $questionIndex => $question) {
-                if (in_array($question['type'] ?? '', ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
+                $questionType = $question['type'] ?? '';
+
+                if (in_array($questionType, ['radio', 'checkbox', 'select', 'multiple_choice_grid'])) {
                     $options = $question['options'] ?? [];
-                    if (empty($options) || count($options) < 2) {
+                    $minimumOptions = $questionType === 'multiple_choice_grid' ? 1 : 2;
+
+                    if (empty($options) || count($options) < $minimumOptions) {
                         $errors["sections.{$sectionIndex}.questions.{$questionIndex}.options"] = [
-                            'Pertanyaan dengan tipe ' . $question['type'] . ' harus memiliki minimal 2 opsi'
+                            'Pertanyaan dengan tipe ' . $questionType . ' harus memiliki minimal ' . $minimumOptions . ' opsi'
+                        ];
+                    }
+                }
+
+                if ($questionType === 'multiple_choice_grid') {
+                    $gridColumns = collect($question['grid_columns'] ?? [])
+                        ->map(fn ($col) => is_string($col) ? trim($col) : '')
+                        ->filter()
+                        ->values();
+
+                    if ($gridColumns->count() < 1) {
+                        $errors["sections.{$sectionIndex}.questions.{$questionIndex}.grid_columns"] = [
+                            'Pertanyaan Multiple Choice Grid harus memiliki minimal 1 kolom.'
                         ];
                     }
                 }
@@ -360,11 +394,13 @@ class FormBuilderController extends Controller
             'sections.*.questions' => 'required|array|min:1|max:50',
             'sections.*.questions.*.question' => 'required|string|max:500',
             'sections.*.questions.*.description' => 'nullable|string|max:500',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date',
+            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,multiple_choice_grid,file,date,gaji',
             'sections.*.questions.*.required' => 'boolean',
             'sections.*.questions.*.visualization' => 'nullable|in:bar,pie',
             'sections.*.questions.*.options' => 'nullable|array|max:20',
             'sections.*.questions.*.options.*' => 'string|max:255',
+            'sections.*.questions.*.grid_columns' => 'nullable|array|max:10',
+            'sections.*.questions.*.grid_columns.*' => 'string|max:100',
             'sections.*.navigation' => 'nullable|array',
             'sections.*.navigation.type' => 'nullable|in:next,jump,end',
             'sections.*.navigation.target_section' => 'nullable|integer|min:1',
@@ -445,9 +481,15 @@ class FormBuilderController extends Controller
     private function processSurveyBlocks(Request $request, Survey $survey)
     {
         $sections = $request->input('sections', []);
-        
-        // Delete existing blocks if updating (with cascade)
-        if ($request->input('survey_id')) {
+        $isUpdatingExistingSurvey = (bool) $request->input('survey_id');
+
+        if ($isUpdatingExistingSurvey && $this->surveyHasResponses($survey->id)) {
+            $this->syncSurveyBlocksPreservingResponses($survey, $sections);
+            return;
+        }
+
+        // Delete existing blocks if updating and no response history needs to be preserved.
+        if ($isUpdatingExistingSurvey) {
             $this->deleteExistingBlocksOptimized($survey->id);
         }
 
@@ -465,6 +507,24 @@ class FormBuilderController extends Controller
                 'section_name' => $sectionData['section_name'] ?? "Section " . ($sectionIndex + 1)
             ]);
             
+            // Determine if this section is in kompetensi mode
+            $isKompetensiMode = !empty($sectionData['is_kompetensi_mode']);
+            $kompetensiConfig = $isKompetensiMode ? ($sectionData['kompetensi_config'] ?? null) : null;
+
+            // Build metadata with kompetensi info if applicable
+            $blockMetadata = [
+                'form_builder_version' => '1.0',
+                'created_at' => now()->toISOString(),
+                'section_index' => $sectionIndex,
+                'original_code_format' => "Section " . ($sectionIndex + 1),
+                'original_target_section' => $sectionData['navigation']['target_section'] ?? null
+            ];
+
+            if ($isKompetensiMode && $kompetensiConfig) {
+                $blockMetadata['is_kompetensi'] = true;
+                $blockMetadata['pertanyaan_utama'] = $kompetensiConfig['pertanyaan_utama'] ?? '';
+            }
+
             // Create block without target_section_id first
             $block = SurveyBlock::create([
                 'survey_id' => $survey->id,
@@ -474,14 +534,10 @@ class FormBuilderController extends Controller
                 'urutan' => $sectionIndex + 1,
                 'is_terminal' => ($sectionData['navigation']['type'] ?? 'next') === 'end',
                 'navigation_type' => $sectionData['navigation']['type'] ?? 'next',
-                'target_section_id' => null, // Set to null initially to avoid foreign key constraint
-                'metadata' => json_encode([
-                    'form_builder_version' => '1.0',
-                    'created_at' => now()->toISOString(),
-                    'section_index' => $sectionIndex,
-                    'original_code_format' => "Section " . ($sectionIndex + 1),
-                    'original_target_section' => $sectionData['navigation']['target_section'] ?? null // Store original target for later update
-                ]),
+                'target_section_id' => null,
+                'metadata' => json_encode($blockMetadata),
+                'is_kompetensi_mode' => $isKompetensiMode,
+                'kompetensi_config' => $kompetensiConfig ? json_encode($kompetensiConfig) : null,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -529,13 +585,136 @@ class FormBuilderController extends Controller
 
         // STEP 3: Process questions for each block
         foreach ($insertedBlocks as $index => $block) {
-            $this->processQuestionsForBlock($block, $sections[$index]['questions'] ?? []);
+            if ($block->is_kompetensi_mode && !empty($sections[$index]['kompetensi_config'])) {
+                $this->processKompetensiQuestions($block, $sections[$index]['kompetensi_config']);
+            } else {
+                $this->processQuestionsForBlock($block, $sections[$index]['questions'] ?? []);
+            }
         }
 
         Log::info("All survey blocks processed successfully", [
             'survey_id' => $survey->id,
             'total_blocks' => count($insertedBlocks)
         ]);
+    }
+
+    private function syncSurveyBlocksPreservingResponses(Survey $survey, array $sections): void
+    {
+        $existingBlocks = SurveyBlock::where('survey_id', $survey->id)
+            ->orderBy('urutan')
+            ->get()
+            ->values();
+
+        $syncedBlocks = [];
+
+        foreach (array_values($sections) as $sectionIndex => $sectionData) {
+            $block = $existingBlocks[$sectionIndex] ?? null;
+            $isKompetensiMode = !empty($sectionData['is_kompetensi_mode']);
+            $kompetensiConfig = $isKompetensiMode ? ($sectionData['kompetensi_config'] ?? null) : null;
+
+            $syncMetadata = [
+                'form_builder_version' => '1.0',
+                'updated_at' => now()->toISOString(),
+                'section_index' => $sectionIndex,
+                'preserve_responses' => true,
+            ];
+
+            if ($isKompetensiMode && $kompetensiConfig) {
+                $syncMetadata['is_kompetensi'] = true;
+                $syncMetadata['pertanyaan_utama'] = $kompetensiConfig['pertanyaan_utama'] ?? '';
+            }
+
+            $blockData = [
+                'survey_id' => $survey->id,
+                'kode' => $block->kode ?? $this->generateSurveyBlockCode($sectionIndex),
+                'nama' => $sectionData['section_name'] ?? 'Section ' . ($sectionIndex + 1),
+                'deskripsi' => $sectionData['section_description'] ?? '',
+                'urutan' => $sectionIndex + 1,
+                'is_terminal' => ($sectionData['navigation']['type'] ?? 'next') === 'end',
+                'navigation_type' => $sectionData['navigation']['type'] ?? 'next',
+                'target_section_id' => null,
+                'metadata' => json_encode($syncMetadata),
+                'is_kompetensi_mode' => $isKompetensiMode,
+                'kompetensi_config' => $kompetensiConfig ? json_encode($kompetensiConfig) : null,
+                'updated_at' => now(),
+            ];
+
+            if ($block) {
+                $block->update($blockData);
+            } else {
+                $block = SurveyBlock::create($blockData + ['created_at' => now()]);
+            }
+
+            $syncedBlocks[$sectionIndex] = $block;
+        }
+
+        foreach (array_values($sections) as $sectionIndex => $sectionData) {
+            $block = $syncedBlocks[$sectionIndex] ?? null;
+            if (!$block) {
+                continue;
+            }
+
+            $navigation = $sectionData['navigation'] ?? [];
+            $targetSectionId = null;
+
+            if (($navigation['type'] ?? 'next') === 'jump' && !empty($navigation['target_section'])) {
+                $targetIndex = ((int) $navigation['target_section']) - 1;
+                $targetSectionId = $syncedBlocks[$targetIndex]->id ?? null;
+            } elseif (($navigation['type'] ?? 'next') === 'next') {
+                $targetSectionId = $syncedBlocks[$sectionIndex + 1]->id ?? null;
+            }
+
+            $block->update([
+                'target_section_id' => $targetSectionId,
+                'is_terminal' => ($navigation['type'] ?? 'next') === 'end',
+                'navigation_type' => $navigation['type'] ?? 'next',
+            ]);
+
+            // Handle kompetensi mode: delete existing questions and regenerate
+            if ($block->is_kompetensi_mode && !empty($sectionData['kompetensi_config'])) {
+                // Delete existing questions for this block
+                $existingQIds = TemplatePertanyaan::where('block_id', $block->id)->pluck('id')->toArray();
+                if (!empty($existingQIds)) {
+                    TemplateJawaban::whereIn('id_template_pertanyaan', $existingQIds)->delete();
+                    TemplatePertanyaan::whereIn('id', $existingQIds)->delete();
+                }
+                // Regenerate from config
+                $this->processKompetensiQuestions($block, $sectionData['kompetensi_config']);
+            } else {
+                $existingQuestions = TemplatePertanyaan::where('block_id', $block->id)
+                    ->orderBy('urutan')
+                    ->get()
+                    ->values();
+
+                $questions = array_values($sectionData['questions'] ?? []);
+                foreach ($questions as $questionIndex => $questionData) {
+                    $question = $existingQuestions[$questionIndex] ?? null;
+                    $questionDataToSave = [
+                        'id_survey' => $survey->id,
+                        'block_id' => $block->id,
+                        'pertanyaan' => trim($questionData['question'] ?? ''),
+                        'deskripsi_pertanyaan' => trim($questionData['description'] ?? ''),
+                        'tipe' => $questionData['type'] ?? 'text',
+                        'urutan' => $questionIndex + 1,
+                        'is_required' => $questionData['required'] ?? false,
+                        'visualisasi' => $this->normalizeVisualizationValue($questionData['visualization'] ?? null),
+                        'grid_columns' => $this->normalizeGridColumns($questionData),
+                        'updated_at' => now(),
+                    ];
+
+                    if ($question) {
+                        $question->update($questionDataToSave);
+                    } else {
+                        $question = TemplatePertanyaan::create($questionDataToSave + ['created_at' => now()]);
+                    }
+
+                    TemplateJawaban::where('id_template_pertanyaan', $question->id)->delete();
+                    $this->processQuestionOptionsOptimized($question, $questionData);
+                }
+            }
+        }
+
+        SectionNavigationRule::where('survey_id', $survey->id)->delete();
     }
 
     /**
@@ -586,9 +765,99 @@ class FormBuilderController extends Controller
         }
     }
 
+    private function surveyHasResponses(int $surveyId): bool
+    {
+        return DB::table('survey_user_jawaban')
+            ->join('survey_user', 'survey_user.id', '=', 'survey_user_jawaban.survey_user_id')
+            ->where('survey_user.survey_id', $surveyId)
+            ->exists();
+    }
+
+    private function generateSurveyBlockCode(int $sectionIndex): string
+    {
+        $codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+
+        return $codes[$sectionIndex] ?? 'S' . ($sectionIndex + 1);
+    }
+
     /**
      * Process questions untuk specific block
      */
+    /**
+     * Process kompetensi mode: auto-generate one multiple_choice_grid question per indicator
+     */
+    private function processKompetensiQuestions(SurveyBlock $block, array $kompetensiConfig)
+    {
+        $pertanyaanUtama = $kompetensiConfig['pertanyaan_utama'] ?? 'Bagaimana tingkat kompetensi {indikator} Anda?';
+        $gridRows = $kompetensiConfig['grid_rows'] ?? [];
+        $gridColumns = $kompetensiConfig['grid_columns'] ?? [];
+        $indikatorList = $kompetensiConfig['indikator'] ?? [];
+
+        if (empty($indikatorList) || empty($gridRows) || empty($gridColumns)) {
+            Log::warning('Kompetensi config incomplete, skipping question generation', [
+                'block_id' => $block->id,
+                'has_indikator' => !empty($indikatorList),
+                'has_grid_rows' => !empty($gridRows),
+                'has_grid_columns' => !empty($gridColumns),
+            ]);
+            return;
+        }
+
+        foreach ($indikatorList as $index => $indikator) {
+            $indikator = trim($indikator);
+            if (empty($indikator)) continue;
+
+            // Replace {indikator} placeholder in the question template
+            $questionText = str_replace('{indikator}', $indikator, $pertanyaanUtama);
+
+            // Create the question as multiple_choice_grid
+            $question = TemplatePertanyaan::create([
+                'id_survey' => $block->survey_id,
+                'block_id' => $block->id,
+                'pertanyaan' => $questionText,
+                'deskripsi_pertanyaan' => '',
+                'tipe' => 'multiple_choice_grid',
+                'urutan' => $index + 1,
+                'visualisasi' => 'bar',
+                'is_required' => true,
+                'grid_columns' => $gridColumns,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Create grid rows as templateJawaban (answer options / row labels)
+            $optionData = [];
+            foreach ($gridRows as $rowIndex => $rowText) {
+                $rowText = trim($rowText);
+                if (!empty($rowText)) {
+                    $optionData[] = [
+                        'id_template_pertanyaan' => $question->id,
+                        'pilihan_jawaban' => $rowText,
+                        'urutan' => $rowIndex + 1,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+            }
+
+            if (!empty($optionData)) {
+                TemplateJawaban::insert($optionData);
+            }
+
+            Log::info('Generated kompetensi question', [
+                'block_id' => $block->id,
+                'question_id' => $question->id,
+                'indikator' => $indikator,
+                'question_text' => $questionText,
+            ]);
+        }
+
+        Log::info('Kompetensi questions generated', [
+            'block_id' => $block->id,
+            'total_generated' => count($indikatorList),
+        ]);
+    }
+
     private function processQuestionsForBlock(SurveyBlock $block, array $questions)
     {
         foreach ($questions as $questionIndex => $questionData) {
@@ -609,11 +878,43 @@ class FormBuilderController extends Controller
             'deskripsi_pertanyaan' => trim($questionData['description'] ?? ''),
             'tipe' => $questionData['type'],
             'urutan' => $urutan,
-            'visualisasi' => $questionData['visualization'] ?? '',
+            'visualisasi' => $this->normalizeVisualizationValue($questionData['visualization'] ?? null),
             'is_required' => $questionData['required'] ?? false,
+            'grid_columns' => $this->normalizeGridColumns($questionData),
             'created_at' => now(),
             'updated_at' => now()
         ]);
+    }
+
+    private function normalizeGridColumns(array $questionData): ?array
+    {
+        if (($questionData['type'] ?? '') !== 'multiple_choice_grid') {
+            return null;
+        }
+
+        $columns = collect($questionData['grid_columns'] ?? [])
+            ->map(fn ($column) => is_string($column) ? trim($column) : '')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (count($columns) >= 1) {
+            return $columns;
+        }
+
+        return ['Sangat Tidak Setuju', 'Tidak Setuju', 'Netral', 'Setuju', 'Sangat Setuju'];
+    }
+
+    private function normalizeVisualizationValue($value): ?string
+    {
+        $normalized = strtolower(trim((string) $value));
+
+        return in_array($normalized, ['bar', 'pie'], true) ? $normalized : null;
+    }
+
+    private function normalizeVisualizationValueForForm($value): string
+    {
+        return $this->normalizeVisualizationValue($value) ?? '';
     }
 
     /**
@@ -622,7 +923,7 @@ class FormBuilderController extends Controller
     private function processQuestionOptionsOptimized(TemplatePertanyaan $question, array $questionData)
     {
         $options = $questionData['options'] ?? [];
-        
+
         if (!in_array($question->tipe, ['radio', 'checkbox', 'select', 'multiple_choice_grid']) || empty($options)) {
             return;
         }
@@ -772,7 +1073,9 @@ class FormBuilderController extends Controller
                         'target_section_id' => $block->target_section_id,
                         'is_terminal' => $block->is_terminal
                     ],
-                    'metadata' => $block->metadata ? json_decode($block->metadata, true) : null
+                    'metadata' => $block->metadata ? (is_string($block->metadata) ? json_decode($block->metadata, true) : $block->metadata) : null,
+                    'is_kompetensi_mode' => (bool) $block->is_kompetensi_mode,
+                    'kompetensi_config' => $block->kompetensi_config ? (is_string($block->kompetensi_config) ? json_decode($block->kompetensi_config, true) : $block->kompetensi_config) : null,
                 ];
 
                 foreach ($block->questions as $question) {
@@ -782,8 +1085,9 @@ class FormBuilderController extends Controller
                         'description' => $question->deskripsi_pertanyaan,
                         'type' => $question->tipe,
                         'required' => $question->is_required,
-                        'visualization' => $question->visualisasi,
+                        'visualization' => $this->normalizeVisualizationValueForForm($question->visualisasi),
                         'options' => $question->templateJawaban->pluck('pilihan_jawaban')->toArray(),
+                        'grid_columns' => $question->grid_columns ?? [],
                         'order' => $question->urutan
                     ];
                     
@@ -880,6 +1184,8 @@ class FormBuilderController extends Controller
                     'navigation_type' => $originalBlock->navigation_type,
                     'target_section_id' => $originalBlock->target_section_id,
                     'metadata' => $originalBlock->metadata,
+                    'is_kompetensi_mode' => $originalBlock->is_kompetensi_mode,
+                    'kompetensi_config' => $originalBlock->kompetensi_config,
                 ]);
 
                 // Duplicate questions
@@ -891,8 +1197,9 @@ class FormBuilderController extends Controller
                         'deskripsi_pertanyaan' => $originalQuestion->deskripsi_pertanyaan,
                         'tipe' => $originalQuestion->tipe,
                         'urutan' => $originalQuestion->urutan,
-                        'visualisasi' => $originalQuestion->visualisasi,
+                        'visualisasi' => $this->normalizeVisualizationValue($originalQuestion->visualisasi),
                         'is_required' => $originalQuestion->is_required,
+                        'grid_columns' => $originalQuestion->grid_columns,
                     ]);
 
                     // Duplicate answer options
@@ -918,6 +1225,8 @@ class FormBuilderController extends Controller
             }
 
             DB::commit();
+
+            $this->clearSurveyCache($newSurvey->id);
 
             return response()->json([
                 'success' => true,

@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class TemplatePertanyaan extends Model
 {
     protected $table = 'template_pertanyaan';
-    protected $fillable = ['id_survey', 'block_id', 'pertanyaan', 'deskripsi_pertanyaan', 'tipe', 'urutan', 'visualisasi', 'is_required'];
+    protected $fillable = ['id_survey', 'block_id', 'pertanyaan', 'deskripsi_pertanyaan', 'tipe', 'urutan', 'visualisasi', 'is_required', 'grid_columns', 'is_analytic_table', 'min_gaji'];
 
     protected $casts = [
         'is_required' => 'boolean',
+        'is_analytic_table' => 'boolean',
+        'grid_columns' => 'array',
     ];
 
     static function getTemplatePertanyaan($id_survey){

@@ -29,11 +29,22 @@
                                 </div>
                                 <div class="w-full max-w-full px-3 shrink-0 md:w-4/12 md:flex-0">
                                     <div class="mb-4">
-                                        <label for="nip"
-                                            class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">NIP <span class="text-red-500">*</span></label>
-                                        <input type="text" name="nip" value="{{ $penggunaLulusan->nip }}"
+                                        <label for="nip_baru"
+                                            class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">NIP Baru (18 Digit) <span class="text-red-500">*</span></label>
+                                        <input type="text" name="nip_baru" value="{{ old('nip_baru', $penggunaLulusan->nip_baru ?? $penggunaLulusan->nip) }}" placeholder="Contoh: 198001012005011001" maxlength="18"
                                             class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
-                                        @error('nip')
+                                        @error('nip_baru')
+                                            <span class="text-red-500 text-xs">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="w-full max-w-full px-3 shrink-0 md:w-4/12 md:flex-0">
+                                    <div class="mb-4">
+                                        <label for="nip_lama"
+                                            class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">NIP Lama (9 Digit) <span class="text-red-500">*</span></label>
+                                        <input type="text" name="nip_lama" value="{{ old('nip_lama', $penggunaLulusan->nip_lama) }}" placeholder="Contoh: 123456789" maxlength="9"
+                                            class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                                        @error('nip_lama')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
                                         @enderror
                                     </div>
@@ -54,8 +65,12 @@
                                     <div class="mb-4">
                                         <label for="jabatan"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Jabatan</label>
-                                        <input type="text" name="jabatan" value="{{ $penggunaLulusan->jabatan }}"
-                                            class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                                        <select name="jabatan" id="jabatan" class="searchable-select w-full">
+                                            <option value="">-- Pilih Jabatan --</option>
+                                            @foreach($masterJabatan as $j)
+                                                <option value="{{ $j->nama }}" {{ old('jabatan', $penggunaLulusan->jabatan) == $j->nama ? 'selected' : '' }}>{{ $j->nama }}</option>
+                                            @endforeach
+                                        </select>
                                         @error('jabatan')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
                                         @enderror
@@ -66,8 +81,12 @@
                                         <label for="satuan_kerja"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Satuan
                                             Kerja</label>
-                                        <input type="text" name="satuan_kerja" value="{{ $penggunaLulusan->satuan_kerja }}"
-                                            class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                                        <select name="satuan_kerja" id="satuan_kerja" class="searchable-select w-full">
+                                            <option value="">-- Pilih Satuan Kerja --</option>
+                                            @foreach($masterSatuanKerja as $sk)
+                                                <option value="{{ $sk->nama }}" {{ old('satuan_kerja', $penggunaLulusan->satuan_kerja) == $sk->nama ? 'selected' : '' }}>{{ $sk->nama }}</option>
+                                            @endforeach
+                                        </select>
                                         @error('satuan_kerja')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
                                         @enderror
@@ -78,21 +97,12 @@
                                         <label for="unit_kerja"
                                             class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Unit
                                             Kerja</label>
-                                        <input type="text" name="unit_kerja" value="{{ $penggunaLulusan->unit_kerja }}"
-                                            class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
-                                        @error('unit_kerja')
-                                            <span class="text-red-500 text-xs">{{ $message }}</span>
-                                        @enderror
-                                    </div>
-                                </div>
-                                
-                                <div class="w-full max-w-full px-3 shrink-0 md:w-4/12 md:flex-0">
-                                    <div class="mb-4">
-                                        <label for="unit_kerja"
-                                            class="inline-block mb-2 ml-1 font-bold text-xs text-slate-700 dark:text-white/80">Unit
-                                            Kerja</label>
-                                        <input type="text" name="unit_kerja" value="{{ $penggunaLulusan->unit_kerja }}"
-                                            class="focus:shadow-primary-outline dark:bg-slate-850 dark:text-white text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none" />
+                                        <select name="unit_kerja" id="unit_kerja" class="searchable-select w-full">
+                                            <option value="">-- Pilih Unit Kerja --</option>
+                                            @foreach($masterUnitKerja as $uk)
+                                                <option value="{{ $uk->nama }}" {{ old('unit_kerja', $penggunaLulusan->unit_kerja) == $uk->nama ? 'selected' : '' }}>{{ $uk->nama }}</option>
+                                            @endforeach
+                                        </select>
                                         @error('unit_kerja')
                                             <span class="text-red-500 text-xs">{{ $message }}</span>
                                         @enderror
@@ -128,4 +138,101 @@
             </div>
         </div>
     </form>
+
+@push('styles')
+<style>
+    .select2-container--default .select2-selection--single {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        height: 38px;
+        padding: 4px 8px;
+        font-size: 0.875rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #3b82f6;
+    }
+    .select2-dropdown {
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .select2-search--dropdown .select2-search__field {
+        border-radius: 0.375rem;
+        border: 1px solid #d1d5db;
+        padding: 6px 8px;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        function limitSelect2Matcher(params, data) {
+            // Abaikan opsi kosong / placeholder di daftar hasil
+            if (!data || !data.id || data.id === '') {
+                return null;
+            }
+
+            // Inisialisasi counter per pencarian/query
+            if (params._matchCount === undefined) {
+                params._matchCount = 0;
+            }
+
+            const term = (params.term || '').trim().toLowerCase();
+
+            // Kondisi 1: Saat dropdown baru dibuka tanpa kata kunci pencarian
+            if (term === '') {
+                const $select = data.element ? $(data.element).closest('select') : null;
+                const selectedValue = $select ? $select.val() : null;
+
+                // Jika ada opsi yang sedang terpilih dan belum tercakup, simpan slot ke-5 untuknya
+                if (selectedValue && String(data.id) !== String(selectedValue) && !params._selectedMatched) {
+                    if (params._hasSelectedInOptions === undefined) {
+                        params._hasSelectedInOptions = $select.find('option').filter(function() {
+                            return this.value && String(this.value) === String(selectedValue);
+                        }).length > 0;
+                    }
+
+                    if (params._hasSelectedInOptions && params._matchCount >= 4) {
+                        return null;
+                    }
+                }
+
+                if (params._matchCount < 5) {
+                    params._matchCount++;
+                    if (selectedValue && String(data.id) === String(selectedValue)) {
+                        params._selectedMatched = true;
+                    }
+                    return data;
+                }
+
+                return null;
+            }
+
+            // Kondisi 2: Saat pengguna mengetik di kolom pencarian
+            if (data.text.toLowerCase().indexOf(term) > -1) {
+                if (params._matchCount < 5) {
+                    params._matchCount++;
+                    return data;
+                }
+            }
+
+            return null;
+        }
+
+        $('.searchable-select').select2({
+            placeholder: 'Ketik untuk mencari...',
+            allowClear: true,
+            width: '100%',
+            matcher: limitSelect2Matcher
+        });
+    });
+</script>
+@endpush
+
 @endsection

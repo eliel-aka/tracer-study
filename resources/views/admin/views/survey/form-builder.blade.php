@@ -108,7 +108,98 @@
                             </div>
                         </div>
 
-                        <div class="mb-4 space-y-3">
+                        <!-- Kompetensi Mode Toggle -->
+                        <div class="mb-4 kompetensi-toggle-area">
+                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-bullseye text-amber-600 mr-2"></i>
+                                        <span class="text-sm font-medium text-amber-800">Mode Penilaian Kompetensi</span>
+                                        <span class="ml-2 text-xs text-amber-600">(otomatis generate pertanyaan per indikator)</span>
+                                    </div>
+                                    <button type="button" class="kompetensi-mode-toggle flex items-center px-3 py-2 text-gray-600 hover:text-amber-600 border border-gray-300 rounded-lg transition-colors cursor-pointer" title="Toggle Mode Kompetensi">
+                                        <div class="relative inline-block w-10 h-5 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out kompetensi-switch mr-2">
+                                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out kompetensi-dot"></div>
+                                        </div>
+                                        <span class="text-xs font-medium">Aktifkan</span>
+                                    </button>
+                                </div>
+                                <input type="hidden" class="kompetensi-mode-value" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Kompetensi Config Area (hidden by default) -->
+                        <div class="mb-4 kompetensi-config-area" style="display: none;">
+                            <div class="border-2 border-amber-300 rounded-lg p-5 bg-amber-50/50 space-y-5">
+                                <!-- Pertanyaan Utama Template -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-question-circle text-amber-600 mr-1"></i> Pertanyaan Utama (Template)
+                                    </label>
+                                    <textarea class="kompetensi-pertanyaan-utama dark:text-white w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 resize-none" 
+                                              rows="2" 
+                                              placeholder="Bagaimana tingkat kompetensi {indikator} Anda?"
+                                              style="min-height: 50px;"></textarea>
+                                    <p class="text-xs text-amber-600 mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Gunakan <code class="bg-amber-100 px-1 rounded">{indikator}</code> sebagai placeholder yang akan diganti nama indikator.
+                                    </p>
+                                </div>
+
+                                <!-- Grid Rows (Dimensi Penilaian) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-th-list text-blue-600 mr-1"></i> Baris Grid (Dimensi Penilaian)
+                                    </label>
+                                    <div class="kompetensi-grid-rows space-y-2">
+                                        <!-- Rows will be added dynamically -->
+                                    </div>
+                                    <button type="button" onclick="addKompetensiGridRow(this)" 
+                                            class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-blue-100 hover:bg-blue-200 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i> Tambah Baris
+                                    </button>
+                                </div>
+
+                                <!-- Grid Columns (Pilihan Jawaban) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-columns text-green-600 mr-1"></i> Kolom Grid (Pilihan Jawaban / Skala)
+                                    </label>
+                                    <div class="kompetensi-grid-columns space-y-2">
+                                        <!-- Columns will be added dynamically -->
+                                    </div>
+                                    <button type="button" onclick="addKompetensiGridColumn(this)" 
+                                            class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-green-100 hover:bg-green-200 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i> Tambah Kolom
+                                    </button>
+                                </div>
+
+                                <!-- Daftar Indikator -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-list-ol text-purple-600 mr-1"></i> Daftar Indikator
+                                    </label>
+                                    <div class="kompetensi-indikator-list space-y-2">
+                                        <!-- Indicators will be added dynamically -->
+                                    </div>
+                                    <button type="button" onclick="addKompetensiIndikator(this)" 
+                                            class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-purple-100 hover:bg-purple-200 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i> Tambah Indikator
+                                    </button>
+                                </div>
+
+                                <!-- Preview -->
+                                <div class="bg-white border border-amber-200 rounded-lg p-3">
+                                    <p class="text-xs text-amber-700">
+                                        <i class="fas fa-bolt text-amber-500 mr-1"></i>
+                                        <strong>Preview:</strong> Akan menghasilkan <span class="kompetensi-preview-count font-bold">0</span> pertanyaan (1 pertanyaan per indikator)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Normal Questions Area -->
+                        <div class="mb-4 space-y-3 normal-questions-area">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan</label>
                                 
@@ -135,7 +226,8 @@
                                         <option value="select">Dropdown</option>
                                         <option value="multiple_choice_grid">Multiple Choice Grid</option>
                                         <option value="file">File</option>
-                                        <option value="date">Datepicker</option> 
+                                        <option value="date">Datepicker</option>
+                                        <option value="gaji">Gaji (Angka)</option> 
                                     </select>
                                 </div>
                                 
@@ -295,6 +387,7 @@
                                         <option value="multiple_choice_grid">Multiple Choice Grid</option>
                         <option value="file">File</option>
                         <option value="date">Datepicker</option>
+                        <option value="gaji">Gaji (Angka)</option>
                     </select>
                 </td>
                 <td
@@ -334,6 +427,107 @@
     </table>
     <script src="{{ asset('assets/js/tipejawaban.js') }}"></script>
     <script>
+        window.renumberGridRows = function(personalColumn) {
+            if (!personalColumn) return;
+            const rows = personalColumn.querySelectorAll('.grid-row-item');
+            rows.forEach((rowEl, index) => {
+                const numberEl = rowEl.querySelector('.grid-row-number');
+                const inputEl = rowEl.querySelector('input[type="text"]');
+                if (numberEl) numberEl.textContent = `${index + 1}.`;
+                if (inputEl) inputEl.placeholder = `Row ${index + 1}`;
+            });
+        };
+
+        window.removeGridItem = function(button) {
+            const item = button.closest('.grid-row-item, .grid-column-item');
+            if (!item) return;
+            const personalColumn = button.closest('.personal-column');
+            item.remove();
+            renumberGridRows(personalColumn);
+        };
+
+        window.addGridRow = function(button, value = '') {
+            const personalColumn = button.closest('.personal-column');
+            const container = personalColumn ? personalColumn.querySelector('#gridRowContainer') : null;
+            if (!container) return;
+
+            const index = container.children.length + 1;
+            const row = document.createElement('div');
+            row.className = 'grid-row-item flex items-center gap-2';
+            row.innerHTML = `
+                <span class="grid-row-number text-xs text-gray-500 w-5">${index}.</span>
+                <input type="text"
+                       class="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
+                       placeholder="Row ${index}">
+                <button type="button"
+                        onclick="removeGridItem(this)"
+                        class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            row.querySelector('input').value = value;
+            container.appendChild(row);
+            renumberGridRows(personalColumn);
+        };
+
+        window.addGridColumn = function(button, value = '') {
+            const personalColumn = button.closest('.personal-column');
+            const container = personalColumn ? personalColumn.querySelector('#gridColumnContainer') : null;
+            if (!container) return;
+
+            const index = container.children.length + 1;
+            const row = document.createElement('div');
+            row.className = 'grid-column-item flex items-center gap-2';
+            row.innerHTML = `
+                <i class="far fa-circle text-gray-400 text-xs"></i>
+                <input type="text"
+                       class="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
+                       placeholder="Column ${index}">
+                <button type="button"
+                        onclick="removeGridItem(this)"
+                        class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            row.querySelector('input').value = value;
+            container.appendChild(row);
+        };
+
+        window.renderMultipleChoiceGridEditor = function(personalColumn, rows = [], columns = []) {
+            if (!personalColumn) return;
+
+            personalColumn.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div>
+                        <div class="text-xs font-semibold text-gray-700 mb-2">Rows</div>
+                        <div id="gridRowContainer" class="space-y-2"></div>
+                        <button type="button" onclick="addGridRow(this)" class="text-xs text-gray-600 hover:text-gray-800 mt-2">
+                            + Add row
+                        </button>
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold text-gray-700 mb-2">Columns</div>
+                        <div id="gridColumnContainer" class="space-y-2"></div>
+                        <button type="button" onclick="addGridColumn(this)" class="text-xs text-gray-600 hover:text-gray-800 mt-2">
+                            + Add column
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const normalizedRows = Array.isArray(rows) ? rows.filter(row => String(row).trim() !== '') : [];
+            const normalizedColumns = Array.isArray(columns) ? columns.filter(col => String(col).trim() !== '') : [];
+
+            const rowsSource = normalizedRows.length > 0 ? normalizedRows : ['Row 1', 'Row 2', 'Row 3'];
+            const columnsSource = normalizedColumns.length > 0 ? normalizedColumns : ['Column 1', 'Column 2'];
+
+            const addRowButton = personalColumn.querySelector('#gridRowContainer')?.nextElementSibling;
+            const addColumnButton = personalColumn.querySelector('#gridColumnContainer')?.nextElementSibling;
+
+            rowsSource.forEach(row => addGridRow(addRowButton, String(row)));
+            columnsSource.forEach(col => addGridColumn(addColumnButton, String(col)));
+        };
+
         // Define the form builder change function globally before DOM loads
         window.changeInputTypeFormBuilder = function(selectEl) {
             const value = selectEl.value;
@@ -342,18 +536,395 @@
             
             if (!personalColumn) return;
             
-            if (["checkbox", "radio", "select"].includes(value)) {
+            if (["checkbox", "radio", "select", "multiple_choice_grid"].includes(value)) {
+                if (value === 'multiple_choice_grid') {
+                    renderMultipleChoiceGridEditor(personalColumn, [], []);
+                    return;
+                }
+
                 personalColumn.innerHTML = `
                     <div id="optionContainer" class="space-y-2"></div>
                     <button type="button" onclick="addOptionWithBranching(this, '${value}')"
-                      class="text-xs font-semibold leading-tight border border-gray-400 rounded px-2 py-1 mt-2 bg-blue-100 hover:bg-blue-200 transition-colors">
+                      class="add-option-btn text-xs font-semibold leading-tight border border-gray-400 rounded px-2 py-1 mt-2 bg-blue-100 hover:bg-blue-200 transition-colors">
                       <i class="fas fa-plus mr-2"></i>Tambah Pilihan
                     </button>
+                `;
+
+                const addOptionButton = personalColumn.querySelector('.add-option-btn');
+                addOptionWithBranching(addOptionButton, value);
+                addOptionWithBranching(addOptionButton, value);
+            } else if (value === 'gaji') {
+                personalColumn.innerHTML = `
+                    <div class="mt-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                        <input type="number" class="min-gaji-input w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+                    </div>
                 `;
             } else {
                 personalColumn.innerHTML = `<span class="text-xs font-semibold leading-tight text-slate-400">${valueText}</span>`;
             }
         };
+
+        // Backward-compatible helper kept for legacy call sites in this file.
+        window.renderGridColumns = function(personalColumn, columns = []) {
+            renderMultipleChoiceGridEditor(personalColumn, [], columns);
+        };
+
+        // ============================================================
+        // KOMPETENSI MODE FUNCTIONS
+        // ============================================================
+
+        // Toggle kompetensi mode on a block
+        window.toggleKompetensiMode = function(toggleButton) {
+            const sectionBlock = toggleButton.closest('.flex.flex-wrap.-mx-3');
+            if (!sectionBlock) return;
+
+            const hiddenInput = sectionBlock.querySelector('.kompetensi-mode-value');
+            const toggleSwitch = toggleButton.querySelector('.kompetensi-switch');
+            const toggleDot = toggleButton.querySelector('.kompetensi-dot');
+            const toggleLabel = toggleButton.querySelector('span');
+            const configArea = sectionBlock.querySelector('.kompetensi-config-area');
+            const normalQuestionsArea = sectionBlock.querySelector('.normal-questions-area');
+            const questionContainers = sectionBlock.querySelectorAll('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
+            const addQuestionBtn = sectionBlock.querySelector('.add-question-btn');
+
+            const isActive = hiddenInput.value === '1';
+
+            if (isActive) {
+                // Turn OFF — confirm first
+                if (!confirm('Mode kompetensi akan dinonaktifkan. Data konfigurasi kompetensi akan hilang jika Anda menyimpan. Lanjutkan?')) {
+                    return;
+                }
+                hiddenInput.value = '0';
+                toggleSwitch.classList.remove('bg-amber-500');
+                toggleSwitch.classList.add('bg-gray-200');
+                toggleDot.classList.remove('translate-x-5');
+                toggleDot.classList.add('translate-x-0');
+                toggleButton.classList.remove('text-amber-600', 'border-amber-300');
+                toggleButton.classList.add('text-gray-600', 'border-gray-300');
+                toggleLabel.textContent = 'Aktifkan';
+
+                if (configArea) configArea.style.display = 'none';
+                if (normalQuestionsArea) normalQuestionsArea.style.display = '';
+                questionContainers.forEach(qc => qc.style.display = '');
+                if (addQuestionBtn) addQuestionBtn.closest('.flex.justify-center.mt-4').style.display = '';
+            } else {
+                // Turn ON
+                hiddenInput.value = '1';
+                toggleSwitch.classList.remove('bg-gray-200');
+                toggleSwitch.classList.add('bg-amber-500');
+                toggleDot.classList.remove('translate-x-0');
+                toggleDot.classList.add('translate-x-5');
+                toggleButton.classList.remove('text-gray-600', 'border-gray-300');
+                toggleButton.classList.add('text-amber-600', 'border-amber-300');
+                toggleLabel.textContent = 'Aktif';
+
+                if (configArea) configArea.style.display = '';
+                if (normalQuestionsArea) normalQuestionsArea.style.display = 'none';
+                questionContainers.forEach(qc => qc.style.display = 'none');
+                if (addQuestionBtn) addQuestionBtn.closest('.flex.justify-center.mt-4').style.display = 'none';
+
+                // Initialize with default rows if empty
+                const gridRowsContainer = configArea.querySelector('.kompetensi-grid-rows');
+                if (gridRowsContainer && gridRowsContainer.children.length === 0) {
+                    const addRowBtn = gridRowsContainer.nextElementSibling;
+                    addKompetensiGridRow(addRowBtn, 'Yang dikuasai pada saat lulus');
+                    addKompetensiGridRow(addRowBtn, 'Yang diperlukan dalam pekerjaan pada saat ini');
+                }
+                // Initialize with default columns if empty
+                const gridColsContainer = configArea.querySelector('.kompetensi-grid-columns');
+                if (gridColsContainer && gridColsContainer.children.length === 0) {
+                    const addColBtn = gridColsContainer.nextElementSibling;
+                    addKompetensiGridColumn(addColBtn, 'Kurang');
+                    addKompetensiGridColumn(addColBtn, 'Cukup');
+                    addKompetensiGridColumn(addColBtn, 'Baik');
+                    addKompetensiGridColumn(addColBtn, 'Sangat Baik');
+                }
+            }
+        };
+
+        // Add a grid row item in kompetensi config
+        window.addKompetensiGridRow = function(button, value = '') {
+            const parentDiv = button.parentElement;
+            const container = parentDiv ? parentDiv.querySelector('.kompetensi-grid-rows') : null;
+            if (!container) return;
+            const index = container.children.length + 1;
+            const item = document.createElement('div');
+            item.className = 'kompetensi-grid-row-item flex items-center gap-2';
+            item.innerHTML = `
+                <span class="text-xs text-gray-500 w-5">${index}.</span>
+                <input type="text" class="flex-1 text-xs border border-gray-300 rounded px-2 py-1" placeholder="Dimensi penilaian ${index}" value="${value.replace(/"/g, '&quot;')}">
+                <button type="button" onclick="removeKompetensiItem(this, 'row')" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(item);
+        };
+
+        // Add a grid column item in kompetensi config
+        window.addKompetensiGridColumn = function(button, value = '') {
+            const parentDiv = button.parentElement;
+            const container = parentDiv ? parentDiv.querySelector('.kompetensi-grid-columns') : null;
+            if (!container) return;
+            const index = container.children.length + 1;
+            const item = document.createElement('div');
+            item.className = 'kompetensi-grid-column-item flex items-center gap-2';
+            item.innerHTML = `
+                <i class="far fa-circle text-gray-400 text-xs"></i>
+                <input type="text" class="flex-1 text-xs border border-gray-300 rounded px-2 py-1" placeholder="Pilihan jawaban ${index}" value="${value.replace(/"/g, '&quot;')}">
+                <button type="button" onclick="removeKompetensiItem(this, 'column')" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(item);
+        };
+
+        // Add an indicator item in kompetensi config
+        window.addKompetensiIndikator = function(button, value = '') {
+            const parentDiv = button.parentElement;
+            const container = parentDiv ? parentDiv.querySelector('.kompetensi-indikator-list') : null;
+            if (!container) return;
+            const index = container.children.length + 1;
+            const item = document.createElement('div');
+            item.className = 'kompetensi-indikator-item flex items-center gap-2';
+            item.innerHTML = `
+                <span class="text-xs font-semibold text-purple-600 w-5">${index}.</span>
+                <input type="text" class="flex-1 text-xs border border-gray-300 rounded px-2 py-1" placeholder="Nama indikator ${index}" value="${value.replace(/"/g, '&quot;')}" oninput="updateKompetensiPreview(this)">
+                <button type="button" onclick="removeKompetensiItem(this, 'indikator')" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(item);
+            updateKompetensiPreview(item.querySelector('input'));
+        };
+
+        // Remove a kompetensi config item
+        window.removeKompetensiItem = function(button, type) {
+            const item = button.closest(`.kompetensi-grid-row-item, .kompetensi-grid-column-item, .kompetensi-indikator-item`);
+            if (!item) return;
+            const container = item.parentElement;
+            item.remove();
+            // Renumber remaining items
+            const items = container.children;
+            for (let i = 0; i < items.length; i++) {
+                const numEl = items[i].querySelector('span');
+                if (numEl && numEl.classList.contains('w-5')) {
+                    numEl.textContent = `${i + 1}.`;
+                }
+            }
+            if (type === 'indikator') {
+                updateKompetensiPreview(container.querySelector('input') || container);
+            }
+        };
+
+        // Update preview counter
+        window.updateKompetensiPreview = function(el) {
+            const configArea = el.closest('.kompetensi-config-area');
+            if (!configArea) return;
+            const indikatorList = configArea.querySelectorAll('.kompetensi-indikator-item input[type="text"]');
+            let count = 0;
+            indikatorList.forEach(input => { if (input.value.trim()) count++; });
+            const previewEl = configArea.querySelector('.kompetensi-preview-count');
+            if (previewEl) previewEl.textContent = count;
+        };
+
+        // Collect kompetensi config data from a section block
+        window.collectKompetensiConfig = function(block) {
+            const configArea = block.querySelector('.kompetensi-config-area');
+            if (!configArea) return null;
+
+            const pertanyaanUtama = configArea.querySelector('.kompetensi-pertanyaan-utama')?.value?.trim() || '';
+            
+            const gridRows = [];
+            configArea.querySelectorAll('.kompetensi-grid-row-item input[type="text"]').forEach(input => {
+                if (input.value.trim()) gridRows.push(input.value.trim());
+            });
+            
+            const gridColumns = [];
+            configArea.querySelectorAll('.kompetensi-grid-column-item input[type="text"]').forEach(input => {
+                if (input.value.trim()) gridColumns.push(input.value.trim());
+            });
+            
+            const indikator = [];
+            configArea.querySelectorAll('.kompetensi-indikator-item input[type="text"]').forEach(input => {
+                if (input.value.trim()) indikator.push(input.value.trim());
+            });
+
+            return {
+                pertanyaan_utama: pertanyaanUtama,
+                grid_rows: gridRows,
+                grid_columns: gridColumns,
+                indikator: indikator
+            };
+        };
+
+        // Populate kompetensi config UI from data
+        window.populateKompetensiConfig = function(sectionBlock, config) {
+            if (!config) return;
+
+            const configArea = sectionBlock.querySelector('.kompetensi-config-area');
+            if (!configArea) return;
+
+            // Set pertanyaan utama
+            const pertanyaanInput = configArea.querySelector('.kompetensi-pertanyaan-utama');
+            if (pertanyaanInput && config.pertanyaan_utama) {
+                pertanyaanInput.value = config.pertanyaan_utama;
+            }
+
+            // Clear and populate grid rows
+            const gridRowsContainer = configArea.querySelector('.kompetensi-grid-rows');
+            if (gridRowsContainer) {
+                gridRowsContainer.innerHTML = '';
+                const addRowBtn = gridRowsContainer.nextElementSibling;
+                (config.grid_rows || []).forEach(row => addKompetensiGridRow(addRowBtn, row));
+            }
+
+            // Clear and populate grid columns
+            const gridColsContainer = configArea.querySelector('.kompetensi-grid-columns');
+            if (gridColsContainer) {
+                gridColsContainer.innerHTML = '';
+                const addColBtn = gridColsContainer.nextElementSibling;
+                (config.grid_columns || []).forEach(col => addKompetensiGridColumn(addColBtn, col));
+            }
+
+            // Clear and populate indicators
+            const indikatorContainer = configArea.querySelector('.kompetensi-indikator-list');
+            if (indikatorContainer) {
+                indikatorContainer.innerHTML = '';
+                const addIndBtn = indikatorContainer.nextElementSibling;
+                (config.indikator || []).forEach(ind => addKompetensiIndikator(addIndBtn, ind));
+            }
+        };
+
+        // Activate kompetensi mode visually (used during data loading)
+        window.activateKompetensiMode = function(sectionBlock) {
+            const toggleButton = sectionBlock.querySelector('.kompetensi-mode-toggle');
+            const hiddenInput = sectionBlock.querySelector('.kompetensi-mode-value');
+            const toggleSwitch = toggleButton?.querySelector('.kompetensi-switch');
+            const toggleDot = toggleButton?.querySelector('.kompetensi-dot');
+            const toggleLabel = toggleButton?.querySelector('span');
+            const configArea = sectionBlock.querySelector('.kompetensi-config-area');
+            const normalQuestionsArea = sectionBlock.querySelector('.normal-questions-area');
+            const questionContainers = sectionBlock.querySelectorAll('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
+            const addQuestionBtn = sectionBlock.querySelector('.add-question-btn');
+
+            if (hiddenInput) hiddenInput.value = '1';
+            if (toggleSwitch) {
+                toggleSwitch.classList.remove('bg-gray-200');
+                toggleSwitch.classList.add('bg-amber-500');
+            }
+            if (toggleDot) {
+                toggleDot.classList.remove('translate-x-0');
+                toggleDot.classList.add('translate-x-5');
+            }
+            if (toggleButton) {
+                toggleButton.classList.remove('text-gray-600', 'border-gray-300');
+                toggleButton.classList.add('text-amber-600', 'border-amber-300');
+            }
+            if (toggleLabel) toggleLabel.textContent = 'Aktif';
+            if (configArea) configArea.style.display = '';
+            if (normalQuestionsArea) normalQuestionsArea.style.display = 'none';
+            questionContainers.forEach(qc => qc.style.display = 'none');
+            if (addQuestionBtn) {
+                const wrapper = addQuestionBtn.closest('.flex.justify-center.mt-4');
+                if (wrapper) wrapper.style.display = 'none';
+            }
+        };
+
+        // Inject kompetensi toggle + config HTML into a section block that doesn't have it
+        window.injectKompetensiUI = function(sectionBlock) {
+            if (sectionBlock.querySelector('.kompetensi-toggle-area')) return; // Already has it
+
+            const kompetensiHTML = `
+                <!-- Kompetensi Mode Toggle -->
+                <div class="mb-4 kompetensi-toggle-area">
+                    <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-bullseye text-amber-600 mr-2"></i>
+                                <span class="text-sm font-medium text-amber-800">Mode Penilaian Kompetensi</span>
+                                <span class="ml-2 text-xs text-amber-600">(otomatis generate pertanyaan per indikator)</span>
+                            </div>
+                            <button type="button" class="kompetensi-mode-toggle flex items-center px-3 py-2 text-gray-600 hover:text-amber-600 border border-gray-300 rounded-lg transition-colors cursor-pointer" title="Toggle Mode Kompetensi">
+                                <div class="relative inline-block w-10 h-5 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out kompetensi-switch mr-2">
+                                    <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out kompetensi-dot"></div>
+                                </div>
+                                <span class="text-xs font-medium">Aktifkan</span>
+                            </button>
+                        </div>
+                        <input type="hidden" class="kompetensi-mode-value" value="0">
+                    </div>
+                </div>
+
+                <!-- Kompetensi Config Area (hidden by default) -->
+                <div class="mb-4 kompetensi-config-area" style="display: none;">
+                    <div class="border-2 border-amber-300 rounded-lg p-5 bg-amber-50/50 space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-question-circle text-amber-600 mr-1"></i> Pertanyaan Utama (Template)
+                            </label>
+                            <textarea class="kompetensi-pertanyaan-utama dark:text-white w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 resize-none" 
+                                      rows="2" 
+                                      placeholder="Bagaimana tingkat kompetensi {indikator} Anda?"
+                                      style="min-height: 50px;"></textarea>
+                            <p class="text-xs text-amber-600 mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Gunakan <code class="bg-amber-100 px-1 rounded">{indikator}</code> sebagai placeholder.
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-th-list text-blue-600 mr-1"></i> Baris Grid (Dimensi Penilaian)
+                            </label>
+                            <div class="kompetensi-grid-rows space-y-2"></div>
+                            <button type="button" onclick="addKompetensiGridRow(this)" 
+                                    class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-blue-100 hover:bg-blue-200 transition-colors">
+                                <i class="fas fa-plus mr-1"></i> Tambah Baris
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-columns text-green-600 mr-1"></i> Kolom Grid (Pilihan Jawaban / Skala)
+                            </label>
+                            <div class="kompetensi-grid-columns space-y-2"></div>
+                            <button type="button" onclick="addKompetensiGridColumn(this)" 
+                                    class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-green-100 hover:bg-green-200 transition-colors">
+                                <i class="fas fa-plus mr-1"></i> Tambah Kolom
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-list-ol text-purple-600 mr-1"></i> Daftar Indikator
+                            </label>
+                            <div class="kompetensi-indikator-list space-y-2"></div>
+                            <button type="button" onclick="addKompetensiIndikator(this)" 
+                                    class="mt-2 text-xs font-semibold border border-gray-400 rounded px-2 py-1 bg-purple-100 hover:bg-purple-200 transition-colors">
+                                <i class="fas fa-plus mr-1"></i> Tambah Indikator
+                            </button>
+                        </div>
+                        <div class="bg-white border border-amber-200 rounded-lg p-3">
+                            <p class="text-xs text-amber-700">
+                                <i class="fas fa-bolt text-amber-500 mr-1"></i>
+                                <strong>Preview:</strong> Akan menghasilkan <span class="kompetensi-preview-count font-bold">0</span> pertanyaan (1 per indikator)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Find the block description area and insert after it
+            const blockDescArea = sectionBlock.querySelector('.mb-4.space-y-3');
+            if (blockDescArea) {
+                blockDescArea.insertAdjacentHTML('afterend', kompetensiHTML);
+            } else {
+                // Fallback: insert before the first question container
+                const firstQuestion = sectionBlock.querySelector('.border-2.border-gray-300');
+                if (firstQuestion) {
+                    firstQuestion.insertAdjacentHTML('beforebegin', kompetensiHTML);
+                }
+            }
+
+            // Wrap the normal questions area
+            const normalQuestionsLabel = sectionBlock.querySelector('.mb-4.space-y-3:not(.kompetensi-toggle-area)');
+            if (normalQuestionsLabel && !normalQuestionsLabel.classList.contains('normal-questions-area')) {
+                normalQuestionsLabel.classList.add('normal-questions-area');
+            }
+        };
+
 
         // Function to get available sections for branching
         window.getAvailableSections = function() {
@@ -457,6 +1028,9 @@
 
         // Function to add event listeners to a section
         window.addEventListenersToSection = function(sectionElement) {
+            // Inject kompetensi UI if not present (for dynamically created blocks)
+            injectKompetensiUI(sectionElement);
+
             // Add listeners for duplicate and delete block buttons
             const duplicateBtn = sectionElement.querySelector('.duplicate-block-btn');
             const deleteBtn = sectionElement.querySelector('.delete-block-btn');
@@ -477,6 +1051,8 @@
             if (addBlockBtn) {
                 addAddBlockListener(addBlockBtn);
             }
+
+            // Kompetensi toggle is handled via global event delegation
             
             // Add listeners for all question containers in this section
             const questionContainers = sectionElement.querySelectorAll('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
@@ -567,6 +1143,42 @@
             if (navigationSelect) {
                 navigationSelect.value = 'end';
             }
+
+            // Reset kompetensi mode
+            const kompetensiValue = clonedBlock.querySelector('.kompetensi-mode-value');
+            if (kompetensiValue) kompetensiValue.value = '0';
+            const kompetensiSwitch = clonedBlock.querySelector('.kompetensi-switch');
+            const kompetensiDot = clonedBlock.querySelector('.kompetensi-dot');
+            const kompetensiToggle = clonedBlock.querySelector('.kompetensi-mode-toggle');
+            if (kompetensiSwitch) {
+                kompetensiSwitch.classList.remove('bg-amber-500');
+                kompetensiSwitch.classList.add('bg-gray-200');
+            }
+            if (kompetensiDot) {
+                kompetensiDot.classList.remove('translate-x-5');
+                kompetensiDot.classList.add('translate-x-0');
+            }
+            if (kompetensiToggle) {
+                kompetensiToggle.classList.remove('text-amber-600', 'border-amber-300');
+                kompetensiToggle.classList.add('text-gray-600', 'border-gray-300');
+                const label = kompetensiToggle.querySelector('span');
+                if (label) label.textContent = 'Aktifkan';
+            }
+            const configArea = clonedBlock.querySelector('.kompetensi-config-area');
+            if (configArea) {
+                configArea.style.display = 'none';
+                // Clear config content
+                const gridRows = configArea.querySelector('.kompetensi-grid-rows');
+                const gridCols = configArea.querySelector('.kompetensi-grid-columns');
+                const indikators = configArea.querySelector('.kompetensi-indikator-list');
+                const pertanyaan = configArea.querySelector('.kompetensi-pertanyaan-utama');
+                if (gridRows) gridRows.innerHTML = '';
+                if (gridCols) gridCols.innerHTML = '';
+                if (indikators) indikators.innerHTML = '';
+                if (pertanyaan) pertanyaan.value = '';
+            }
+            const normalArea = clonedBlock.querySelector('.normal-questions-area');
+            if (normalArea) normalArea.style.display = '';
         };
 
         // Function to handle duplicate block
@@ -1122,6 +1734,11 @@
                 } else if (e.target.closest('.delete-block-btn')) {
                     e.preventDefault();
                     deleteBlock(e.target.closest('.delete-block-btn'));
+                }
+                // Handle kompetensi toggle via event delegation
+                else if (e.target.closest('.kompetensi-mode-toggle')) {
+                    e.preventDefault();
+                    toggleKompetensiMode(e.target.closest('.kompetensi-mode-toggle'));
                 }
                 // Handle question-level buttons with event delegation
                 else if (e.target.closest('.duplicate-row')) {
@@ -2038,13 +2655,25 @@
                         
                         if (!personalColumn) return;
                         
-                        if (["checkbox", "radio", "select"].includes(value)) {
+                        if (["checkbox", "radio", "select", "multiple_choice_grid"].includes(value)) {
+                            if (value === 'multiple_choice_grid') {
+                                renderMultipleChoiceGridEditor(personalColumn, [], []);
+                                return;
+                            }
+
                             personalColumn.innerHTML = `
                                 <div id="optionContainer" class="space-y-2"></div>
                                 <button type="button" onclick="addOptionWithBranching(this, '${value}')"
                                   class="text-xs font-semibold leading-tight border border-gray-400 rounded px-2 py-1 mt-2 bg-blue-100 hover:bg-blue-200 transition-colors">
                                   <i class="fas fa-plus mr-2"></i>Tambah Pilihan
                                 </button>
+                            `;
+                        } else if (value === 'gaji') {
+                            personalColumn.innerHTML = `
+                                <div class="mt-2">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                                    <input type="number" class="min-gaji-input w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+                                </div>
                             `;
                         } else {
                             personalColumn.innerHTML = `<span class="text-xs font-semibold leading-tight text-slate-400">${valueText}</span>`;
@@ -2237,7 +2866,9 @@
                         type: container.querySelector('select[name="tipe"]')?.value || 'text',
                         required: container.querySelector('.question-required')?.value === '1',
                         visualization: container.querySelector('select[name="visualisasi"]')?.value || '',
+                        min_gaji: container.querySelector('.min-gaji-input') ? container.querySelector('.min-gaji-input').value : null,
                         options: [],
+                        grid_columns: [],
                         branching_rules: {}
                     };
                     
@@ -2245,18 +2876,36 @@
                     
                     // Collect options for radio, checkbox, select
                     if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type)) {
-                        const optionInputs = container.querySelectorAll('.option-item input[type="text"]');
-                        console.log(`Found option inputs for question ${questionIndex + 1}:`, optionInputs.length);
-                        
-                        optionInputs.forEach((input, index) => {
-                            if (input.value.trim()) {
-                                questionData.options.push(input.value.trim());
-                                
-                                // Check for branching rules
-                                const branchingTarget = input.closest('.option-item').querySelector('.branching-target');
-                                if (branchingTarget && branchingTarget.value) {
-                                    questionData.branching_rules[index] = branchingTarget.value;
+                        if (questionData.type === 'multiple_choice_grid') {
+                            const rowInputs = container.querySelectorAll('.grid-row-item input[type="text"]');
+                            rowInputs.forEach((input) => {
+                                if (input.value.trim()) {
+                                    questionData.options.push(input.value.trim());
                                 }
+                            });
+                        } else {
+                            const optionInputs = container.querySelectorAll('.option-item input[type="text"]');
+                            console.log(`Found option inputs for question ${questionIndex + 1}:`, optionInputs.length);
+
+                            optionInputs.forEach((input, index) => {
+                                if (input.value.trim()) {
+                                    questionData.options.push(input.value.trim());
+
+                                    // Check for branching rules
+                                    const branchingTarget = input.closest('.option-item').querySelector('.branching-target');
+                                    if (branchingTarget && branchingTarget.value) {
+                                        questionData.branching_rules[index] = branchingTarget.value;
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    if (questionData.type === 'multiple_choice_grid') {
+                        const columnInputs = container.querySelectorAll('.grid-column-item input[type="text"]');
+                        columnInputs.forEach((input) => {
+                            if (input.value.trim()) {
+                                questionData.grid_columns.push(input.value.trim());
                             }
                         });
                     }
@@ -2264,12 +2913,35 @@
                     questions.push(questionData);
                 });
                 
-                if (questions.length > 0) {
+                // Check if this block is in kompetensi mode
+                const isKompetensiMode = block.querySelector('.kompetensi-mode-value')?.value === '1';
+                
+                if (isKompetensiMode) {
+                    // Kompetensi mode — send config, no regular questions
+                    const kompetensiConfig = collectKompetensiConfig(block);
+                    
+                    if (kompetensiConfig && kompetensiConfig.indikator.length > 0) {
+                        sections.push({
+                            section_name: sectionName,
+                            section_description: sectionDescription,
+                            questions: [], // empty — backend generates from indikator
+                            navigation: navigation,
+                            is_kompetensi_mode: true,
+                            kompetensi_config: kompetensiConfig
+                        });
+                        console.log(`Added kompetensi section ${blockIndex + 1} with ${kompetensiConfig.indikator.length} indicators`);
+                    } else {
+                        console.log(`Skipping kompetensi section ${blockIndex + 1} — no indicators`);
+                        alert(`Blok "${sectionName}" dalam mode kompetensi harus memiliki minimal 1 indikator!`);
+                        return;
+                    }
+                } else if (questions.length > 0) {
                     sections.push({
                         section_name: sectionName,
                         section_description: sectionDescription,
                         questions: questions,
-                        navigation: navigation
+                        navigation: navigation,
+                        is_kompetensi_mode: false
                     });
                     console.log(`Added section ${blockIndex + 1} with ${questions.length} questions`);
                 }
@@ -2378,7 +3050,12 @@
         // Load existing data if in edit mode
         @if(isset($survey))
         function loadExistingData() {
-            fetch('{{ route("admin.survey.form_builder.data", $survey->id) }}')
+            fetch('{{ route("admin.survey.form_builder.data", $survey->id) }}', {
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -2427,74 +3104,89 @@
                     existingQuestions[i].remove();
                 }
                 
-                // Populate questions
-                section.questions.forEach((question, questionIndex) => {
-                    let questionContainer;
-                    
-                    if (questionIndex === 0) {
-                        // Use first existing question
-                        questionContainer = sectionBlock.querySelector('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
-                    } else {
-                        // Add new question
-                        const addQuestionBtn = sectionBlock.querySelector('.add-question-btn');
-                        if (addQuestionBtn) {
-                            addQuestionBtn.click();
-                            const questions = sectionBlock.querySelectorAll('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
-                            questionContainer = questions[questionIndex];
-                        }
-                    }
-                    
-                    if (questionContainer) {
-                        // Fill question data
-                        const questionTextarea = questionContainer.querySelector('textarea[name="pertanyaan"]');
-                        const descriptionTextarea = questionContainer.querySelector('textarea[name="deskripsi_pertanyaan"]');
-                        const typeSelect = questionContainer.querySelector('select[name="tipe"]');
-                        const visualizationSelect = questionContainer.querySelector('select[name="visualisasi"]');
-                        const requiredInput = questionContainer.querySelector('.question-required');
+                // Handle kompetensi mode
+                if (section.is_kompetensi_mode && section.kompetensi_config) {
+                    // Activate kompetensi mode UI
+                    activateKompetensiMode(sectionBlock);
+                    // Populate kompetensi config
+                    populateKompetensiConfig(sectionBlock, section.kompetensi_config);
+                    // Skip populating regular questions for this section
+                } else {
+                    // Populate questions (normal mode)
+                    section.questions.forEach((question, questionIndex) => {
+                        let questionContainer;
                         
-                        if (questionTextarea) questionTextarea.value = question.question || '';
-                        if (descriptionTextarea) descriptionTextarea.value = question.description || '';
-                        if (typeSelect) {
-                            typeSelect.value = question.type || 'text';
-                            // Trigger change event to show options if needed
-                            typeSelect.dispatchEvent(new Event('change'));
-                        }
-                        if (visualizationSelect) visualizationSelect.value = question.visualization || '';
-                        if (requiredInput) requiredInput.value = question.required ? '1' : '0';
-                        
-                        // Update required toggle UI
-                        const requiredToggle = questionContainer.querySelector('.required-toggle');
-                        if (requiredToggle && question.required) {
-                            requiredToggle.click();
-                        }
-                        
-                        // Add options for radio, checkbox, select
-                        setTimeout(() => {
-                            if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(question.type) && question.options) {
-                                const optionContainer = questionContainer.querySelector('#optionContainer');
-                                if (optionContainer) {
-                                    // Clear existing options
-                                    optionContainer.innerHTML = '';
-                                    
-                                    // Add saved options
-                                    question.options.forEach((optionText, optionIndex) => {
-                                        const optionDiv = document.createElement('div');
-                                        optionDiv.className = 'flex items-center space-x-2';
-                                        optionDiv.innerHTML = `
-                                            <input type="text" class="option-input flex-1 px-2 py-1 border border-gray-300 rounded text-sm" 
-                                                   placeholder="Pilihan ${optionIndex + 1}" value="${optionText}">
-                                            <button type="button" onclick="removeOption(this)" 
-                                                    class="text-red-500 hover:text-red-700 text-sm">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        `;
-                                        optionContainer.appendChild(optionDiv);
-                                    });
-                                }
+                        if (questionIndex === 0) {
+                            // Use first existing question
+                            questionContainer = sectionBlock.querySelector('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
+                        } else {
+                            // Add new question
+                            const addQuestionBtn = sectionBlock.querySelector('.add-question-btn');
+                            if (addQuestionBtn) {
+                                addQuestionBtn.click();
+                                const questions = sectionBlock.querySelectorAll('.border-2.border-gray-300.rounded-lg.p-4.mb-4.bg-white.shadow-sm');
+                                questionContainer = questions[questionIndex];
                             }
-                        }, 100);
-                    }
-                });
+                        }
+                        
+                        if (questionContainer) {
+                            // Fill question data
+                            const questionTextarea = questionContainer.querySelector('textarea[name="pertanyaan"]');
+                            const descriptionTextarea = questionContainer.querySelector('textarea[name="deskripsi_pertanyaan"]');
+                            const typeSelect = questionContainer.querySelector('select[name="tipe"]');
+                            const visualizationSelect = questionContainer.querySelector('select[name="visualisasi"]');
+                            const requiredInput = questionContainer.querySelector('.question-required');
+                            
+                            if (questionTextarea) questionTextarea.value = question.question || '';
+                            if (descriptionTextarea) descriptionTextarea.value = question.description || '';
+                            if (typeSelect) {
+                                typeSelect.value = question.type || 'text';
+                                // Trigger change event to show options if needed
+                                typeSelect.dispatchEvent(new Event('change'));
+                            }
+                            if (visualizationSelect) visualizationSelect.value = question.visualization || '';
+                            if (requiredInput) requiredInput.value = question.required ? '1' : '0';
+                            
+                            // Update required toggle UI
+                            const requiredToggle = questionContainer.querySelector('.required-toggle');
+                            if (requiredToggle && question.required) {
+                                requiredToggle.click();
+                            }
+                            
+                            // Add options and grid columns for choice-based questions
+                            setTimeout(() => {
+                                if (question.type === 'gaji' && question.min_gaji) {
+                                    const minGajiInput = questionContainer.querySelector('.min-gaji-input');
+                                    if (minGajiInput) {
+                                        minGajiInput.value = question.min_gaji;
+                                    }
+                                }
+                                if (['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(question.type) && question.options) {
+                                    const optionContainer = questionContainer.querySelector('#optionContainer');
+                                    const typeSelectEl = questionContainer.querySelector('select[name="tipe"]');
+                                    if (question.type === 'multiple_choice_grid') {
+                                        const personalColumn = questionContainer.querySelector('.personal-column');
+                                        renderMultipleChoiceGridEditor(personalColumn, question.options || [], question.grid_columns || []);
+                                    } else if (optionContainer) {
+                                        // Clear existing options
+                                        optionContainer.innerHTML = '';
+
+                                        question.options.forEach((optionText) => {
+                                            if (typeSelectEl) {
+                                                const addBtn = questionContainer.querySelector('.add-option-btn');
+                                                addOptionWithBranching(addBtn, typeSelectEl.value);
+                                                const latestInput = optionContainer.querySelector('.option-item:last-child input[type="text"]');
+                                                if (latestInput) {
+                                                    latestInput.value = optionText;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }, 100);
+                        }
+                    });
+                }
                 
                 // Set navigation
                 setTimeout(() => {

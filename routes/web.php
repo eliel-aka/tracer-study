@@ -3,6 +3,7 @@
 use App\Http\Controllers\LulusanController;
 use App\Http\Controllers\PenggunaLulusanController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ManajemenSatkerController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SurveyController;
@@ -40,12 +41,18 @@ Route::get('/', function () {
 Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard/grafik/{id}', [DashboardController::class, 'grafik'])->name('dashboard.grafik');
+    Route::get('dashboard/analitik/{id}', [DashboardController::class, 'analitik'])->name('dashboard.analitik');
+    Route::get('dashboard/charts-data/{surveyId}', [DashboardController::class, 'getChartsData'])->name('dashboard.chartsData');
+    Route::get('dashboard/analitik-data/{surveyId}', [DashboardController::class, 'getAnalitikData'])->name('dashboard.analitikData');
+    Route::get('dashboard/analitik/export/{surveyId}', [DashboardController::class, 'exportAnalitik'])->name('dashboard.analitik.export');
     Route::get('dashboard/chart-data/{surveyId}/{questionId}', [DashboardController::class, 'getChartData'])->name('dashboard.chartData');
     Route::get('lulusan/export', [LulusanController::class, 'export'])->name('lulusan.export');
+    Route::get('lulusan/template', [LulusanController::class, 'downloadTemplate'])->name('lulusan.template');
     Route::post('lulusan/import', [LulusanController::class, 'import'])->name('lulusan.import');
     Route::delete('lulusan/delete/{id}', [LulusanController::class, 'destroy'])->name('admin.lulusan.destroy'); //hapus lulusan
     Route::post('penggunaLulusan/import', [PenggunaLulusanController::class, 'import'])->name('penggunaLulusan.import');
     Route::get('penggunaLulusan/export', [PenggunaLulusanController::class, 'export'])->name('penggunaLulusan.export');
+    Route::get('penggunaLulusan/template', [PenggunaLulusanController::class, 'downloadTemplate'])->name('penggunaLulusan.template');
     Route::get('penggunaLulusan/details/{id}', [PenggunaLulusanController::class, 'details'])->name('penggunaLulusan.details');
     Route::delete('penggunaLulusan/delete/{id}', [PenggunaLulusanController::class, 'destroy'])->name('admin.penggunaLulusan.destroy');
     Route::resource('lulusan', LulusanController::class);
@@ -96,6 +103,15 @@ Route::middleware(['auth', 'role:admin|supervisor'])->prefix('admin')->name('adm
     Route::get('template_email', [TemplateEmailController::class, 'template_email'])->name('template_email.index'); //template email index
     Route::post('template_email/update', [TemplateEmailController::class, 'update'])->name('template_email.update');
     Route::get('template_email/preview', [TemplateEmailController::class, 'preview'])->name('template_email.preview');
+
+    // Manajemen Satker (Master Data)
+    Route::get('manajemen-satker', [ManajemenSatkerController::class, 'index'])->name('manajemenSatker.index');
+    Route::post('manajemen-satker', [ManajemenSatkerController::class, 'store'])->name('manajemenSatker.store');
+    Route::post('manajemen-satker/import', [ManajemenSatkerController::class, 'import'])->name('manajemenSatker.import');
+    Route::get('manajemen-satker/export', [ManajemenSatkerController::class, 'export'])->name('manajemenSatker.export');
+    Route::get('manajemen-satker/api/search', [ManajemenSatkerController::class, 'apiSearch'])->name('manajemenSatker.apiSearch');
+    Route::put('manajemen-satker/{id}', [ManajemenSatkerController::class, 'update'])->name('manajemenSatker.update');
+    Route::delete('manajemen-satker/{id}', [ManajemenSatkerController::class, 'destroy'])->name('manajemenSatker.destroy');
 });
 
 // User route
@@ -104,6 +120,7 @@ Route::middleware(['auth', 'role:lulusan|penggunaLulusan'])->prefix('user')->nam
     Route::post('profile/update', [SurveyUserController::class, 'updateProfile'])->name('profile.update');
     Route::get('survey/{id}', [SurveyUserController::class, 'surveyUserPertanyaan'])->name('survey.survey');
     Route::post('survey/{id}', [SurveyUserController::class, 'saveSurvey'])->name('survey.save');
+    Route::post('survey/{id}/autosave', [SurveyUserController::class, 'autosaveSurvey'])->name('survey.autosave');
     Route::post('survey/{surveyId}/next-question/{questionId}', [SurveyUserController::class, 'getNextQuestion'])->name('survey.next_question');
     Route::get('monitoring', [SurveyUserController::class, 'index'])->name('monitoring.index');
 });

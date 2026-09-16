@@ -7,6 +7,9 @@ use App\Models\SurveyUser;
 use App\Models\SurveyUserJawaban;
 use App\Models\Lulusan;
 use App\Models\PenggunaLulusan;
+use App\Models\MasterJabatan;
+use App\Models\MasterSatuanKerja;
+use App\Models\MasterUnitKerja;
 use App\Models\TemplatePertanyaan;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -41,9 +44,16 @@ class SurveyUserController extends Controller
 
         $user = Auth::user();
 
+        $masterJabatan = MasterJabatan::orderBy('nama')->get();
+        $masterSatuanKerja = MasterSatuanKerja::orderBy('nama')->get();
+        $masterUnitKerja = MasterUnitKerja::orderBy('nama')->get();
+
         return view('user.views.index', [
             'survey' => $surveys,
-            'user' => $user
+            'user' => $user,
+            'masterJabatan' => $masterJabatan,
+            'masterSatuanKerja' => $masterSatuanKerja,
+            'masterUnitKerja' => $masterUnitKerja,
         ]);
     }
 
@@ -134,13 +144,26 @@ class SurveyUserController extends Controller
 
     public function surveyUserPertanyaan($id)
     {
-        $surveyUser = SurveyUser::where('user_id', Auth::id())->where('survey_id', $id)->where('status', 0)->first();
+        $surveyUser = SurveyUser::where('user_id', Auth::id())->where('survey_id', $id)->first();
         if (!$surveyUser) {
             return redirect()->back()->with('error', 'Survey tidak ditemukan');
         }
+
         $survey = Survey::where('id', $surveyUser->survey_id)->first();
+
+        // Check if survey is expired
+        if ($survey && Carbon::parse($survey->tanggal_selesai)->lt(now())) {
+            return redirect()->back()->with('error', 'Maaf, survei ini sudah kadaluarsa dan tidak dapat diisi atau diedit lagi.');
+        }
+
         $survey->tanggal_mulai = Carbon::parse($survey->tanggal_mulai)->format("d-m-Y");
         $survey->tanggal_selesai = Carbon::parse($survey->tanggal_selesai)->format("d-m-Y");
+
+        $user = Auth::user();
+
+        // Pastikan survei memiliki Blok 1 Identitas Responden
+        \App\Services\RespondentAttributeService::ensureIdentityBlock($survey);
+        $profileValues = \App\Services\RespondentAttributeService::getUserProfileValues($user);
 
         // Get survey data organized by blocks for the new flow
         $surveyBlocks = \App\Models\SurveyBlock::with([
@@ -154,6 +177,11 @@ class SurveyUserController extends Controller
         ->where('survey_id', $surveyUser->survey_id)
         ->orderBy('urutan')
         ->get();
+
+        // Get existing answers for this user
+        $existingAnswers = SurveyUserJawaban::where('survey_user_id', $surveyUser->id)
+            ->pluck('jawaban', 'template_pertanyaan_id')
+            ->toArray();
 
         // If no blocks exist, fall back to the old grouping method for backward compatibility
         if ($surveyBlocks->isEmpty()) {
@@ -175,11 +203,41 @@ class SurveyUserController extends Controller
                 });
         } else {
             // New block-based structure with full block information
-            $surveyUserPertanyaan = $surveyBlocks->mapWithKeys(function ($block) {
-                return [$block->nama => $block->questions->map(function ($question) {
+            $surveyUserPertanyaan = $surveyBlocks->mapWithKeys(function ($block) use ($profileValues, $survey, $surveyUser, &$existingAnswers) {
+                $isIdentityBlock = ($block->urutan == 1) || (!empty($block->metadata['is_identity_block']));
+
+                return [$block->id => $block->questions->map(function ($question) use ($block, $isIdentityBlock, $profileValues, $survey, $surveyUser, &$existingAnswers) {
                     // Ensure templateJawaban is included with navigation targets
                     $questionArray = $question->toArray();
-                    
+
+                    if ($isIdentityBlock) {
+                        $questionArray['is_readonly'] = true;
+                        $attrKey = \App\Services\RespondentAttributeService::mapQuestionToAttributeKey($question->pertanyaan, $survey->type_survei);
+
+                        if ($attrKey !== null && array_key_exists($attrKey, $profileValues)) {
+                            $val = (string)($profileValues[$attrKey] ?? '');
+                            $existingAnswers[$question->id] = $val;
+                            $questionArray['default_value'] = $val;
+
+                            // Pastikan otomatis tersimpan di database jika belum ada
+                            SurveyUserJawaban::updateOrCreate(
+                                [
+                                    'survey_user_id' => $surveyUser->id,
+                                    'template_pertanyaan_id' => $question->id
+                                ],
+                                [
+                                    'jawaban' => $val
+                                ]
+                            );
+                        }
+
+                        // Pastikan di blok identitas, pertanyaan jenis kelamin atau radio menjadi 'text'
+                        // agar tampil sebagai isian terkunci (read-only) sama seperti Nama Lengkap dan NIP
+                        if ($attrKey === 'jenis_kelamin' || $questionArray['tipe'] === 'radio' || (stripos($question->pertanyaan, 'kelamin') !== false)) {
+                            $questionArray['tipe'] = 'text';
+                        }
+                    }
+
                     // Log navigation targets for debugging
                     if ($question->tipe === 'radio' && $question->templateJawaban) {
                         Log::info('Radio question navigation data', [
@@ -194,11 +252,11 @@ class SurveyUserController extends Controller
                             })->toArray()
                         ]);
                     }
-                    
+
                     return $questionArray;
                 })];
             });
-            
+
             // Also pass the full block structure for navigation
             $blockStructure = $surveyBlocks->map(function ($block) {
                 return [
@@ -206,21 +264,17 @@ class SurveyUserController extends Controller
                     'nama' => $block->nama,
                     'urutan' => $block->urutan,
                     'deskripsi' => $block->deskripsi,
-                    'navigation_type' => $block->navigation_type
+                    'navigation_type' => $block->navigation_type,
+                    'metadata' => $block->metadata
                 ];
             });
-            
+
             Log::info('Block structure created', [
                 'survey_id' => $surveyUser->survey_id,
                 'block_count' => $blockStructure->count(),
                 'blocks' => $blockStructure->toArray()
             ]);
         }
-
-        // Get existing answers for this user
-        $existingAnswers = SurveyUserJawaban::where('survey_user_id', $surveyUser->id)
-            ->pluck('jawaban', 'template_pertanyaan_id')
-            ->toArray();
 
         return view('user.views.survey', [
             'survey' => $survey,
@@ -229,6 +283,128 @@ class SurveyUserController extends Controller
             'surveyBlocks' => $surveyBlocks,
             'blockStructure' => $blockStructure ?? null
         ]);
+    }
+
+    /**
+     * Autosave survey answers (draft mode - does NOT mark survey as complete)
+     * Saves answers periodically without requiring manual submit.
+     * User can resume filling the survey later without losing data.
+     */
+    public function autosaveSurvey(Request $request, $id)
+    {
+        try {
+            // Get current user's survey assignment
+            $surveyUser = SurveyUser::where('user_id', Auth::id())->where('survey_id', $id)->first();
+            if (!$surveyUser) {
+                return response()->json(['success' => false, 'message' => 'Survey tidak ditemukan'], 404);
+            }
+
+            // Check if survey is expired
+            $survey = Survey::find($id);
+            if ($survey && Carbon::parse($survey->tanggal_selesai)->lt(now())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maaf, survei ini sudah kadaluarsa dan tidak dapat disimpan.'
+                ], 403);
+            }
+
+            // If survey is already completed, don't autosave (user should edit explicitly)
+            if ($surveyUser->status == 1) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Survey sudah selesai, autosave dilewati.',
+                    'skipped' => true
+                ]);
+            }
+
+            $savedCount = 0;
+
+            // Pastikan pertanyaan identitas selalu tersimpan dengan nilai profil resmi
+            $user = Auth::user();
+            $profileValues = \App\Services\RespondentAttributeService::getUserProfileValues($user);
+            $identityBlock = \App\Models\SurveyBlock::where('survey_id', $id)
+                ->where(function($q) {
+                    $q->where('urutan', 1)->orWhere('metadata->is_identity_block', true);
+                })->first();
+
+            $lockedQuestionIds = $identityBlock ? $identityBlock->questions->pluck('id')->map(fn($qid) => (int)$qid)->toArray() : [];
+
+            if ($identityBlock) {
+                foreach ($identityBlock->questions as $iq) {
+                    $attrKey = \App\Services\RespondentAttributeService::mapQuestionToAttributeKey($iq->pertanyaan, $survey->type_survei);
+                    if ($attrKey !== null && array_key_exists($attrKey, $profileValues)) {
+                        SurveyUserJawaban::updateOrCreate(
+                            [
+                                'survey_user_id' => $surveyUser->id,
+                                'template_pertanyaan_id' => $iq->id
+                            ],
+                            [
+                                'jawaban' => (string)($profileValues[$attrKey] ?? '')
+                            ]
+                        );
+                        $savedCount++;
+                    }
+                }
+            }
+
+            // Process each question response
+            foreach ($request->except('_token') as $questionId => $answer) {
+                // Skip non-answer fields
+                if (strpos($questionId, 'answer_') !== 0) {
+                    continue;
+                }
+
+                // Extract actual question ID
+                $actualQuestionId = str_replace('answer_', '', $questionId);
+
+                // Prevent modifying questions belonging to the locked identity block
+                if (in_array((int)$actualQuestionId, $lockedQuestionIds, true)) {
+                    continue;
+                }
+
+                // Skip empty/null answers
+                if ($answer === null || $answer === '') {
+                    continue;
+                }
+
+                // Handle checkbox arrays
+                if (is_array($answer)) {
+                    $answer = implode(',', $answer);
+                }
+
+                // Create or update response
+                SurveyUserJawaban::updateOrCreate(
+                    [
+                        'survey_user_id' => $surveyUser->id,
+                        'template_pertanyaan_id' => $actualQuestionId
+                    ],
+                    [
+                        'jawaban' => $answer
+                    ]
+                );
+
+                $savedCount++;
+            }
+
+            // Removed invalid update of current_question_id with block_index
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jawaban tersimpan otomatis',
+                'saved_count' => $savedCount,
+                'saved_at' => now()->format('H:i:s')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error autosaving survey: ' . $e->getMessage(), [
+                'survey_id' => $id,
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan otomatis: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function saveSurvey(Request $request, $id)
@@ -240,6 +416,45 @@ class SurveyUserController extends Controller
                 return response()->json(['success' => false, 'message' => 'Survey tidak ditemukan'], 404);
             }
 
+            // Check if survey is expired
+            $survey = Survey::find($id);
+            if ($survey && Carbon::parse($survey->tanggal_selesai)->lt(now())) {
+                if ($request->ajax() || $request->expectsJson()) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Maaf, survei ini sudah kadaluarsa dan tidak dapat disimpan.'
+                    ], 403);
+                }
+                return redirect()->route('user.profile.index')->with('error', 'Maaf, survei ini sudah kadaluarsa dan tidak dapat disimpan.');
+            }
+
+            // Pastikan pertanyaan identitas selalu tersimpan dengan nilai profil resmi
+            $user = Auth::user();
+            $profileValues = \App\Services\RespondentAttributeService::getUserProfileValues($user);
+            $identityBlock = \App\Models\SurveyBlock::where('survey_id', $id)
+                ->where(function($q) {
+                    $q->where('urutan', 1)->orWhere('metadata->is_identity_block', true);
+                })->first();
+
+            $lockedQuestionIds = $identityBlock ? $identityBlock->questions->pluck('id')->map(fn($qid) => (int)$qid)->toArray() : [];
+
+            if ($identityBlock) {
+                foreach ($identityBlock->questions as $iq) {
+                    $attrKey = \App\Services\RespondentAttributeService::mapQuestionToAttributeKey($iq->pertanyaan, $survey->type_survei);
+                    if ($attrKey !== null && array_key_exists($attrKey, $profileValues)) {
+                        SurveyUserJawaban::updateOrCreate(
+                            [
+                                'survey_user_id' => $surveyUser->id,
+                                'template_pertanyaan_id' => $iq->id
+                            ],
+                            [
+                                'jawaban' => (string)($profileValues[$attrKey] ?? '')
+                            ]
+                        );
+                    }
+                }
+            }
+
             // Process each question response
             foreach ($request->except('_token') as $questionId => $answer) {
                 // Skip non-answer fields
@@ -249,6 +464,11 @@ class SurveyUserController extends Controller
                 
                 // Extract actual question ID
                 $actualQuestionId = str_replace('answer_', '', $questionId);
+
+                // Prevent modifying questions belonging to the locked identity block
+                if (in_array((int)$actualQuestionId, $lockedQuestionIds, true)) {
+                    continue;
+                }
                 
                 // Check if the answer is a file upload
                 if ($request->hasFile($questionId)) {
@@ -274,20 +494,24 @@ class SurveyUserController extends Controller
                 );
             }
 
+            $isFirstTime = ($surveyUser->status == 0);
+
             // Update status survey user
             $surveyUser->status = 1;
             $surveyUser->tanggal_mengisi = now();
             $surveyUser->save();
 
-            // Automatically send thank you email
-            try {
-                $survey = Survey::find($id);
-                if ($survey) {
-                    $this->emailService->sendThankYou(Auth::user(), $survey);
+            // Automatically send thank you email only for the first time
+            if ($isFirstTime) {
+                try {
+                    $survey = Survey::find($id);
+                    if ($survey) {
+                        $this->emailService->sendThankYou(Auth::user(), $survey);
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail the survey submission
+                    Log::error("Failed to send thank you email: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                // Log error but don't fail the survey submission
-                Log::error("Failed to send thank you email: " . $e->getMessage());
             }
 
             // Return JSON response for AJAX requests
@@ -318,11 +542,20 @@ class SurveyUserController extends Controller
         }
     }
 
-    public function sendEmail($id){
+    public function sendEmail(Request $request, $id){
         try {
-            $surveyUsers = SurveyUser::with(['user.lulusan','user.pengguna_lulusan'])->where('survey_id', $id)->get();
+            $query = SurveyUser::with(['user.lulusan','user.pengguna_lulusan'])
+                ->where('survey_id', $id)
+                ->whereNull('invitation_email_sent_at');
+
+            if ($request->has('user_ids') && is_array($request->user_ids) && count($request->user_ids) > 0) {
+                $query->whereIn('user_id', $request->user_ids);
+            }
+
+            $surveyUsers = $query->get();
+
             if($surveyUsers->isEmpty()) {
-                return response()->json(['success'=>false, 'message'=>'Tidak ada pengguna yang terdaftar untuk survei ini.'], 400);
+                return response()->json(['success'=>false, 'message'=>'Tidak ada pengguna yang memenuhi syarat (atau belum diundang) untuk survei ini.'], 400);
             }
             $template_pertanyaan = TemplatePertanyaan::getTemplatePertanyaan($id);
             if($template_pertanyaan->isEmpty()) {
@@ -334,8 +567,28 @@ class SurveyUserController extends Controller
             
             // Send bulk invitations using the new service
             $result = $this->emailService->sendBulkInvitationsToCollection($users, $survey);
-            
-            return response()->json(['success'=>true, 'message'=>'Email berhasil dikirim ke semua!']);
+
+            if (($result['success'] ?? 0) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email undangan ke seluruh pengguna.',
+                    'result' => $result,
+                ], 500);
+            }
+
+            if (($result['failed'] ?? 0) > 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Sebagian email undangan terkirim ({$result['success']} berhasil, {$result['failed']} gagal).",
+                    'result' => $result,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Email berhasil dikirim ke semua ({$result['success']} pengguna).",
+                'result' => $result,
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success'=>false, 'message'=>'Gagal mengirim email: ' . $e->getMessage()], 500);
         }
@@ -483,7 +736,7 @@ class SurveyUserController extends Controller
     /**
      * Send reminder emails to users who haven't completed the survey
      */
-    public function sendReminders($id)
+    public function sendReminders(Request $request, $id)
     {
         try {
             $survey = Survey::find($id);
@@ -491,21 +744,46 @@ class SurveyUserController extends Controller
                 return response()->json(['success'=>false, 'message'=>'Survei tidak ditemukan.'], 404);
             }
 
-            // Get users who haven't completed the survey (status = false)
-            $incompleteUsers = SurveyUser::with('user')
+            // Get users who haven't completed the survey (status = false) and have been invited
+            $query = SurveyUser::with('user')
                 ->where('survey_id', $id)
                 ->where('status', false)
-                ->get()
-                ->pluck('user');
+                ->whereNotNull('invitation_email_sent_at');
+
+            if ($request->has('user_ids') && is_array($request->user_ids) && count($request->user_ids) > 0) {
+                $query->whereIn('user_id', $request->user_ids);
+            }
+
+            $incompleteUsers = $query->get()->pluck('user');
 
             if($incompleteUsers->isEmpty()) {
-                return response()->json(['success'=>false, 'message'=>'Semua pengguna sudah mengisi survei.'], 400);
+                return response()->json(['success'=>false, 'message'=>'Tidak ada pengguna yang memenuhi syarat untuk dikirimkan reminder.'], 400);
             }
 
             // Send bulk reminders using the new service
             $result = $this->emailService->sendBulkRemindersToCollection($incompleteUsers, $survey);
-            
-            return response()->json(['success'=>true, 'message'=>'Email reminder berhasil dikirim!']);
+
+            if (($result['success'] ?? 0) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email reminder ke seluruh pengguna.',
+                    'result' => $result,
+                ], 500);
+            }
+
+            if (($result['failed'] ?? 0) > 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Sebagian email reminder terkirim ({$result['success']} berhasil, {$result['failed']} gagal).",
+                    'result' => $result,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Email reminder berhasil dikirim ({$result['success']} pengguna).",
+                'result' => $result,
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success'=>false, 'message'=>'Gagal mengirim reminder: ' . $e->getMessage()], 500);
         }
@@ -545,7 +823,7 @@ class SurveyUserController extends Controller
     /**
      * Send bulk thank you emails to all users who have completed the survey
      */
-    public function sendBulkThankYou($surveyId)
+    public function sendBulkThankYou(Request $request, $surveyId)
     {
         try {
             $survey = Survey::find($surveyId);
@@ -554,11 +832,15 @@ class SurveyUserController extends Controller
             }
 
             // Get users who have completed the survey (status = true)
-            $completedUsers = SurveyUser::with('user')
+            $query = SurveyUser::with('user')
                 ->where('survey_id', $surveyId)
-                ->where('status', true)
-                ->get()
-                ->pluck('user');
+                ->where('status', true);
+
+            if ($request->has('user_ids') && is_array($request->user_ids) && count($request->user_ids) > 0) {
+                $query->whereIn('user_id', $request->user_ids);
+            }
+
+            $completedUsers = $query->get()->pluck('user');
 
             if($completedUsers->isEmpty()) {
                 return response()->json(['success'=>false, 'message'=>'Tidak ada pengguna yang telah menyelesaikan survei.'], 400);
@@ -567,9 +849,26 @@ class SurveyUserController extends Controller
             // Send bulk thank you emails using the service
             $result = $this->emailService->sendBulkThankYouToCollection($completedUsers, $survey);
             
+            if (($result['success'] ?? 0) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email terima kasih ke seluruh pengguna.',
+                    'result' => $result,
+                ], 500);
+            }
+
+            if (($result['failed'] ?? 0) > 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Sebagian email terima kasih terkirim ({$result['success']} berhasil, {$result['failed']} gagal).",
+                    'result' => $result,
+                ]);
+            }
+
             return response()->json([
-                'success'=>true, 
-                'message'=>"Email terima kasih berhasil dikirim ke {$result['success']} pengguna!"
+                'success'=>true,
+                'message'=>"Email terima kasih berhasil dikirim ke {$result['success']} pengguna!",
+                'result' => $result,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success'=>false, 'message'=>'Gagal mengirim email terima kasih: ' . $e->getMessage()], 500);
@@ -790,6 +1089,8 @@ class SurveyUserController extends Controller
             $nextQuestionData = $this->determineNextQuestion($currentQuestion, $answer, $surveyId);
             
             if ($nextQuestionData === null) {
+                $isFirstTime = ($surveyUser->status == 0);
+
                 // Survey is completed, update status
                 $surveyUser->status = 1;
                 $surveyUser->tanggal_mengisi = now();
@@ -801,19 +1102,21 @@ class SurveyUserController extends Controller
                     'user_id' => Auth::id()
                 ]);
                 
-                // Send thank you email
-                try {
-                    $survey = Survey::find($surveyId);
-                    if ($survey) {
-                        $this->emailService->sendThankYou(Auth::user(), $survey);
-                        Log::info('Thank you email sent', ['user_id' => Auth::id(), 'survey_id' => $surveyId]);
+                // Send thank you email only for the first time
+                if ($isFirstTime) {
+                    try {
+                        $survey = Survey::find($surveyId);
+                        if ($survey) {
+                            $this->emailService->sendThankYou(Auth::user(), $survey);
+                            Log::info('Thank you email sent', ['user_id' => Auth::id(), 'survey_id' => $surveyId]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send thank you email', [
+                            'error' => $e->getMessage(),
+                            'user_id' => Auth::id(),
+                            'survey_id' => $surveyId
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    Log::error('Failed to send thank you email', [
-                        'error' => $e->getMessage(),
-                        'user_id' => Auth::id(),
-                        'survey_id' => $surveyId
-                    ]);
                 }
                 
                 return response()->json(['completed' => true]);
