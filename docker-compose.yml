@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  app:
+  tracer-study-app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -26,7 +26,7 @@ services:
     volumes:
       - app-code-v2:/var/www
     depends_on:
-      - app
+      - tracer-study-app
     networks:
       - tracer-study-network
 
