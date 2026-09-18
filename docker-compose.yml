@@ -8,6 +8,9 @@ services:
     image: tracer-study-app
     restart: unless-stopped
     working_dir: /var/www
+    env_file:
+      - .env
+    command: sh -c "mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && php-fpm"
     volumes:
       - app-code-v2:/var/www
     networks:
@@ -19,6 +22,8 @@ services:
       dockerfile: docker/nginx/Dockerfile
     image: tracer-study-web
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "8000:80"
     volumes:
