@@ -214,13 +214,23 @@ class DummyDataSeeder extends Seeder
 
         // Create template questions and answers
         foreach ($questions as $index => $questionData) {
+            // Create or get the block
+            $block = \App\Models\SurveyBlock::firstOrCreate(
+                ['survey_id' => $survey->id, 'nama' => $questionData['blok']],
+                [
+                    'kode' => substr($questionData['blok'], 0, 3),
+                    'deskripsi' => 'Otomatis dibuat untuk ' . $questionData['blok'],
+                    'urutan' => 1,
+                ]
+            );
+
             $question = TemplatePertanyaan::firstOrCreate(
                 ['pertanyaan' => $questionData['pertanyaan'], 'id_survey' => $survey->id],
                 [
                     'id_survey' => $survey->id,
+                    'block_id' => $block->id,
                     'tipe' => $questionData['tipe'],
                     'urutan' => $index + 1,
-                    'blok' => $questionData['blok'],
                     'deskripsi_pertanyaan' => 'Deskripsi untuk ' . $questionData['pertanyaan'],
                     'visualisasi' => $questionData['visualisasi'],
                 ]
