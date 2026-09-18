@@ -1,6 +1,6 @@
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install system dependencies and Node.js
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    libzip-dev \
+    libsqlite3-dev \
     sqlite3 \
-    libsqlite3-dev
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -22,12 +23,20 @@ RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd zi
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create system user to run Composer and Artisan Commands (optional but good practice)
 # Set working directory
 WORKDIR /var/www
 
 # Copy existing application directory contents
 COPY . /var/www
+
+# Install PHP Dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Build Frontend Assets
+RUN npm install && npm run build
+
+# Adjust permissions
+RUN chown -R www-data:www-data /var/www
 
 # Expose port 9000 and start php-fpm server
 EXPOSE 9000
