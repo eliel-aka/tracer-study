@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
+    libzip-dev \
     libsqlite3-dev \
     sqlite3 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
