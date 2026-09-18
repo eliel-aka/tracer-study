@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - shared-code:/var/www
+      - app-code-v2:/var/www
     networks:
       - tracer-study-network
 
@@ -24,7 +24,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - shared-code:/var/www
+      - app-code-v2:/var/www
     depends_on:
       - app
     networks:
@@ -35,4 +35,4 @@ networks:
     driver: bridge
 
 volumes:
-  shared-code:
+  app-code-v2:
