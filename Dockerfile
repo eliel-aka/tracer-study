@@ -33,10 +33,16 @@ COPY . /var/www
 # Install PHP Dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Build Frontend Assets
+# Ensure storage directories exist
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs
+
+# Build assets
 RUN npm install && npm run build
 
-# Adjust permissions
+# Set permissions
 RUN chown -R www-data:www-data /var/www
 
 # Expose port 9000 and start php-fpm server
