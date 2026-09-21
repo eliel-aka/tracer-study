@@ -57,7 +57,7 @@ class PenggunaLulusanImport implements ToModel, WithHeadingRow
                 [
                     'name' => $row['nama'],
                     'password' => bcrypt(substr($nipVal, 0, 5)), // Use first 5 digits of NIP as password
-                    'role' => 'penggunaLulusan',
+                    'role' => 'pengguna_lulusan',
                 ]
             );
 

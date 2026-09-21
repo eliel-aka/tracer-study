@@ -116,7 +116,7 @@ class PenggunaLulusanController extends Controller
             $user = User::create([
                 'name'     => $request->nama,
                 'email'    => $request->email,
-                'role'     => 'penggunaLulusan',
+                'role'     => 'pengguna_lulusan',
                 'password' => bcrypt($password),
             ]);
             $user->assignRole('penggunaLulusan');
