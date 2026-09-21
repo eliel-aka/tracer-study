@@ -365,12 +365,28 @@ class RespondentAttributeService
 
         // If block 1 exists but is not an identity block, shift all existing blocks up by 1
         DB::transaction(function () use ($survey, &$existingBlock, $type, $attributes) {
-            // Shift existing blocks and their questions urutan + 1
+            // Step 1: Rename soft-deleted blocks' kode to free up keys for active blocks
+            $trashedBlocks = SurveyBlock::onlyTrashed()->where('survey_id', $survey->id)->get();
+            foreach ($trashedBlocks as $trashed) {
+                if (!str_starts_with($trashed->kode, 'DEL_')) {
+                    $trashed->update(['kode' => 'DEL_' . $trashed->id . '_' . $trashed->kode]);
+                }
+            }
+
             $allBlocks = SurveyBlock::where('survey_id', $survey->id)->orderBy('urutan', 'desc')->get();
+            
+            // Step 2: Shift urutan and assign temporary kodes to avoid intra-shift UNIQUE constraint conflicts
             foreach ($allBlocks as $blk) {
                 $blk->update([
                     'urutan' => $blk->urutan + 1,
-                    'kode' => 'BLOCK_' . str_pad($blk->urutan + 1, 2, '0', STR_PAD_LEFT)
+                    'kode' => 'TMP_' . $blk->id . '_' . uniqid()
+                ]);
+            }
+            
+            // Step 3: Assign final correct kodes to active blocks
+            foreach ($allBlocks as $blk) {
+                $blk->update([
+                    'kode' => 'BLOCK_' . str_pad($blk->urutan, 2, '0', STR_PAD_LEFT)
                 ]);
             }
 
