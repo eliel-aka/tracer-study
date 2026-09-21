@@ -626,118 +626,124 @@ function loadExistingQuestion(sectionId, questionData, isIdentity = false) {
 
     const questionHtml = `
         <div class="question-item ${isIdentity ? 'bg-gray-50 border border-gray-200' : ''}" data-question-id="${questionCounter}" data-question-number="Q${questionCounter}" data-section-id="${sectionId}">
-            <div class="question-header mb-3">
-                <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-2">
-                        <h6 class="text-sm font-medium text-gray-600">Pertanyaan ${questionCounter}</h6>
-                        ${isIdentity ? '<span class="text-xs font-semibold text-gray-600">(' + (questionData.question || '') + ')</span>' : ''}
-                    </div>
-                    <div class="icon-container question-controls">
-                        ${isIdentity ? `
-                            <span class="text-[11px] bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded">
-                                <i class="fas fa-lock text-[10px] mr-1"></i> Profil Responden
-                            </span>
-                        ` : `
-                            <button type="button" onclick="addQuestion(${sectionId}, ${questionCounter})" class="icon-link add-question-after-btn" title="Tambah Pertanyaan di Bawah">
-                                <i class="fas fa-plus text-green-600"></i>
-                            </button>
-                            <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCounter})" class="icon-link" title="Clone Question">
-                                <i class="fas fa-copy text-blue-600"></i>
-                            </button>
-                            <button type="button" onclick="deleteQuestion(${sectionId}, ${questionCounter})" class="icon-link" title="Delete Question">
-                                <i class="fas fa-trash text-red-600"></i>
-                            </button>
-                        `}
-                    </div>
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                    <h6 class="text-sm font-semibold">Pertanyaan ${questionCounter}</h6>
+                    ${isIdentity ? '<span class="text-xs font-semibold text-gray-600">(' + (questionData.question || '') + ')</span>' : ''}
+                </div>
+                <div class="flex space-x-2 question-controls">
+                    ${isIdentity ? `
+                        <span class="text-[11px] bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded">
+                            <i class="fas fa-lock text-[10px] mr-1"></i> Profil Responden
+                        </span>
+                    ` : `
+                        <button type="button" onclick="addQuestion(${sectionId}, ${questionCounter})" class="text-green-500 hover:text-green-700 add-question-after-btn" title="Tambah Pertanyaan di Bawah">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button type="button" onclick="cloneQuestion(${sectionId}, ${questionCounter})" class="text-blue-500 hover:text-blue-700" title="Clone Question">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button type="button" onclick="deleteQuestion(${sectionId}, ${questionCounter})" class="text-red-500 hover:text-red-700" title="Delete Question">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `}
                 </div>
             </div>
 
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][id]" value="${questionData.id || ''}">
                 <div class="question-textarea-container">
-                    <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Teks Pertanyaan <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Pertanyaan <span class="text-red-500">*</span></label>
                     <textarea name="sections[${sectionId}][questions][${questionCounter}][question]" rows="1" placeholder="Tulis pertanyaan disini..." required
                               ${isIdentity ? 'readonly' : ''}
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 font-medium text-gray-800 cursor-not-allowed' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.question || ''}</textarea>
                 </div>
                 <div>
-                    <label class="inline-block mb-1 text-xs font-semibold text-slate-600">Deskripsi/Instruksi</label>
-                    <textarea name="sections[${sectionId}][questions][${questionCounter}][description]" rows="1" placeholder="Tulis deskripsi disini (opsional)..."
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
+                    <textarea name="sections[${sectionId}][questions][${questionCounter}][description]" rows="1" placeholder="Deskripsi pertanyaan (opsional)"
                               ${isIdentity ? 'readonly' : ''}
                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 ${isIdentity ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700'} bg-clip-padding px-3 py-2 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">${questionData.description || ''}</textarea>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    ${isIdentity ? `
-                        <div>
-                            <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][type]" value="${questionData.type === 'date' ? 'date' : 'text'}">
-                            <input type="text" value="${questionData.type === 'date' ? 'Date' : 'Text Input'}" readonly
-                                   class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-mono text-gray-700 cursor-not-allowed">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                ${isIdentity ? `
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][type]" value="${questionData.type === 'date' ? 'date' : 'text'}">
+                        <input type="text" value="${questionData.type === 'date' ? 'Date' : 'Text Input'}" readonly
+                               class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-mono text-gray-700 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][visualization]" value="">
+                    </div>
+                    <div class="flex items-center pt-4">
+                        <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1">
+                        <span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i> Wajib & Otomatis Terisi
+                        </span>
+                    </div>
+                ` : `
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Tipe Pertanyaan</label>
+                        <select name="sections[${sectionId}][questions][${questionCounter}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${questionCounter}, this.value)" required
+                                class="question-type-select focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                            <option value="text" ${questionData.type === 'text' ? 'selected' : ''}>Text Input</option>
+                            <option value="textarea" ${questionData.type === 'textarea' ? 'selected' : ''}>Text Area</option>
+                            <option value="radio" ${questionData.type === 'radio' ? 'selected' : ''}>Radio Button</option>
+                            <option value="checkbox" ${questionData.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
+                            <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Dropdown</option>
+                            <option value="multiple_choice_grid" ${questionData.type === 'multiple_choice_grid' ? 'selected' : ''}>Multiple Choice Grid</option>
+                            <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
+                            <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
+                            <option value="gaji" ${questionData.type === 'gaji' ? 'selected' : ''}>Gaji (Angka)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Visualisasi</label>
+                        <select name="sections[${sectionId}][questions][${questionCounter}][visualization]"
+                                class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
+                            <option value="" ${!questionData.visualization ? 'selected' : ''}>Tidak ada visualisasi</option>
+                            <option value="bar" ${questionData.visualization === 'bar' ? 'selected' : ''}>Bar Chart</option>
+                            <option value="pie" ${questionData.visualization === 'pie' ? 'selected' : ''}>Pie Chart</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1 pt-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required == '1' ? 'checked' : ''}
+                                   class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label class="text-xs font-medium text-gray-700">Wajib diisi</label>
                         </div>
-                        <div>
-                            <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][visualization]" value="">
+                        <div class="flex items-center mt-1">
+                            <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][is_analytic_table]" value="1" ${questionData.is_analytic_table == '1' ? 'checked' : ''}
+                                   class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <label class="text-xs font-medium text-gray-700">Tabel Analitik</label>
                         </div>
-                        <div class="flex items-center pt-2">
-                            <input type="hidden" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1">
-                            <span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium">
-                                <i class="fas fa-check-circle mr-1"></i> Wajib & Otomatis Terisi
-                            </span>
-                        </div>
-                    ` : `
-                        <div>
-                            <select name="sections[${sectionId}][questions][${questionCounter}][type]" onchange="handleQuestionTypeChange(${sectionId}, ${questionCounter}, this.value)" required
-                                    class="question-type-select focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
-                                <option value="text" ${questionData.type === 'text' ? 'selected' : ''}>Text Input</option>
-                                <option value="textarea" ${questionData.type === 'textarea' ? 'selected' : ''}>Text Area</option>
-                                <option value="radio" ${questionData.type === 'radio' ? 'selected' : ''}>Radio Button</option>
-                                <option value="checkbox" ${questionData.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
-                                <option value="select" ${questionData.type === 'select' ? 'selected' : ''}>Select Dropdown</option>
-                                <option value="multiple_choice_grid" ${questionData.type === 'multiple_choice_grid' ? 'selected' : ''}>Multiple Choice Grid</option>
-                                <option value="file" ${questionData.type === 'file' ? 'selected' : ''}>File Upload</option>
-                                <option value="date" ${questionData.type === 'date' ? 'selected' : ''}>Date</option>
-                                <option value="gaji" ${questionData.type === 'gaji' ? 'selected' : ''}>Gaji</option>
-                            </select>
-                        </div>
-                        <div>
-                            <select name="sections[${sectionId}][questions][${questionCounter}][visualization]"
-                                    class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-white bg-clip-padding px-3 py-2 font-normal text-gray-700 outline-none transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none">
-                                <option value="" ${!questionData.visualization ? 'selected' : ''}>Tidak ada visualisasi</option>
-                                <option value="bar" ${questionData.visualization === 'bar' ? 'selected' : ''}>Bar Chart</option>
-                                <option value="pie" ${questionData.visualization === 'pie' ? 'selected' : ''}>Pie Chart</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-2 pt-2">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][required]" value="1" ${questionData.required == '1' ? 'checked' : ''} class="sr-only peer">
-                                <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">Wajib diisi</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="sections[${sectionId}][questions][${questionCounter}][is_analytic_table]" value="1" ${questionData.is_analytic_table == '1' ? 'checked' : ''} class="sr-only peer">
-                                <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                <span class="ml-2 text-xs font-medium text-gray-700 dark:text-gray-300">Tabel Analitik</span>
-                            </label>
-                        </div>
-                    `}
-                </div>
+                    </div>
+                `}
+            </div>
 
             ${isIdentity ? '' : `
             <!-- Options Container -->
-            <div class="options-container mt-3" id="optionsContainer-${sectionId}-${questionCounter}" style="display: ${['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) ? 'block' : 'none'};">
-                <h6 class="text-sm font-medium text-gray-600 mb-2">Pilihan Jawaban</h6>
+            <div class="options-container" id="optionsContainer-${sectionId}-${questionCounter}" style="display: ${['radio', 'checkbox', 'select', 'multiple_choice_grid'].includes(questionData.type) ? 'block' : 'none'};">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-xs font-medium text-gray-700">Pilihan Jawaban</label>
+                    <button type="button" onclick="addOption(${sectionId}, ${questionCounter})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Tambah Pilihan
+                    </button>
+                </div>
                 <div class="options-list space-y-2" id="optionsList-${sectionId}-${questionCounter}">
                     <!-- Options will be loaded here -->
                 </div>
-                <button type="button" onclick="addOption(${sectionId}, ${questionCounter})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                    <i class="fas fa-plus mr-1"></i> Tambah Pilihan
-                </button>
 
-                <div id="gridColumnsContainer-${sectionId}-${questionCounter}" class="mt-4 pt-4 border-t border-gray-200" style="display: ${questionData.type === 'multiple_choice_grid' ? 'block' : 'none'};">
-                    <h6 class="text-sm font-medium text-gray-600 mb-2">Kolom Grid</h6>
-                    <div id="gridColumnsList-${sectionId}-${questionCounter}" class="space-y-2"></div>
-                    <button type="button" onclick="addGridColumnOption(${sectionId}, ${questionCounter})" class="mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                        <i class="fas fa-plus mr-1"></i> Tambah Kolom
-                    </button>
+                <div class="mt-4 pt-4 border-t border-gray-200" id="gridColumnsContainer-${sectionId}-${questionCounter}" style="display: ${questionData.type === 'multiple_choice_grid' ? 'block' : 'none'};">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-medium text-gray-700">Kolom Grid</label>
+                        <button type="button" onclick="addGridColumnOption(${sectionId}, ${questionCounter})" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Tambah Kolom
+                        </button>
+                    </div>
+                    <div class="space-y-2" id="gridColumnsList-${sectionId}-${questionCounter}"></div>
                 </div>
             </div>
 
@@ -2625,69 +2631,72 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
             });
         }
         
-        let questions = questionsContainer.querySelectorAll('.question-item');
+        // Pastikan hanya ada 1 pertanyaan
+        const questions = questionsContainer.querySelectorAll('.question-item');
         if (questions.length === 0) {
             addQuestion(sectionId);
-            questions = questionsContainer.querySelectorAll('.question-item');
         } else if (questions.length > 1) {
             for (let i = 1; i < questions.length; i++) {
                 questions[i].remove();
             }
         }
         
-        const question = questions[0];
-        if (question) {
-            // Sembunyikan tombol kontrol pertanyaan (add, copy, delete)
-            const controls = question.querySelector('.question-controls');
-            if (controls) controls.style.display = 'none';
-            
-            // Batasi tipe pertanyaan ke 4 tipe yang diizinkan
-            const typeSelect = question.querySelector('.question-type-select');
-            if (typeSelect) {
-                if (!typeSelect.hasAttribute('data-original-html')) {
-                    typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
-                }
-                const allowedTypes = ['radio', 'multiple_choice_grid'];
-                let newHtml = '';
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
-                Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
-                    if (allowedTypes.includes(opt.value)) {
-                        newHtml += opt.outerHTML;
+        setTimeout(() => {
+            const question = questionsContainer.querySelector('.question-item');
+            if (question) {
+                // Sembunyikan tombol kontrol pertanyaan (add, copy, delete)
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'none';
+                
+                // Batasi tipe pertanyaan ke 4 tipe yang diizinkan
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect) {
+                    if (!typeSelect.hasAttribute('data-original-html')) {
+                        typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
                     }
-                });
-                typeSelect.innerHTML = newHtml;
-                // Jika tipe saat ini tidak diizinkan, set ke radio
-                if (!allowedTypes.includes(typeSelect.value)) {
-                    typeSelect.value = 'radio';
-                    const qId = question.getAttribute('data-question-id');
-                    handleQuestionTypeChange(sectionId, qId, 'radio');
+                    const allowedTypes = ['radio', 'multiple_choice_grid'];
+                    let newHtml = '';
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
+                    Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
+                        if (allowedTypes.includes(opt.value)) {
+                            newHtml += opt.outerHTML;
+                        }
+                    });
+                    typeSelect.innerHTML = newHtml;
+                    // Jika tipe saat ini tidak diizinkan, set ke radio
+                    if (!allowedTypes.includes(typeSelect.value)) {
+                        typeSelect.value = 'radio';
+                        const qId = question.getAttribute('data-question-id');
+                        handleQuestionTypeChange(sectionId, qId, 'radio');
+                    }
                 }
-            }
-            
-            // Tampilkan field indikator
-            const qId = question.getAttribute('data-question-id');
-            const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
-            if (indikatorContainer) {
-                indikatorContainer.style.display = 'block';
-                // Sembunyikan textarea pertanyaan asli
-                const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
-                if (questionTextarea) {
-                    const container = questionTextarea.closest('.question-textarea-container');
-                    if (container) container.style.display = 'none';
-                    // Initialize first indicator if empty
-                    const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
-                    if (list && list.children.length === 0) {
-                        const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
-                        if (existingLines.length > 0) {
-                            existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
-                        } else {
-                            addIndikatorItem(sectionId, qId);
+                
+                // Tampilkan field indikator
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'block';
+                    // Sembunyikan textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'none';
+                        // Initialize first indicator if empty
+                        const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
+                        if (list && list.children.length === 0) {
+                            const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
+                            if (existingLines.length > 0) {
+                                existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
+                            } else {
+                                addIndikatorItem(sectionId, qId);
+                            }
                         }
                     }
                 }
             }
-        }
+        }, 100);
+        
     } else {
         // KOMPETENSI MODE OFF
         infoDiv.classList.add('hidden');
@@ -2702,33 +2711,35 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
             });
         }
         
-        const questions = questionsContainer.querySelectorAll('.question-item');
-        questions.forEach((question, index) => {
-            // Tampilkan kembali tombol kontrol pertanyaan
-            const controls = question.querySelector('.question-controls');
-            if (controls) controls.style.display = 'flex';
-            
-            // Kembalikan semua tipe pertanyaan menjadi tersedia
-            const typeSelect = question.querySelector('.question-type-select');
-            if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
-                const currentVal = typeSelect.value;
-                typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
-                typeSelect.value = currentVal;
-            }
-            
-            // Sembunyikan field indikator
-            const qId = question.getAttribute('data-question-id');
-            const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
-            if (indikatorContainer) {
-                indikatorContainer.style.display = 'none';
-                // Tampilkan kembali textarea pertanyaan asli
-                const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
-                if (questionTextarea) {
-                    const container = questionTextarea.closest('.question-textarea-container');
-                    if (container) container.style.display = 'block';
+        setTimeout(() => {
+            const questions = questionsContainer.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                // Tampilkan kembali tombol kontrol pertanyaan
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'flex';
+                
+                // Kembalikan semua tipe pertanyaan menjadi tersedia
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
+                    const currentVal = typeSelect.value;
+                    typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
+                    typeSelect.value = currentVal;
                 }
-            }
-        });
+                
+                // Sembunyikan field indikator
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'none';
+                    // Tampilkan kembali textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'block';
+                    }
+                }
+            });
+        }, 100);
     }
 };
 

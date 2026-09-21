@@ -2352,73 +2352,70 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
                 }
             });
         }
-        let questions = questionsContainer.querySelectorAll('.question-item');
+        
+        // Pastikan hanya ada 1 pertanyaan
+        const questions = questionsContainer.querySelectorAll('.question-item');
         if (questions.length === 0) {
             addQuestion(sectionId);
-            questions = questionsContainer.querySelectorAll('.question-item');
         } else if (questions.length > 1) {
             for (let i = 1; i < questions.length; i++) {
                 questions[i].remove();
             }
         }
         
-        const question = questions[0];
-        if (question) {
-            // Sembunyikan tombol kontrol pertanyaan (add, copy, delete)
-            const controls = question.querySelector('.question-controls');
-            if (controls) controls.style.display = 'none';
-            
-            // Batasi tipe pertanyaan ke 4 tipe yang diizinkan
-            const typeSelect = question.querySelector('.question-type-select');
-            if (typeSelect) {
-                if (!typeSelect.hasAttribute('data-original-html')) {
-                    typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
-                }
-                const allowedTypes = ['radio', 'multiple_choice_grid'];
-                let newHtml = '';
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
-                Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
-                    if (allowedTypes.includes(opt.value)) {
-                        newHtml += opt.outerHTML;
+        setTimeout(() => {
+            const question = questionsContainer.querySelector('.question-item');
+            if (question) {
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'none';
+
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect) {
+                    if (!typeSelect.hasAttribute('data-original-html')) {
+                        typeSelect.setAttribute('data-original-html', typeSelect.innerHTML);
                     }
-                });
-                typeSelect.innerHTML = newHtml;
-                // Jika tipe saat ini tidak diizinkan, set ke radio
-                if (!allowedTypes.includes(typeSelect.value)) {
-                    typeSelect.value = 'radio';
-                    const qId = question.getAttribute('data-question-id');
-                    handleQuestionTypeChange(sectionId, qId, 'radio');
+                    const allowedTypes = ['radio', 'multiple_choice_grid'];
+                    let newHtml = '';
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = typeSelect.getAttribute('data-original-html');
+                    Array.from(tempDiv.querySelectorAll('option')).forEach(opt => {
+                        if (allowedTypes.includes(opt.value)) {
+                            newHtml += opt.outerHTML;
+                        }
+                    });
+                    typeSelect.innerHTML = newHtml;
+                    if (!allowedTypes.includes(typeSelect.value)) {
+                        typeSelect.value = 'radio';
+                        const qId = question.getAttribute('data-question-id');
+                        handleQuestionTypeChange(sectionId, qId, 'radio');
+                    }
                 }
-            }
-            
-            // Tampilkan field indikator
-            const qId = question.getAttribute('data-question-id');
-            const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
-            if (indikatorContainer) {
-                indikatorContainer.style.display = 'block';
-                // Sembunyikan textarea pertanyaan asli
-                const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
-                if (questionTextarea) {
-                    const container = questionTextarea.closest('.question-textarea-container');
-                    if (container) container.style.display = 'none';
-                    // Initialize first indicator if empty
-                    const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
-                    if (list && list.children.length === 0) {
-                        const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
-                        if (existingLines.length > 0) {
-                            existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
-                        } else {
-                            addIndikatorItem(sectionId, qId);
+
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'block';
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'none';
+                        const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
+                        if (list && list.children.length === 0) {
+                            const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
+                            if (existingLines.length > 0) {
+                                existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
+                            } else {
+                                addIndikatorItem(sectionId, qId);
+                            }
                         }
                     }
                 }
             }
-        }
+        }, 100);
+
     } else {
-        // KOMPETENSI MODE OFF
         infoDiv.classList.add('hidden');
-        
+
         // Tampilkan kembali tombol "Tambah Pertanyaan" di level section
         if (section) {
             const addBtns = section.querySelectorAll('button[onclick*="addQuestion"][type="button"]');
@@ -2428,34 +2425,33 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
                 }
             });
         }
-        
-        const questions = questionsContainer.querySelectorAll('.question-item');
-        questions.forEach((question, index) => {
-            // Tampilkan kembali tombol kontrol pertanyaan
-            const controls = question.querySelector('.question-controls');
-            if (controls) controls.style.display = 'flex';
-            
-            // Kembalikan semua tipe pertanyaan menjadi tersedia
-            const typeSelect = question.querySelector('.question-type-select');
-            if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
-                const currentVal = typeSelect.value;
-                typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
-                typeSelect.value = currentVal;
-            }
-            
-            // Sembunyikan field indikator
-            const qId = question.getAttribute('data-question-id');
-            const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
-            if (indikatorContainer) {
-                indikatorContainer.style.display = 'none';
-                // Tampilkan kembali textarea pertanyaan asli
-                const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
-                if (questionTextarea) {
-                    const container = questionTextarea.closest('.question-textarea-container');
-                    if (container) container.style.display = 'block';
+
+        setTimeout(() => {
+            const questions = questionsContainer.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                const controls = question.querySelector('.question-controls');
+                if (controls) controls.style.display = 'flex';
+
+                const typeSelect = question.querySelector('.question-type-select');
+                if (typeSelect && typeSelect.hasAttribute('data-original-html')) {
+                    const currentVal = typeSelect.value;
+                    typeSelect.innerHTML = typeSelect.getAttribute('data-original-html');
+                    typeSelect.value = currentVal;
                 }
-            }
-        });
+
+                const qId = question.getAttribute('data-question-id');
+                const indikatorContainer = document.getElementById(`indikatorContainer-${sectionId}-${qId}`);
+                if (indikatorContainer) {
+                    indikatorContainer.style.display = 'none';
+                    // Tampilkan kembali textarea pertanyaan asli
+                    const questionTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][question]"]`);
+                    if (questionTextarea) {
+                        const container = questionTextarea.closest('.question-textarea-container');
+                        if (container) container.style.display = 'block';
+                    }
+                }
+            });
+        }, 100);
     }
 }
 
