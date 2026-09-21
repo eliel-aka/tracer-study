@@ -17,7 +17,7 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings, WithEvents,
     public function collection()
     {
         return PenggunaLulusan::join('users', 'pengguna_lulusan.user_id', '=', 'users.id')
-            ->get(['pengguna_lulusan.nama', 'pengguna_lulusan.nip_baru', 'pengguna_lulusan.nip_lama', 'users.email', 'pengguna_lulusan.jabatan', 'pengguna_lulusan.satuan_kerja', 'pengguna_lulusan.unit_kerja', 'pengguna_lulusan.no_hp'])
+            ->get(['pengguna_lulusan.nama', 'pengguna_lulusan.nip_baru', 'pengguna_lulusan.nip_lama', 'users.email', 'pengguna_lulusan.jabatan', 'pengguna_lulusan.satuan_kerja', 'pengguna_lulusan.unit_kerja', 'pengguna_lulusan.provinsi', 'pengguna_lulusan.kabupaten', 'pengguna_lulusan.no_hp'])
             ->map(function ($item) {
                 $isComplete = !empty(trim((string) $item->jabatan))
                     && !empty(trim((string) $item->satuan_kerja))
@@ -31,6 +31,8 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings, WithEvents,
                     'jabatan' => $item->jabatan,
                     'satuan_kerja' => $item->satuan_kerja,
                     'unit_kerja' => $item->unit_kerja,
+                    'provinsi' => $item->provinsi,
+                    'kabupaten' => $item->kabupaten,
                     'no_hp' => $item->no_hp,
                     'status_data' => $isComplete ? 'Data Lengkap' : 'Data Tidak Lengkap',
                 ];
@@ -50,6 +52,8 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings, WithEvents,
             'Jabatan',
             'Satuan Kerja',
             'Unit Kerja',
+            'Provinsi',
+            'Kabupaten',
             'No HP',
             'Status Data',
         ];
@@ -66,7 +70,7 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings, WithEvents,
                 $highestRow = $sheet->getHighestRow();
 
                 // Style header row
-                $sheet->getStyle('A1:I1')->applyFromArray([
+                $sheet->getStyle('A1:K1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],
@@ -79,9 +83,9 @@ class PenggunaLulusanExport implements FromCollection, WithHeadings, WithEvents,
 
                 // Highlight rows with "Data Tidak Lengkap" in red
                 for ($row = 2; $row <= $highestRow; $row++) {
-                    $statusCell = $sheet->getCell("I{$row}")->getValue();
+                    $statusCell = $sheet->getCell("K{$row}")->getValue();
                     if ($statusCell === 'Data Tidak Lengkap') {
-                        $sheet->getStyle("A{$row}:I{$row}")->applyFromArray([
+                        $sheet->getStyle("A{$row}:K{$row}")->applyFromArray([
                             'fill' => [
                                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                                 'startColor' => ['rgb' => 'FEE2E2'],

@@ -17,7 +17,7 @@ class LulusanExport implements FromCollection, WithHeadings, WithEvents, ShouldA
     public function collection()
     {
         return Lulusan::join('users', 'lulusan.user_id', '=', 'users.id')
-            ->get(['lulusan.nama', 'lulusan.nip_baru', 'lulusan.nip_lama', 'users.email', 'lulusan.prodi', 'lulusan.jabatan', 'lulusan.satuan_kerja', 'lulusan.unit_kerja', 'lulusan.no_hp', 'lulusan.tanggal_lahir', 'lulusan.tahun_lulus', 'lulusan.nip_baru_pengguna_lulusan', 'lulusan.nip_lama_pengguna_lulusan'])
+            ->get(['lulusan.nama', 'lulusan.nip_baru', 'lulusan.nip_lama', 'users.email', 'lulusan.prodi', 'lulusan.jabatan', 'lulusan.satuan_kerja', 'lulusan.unit_kerja', 'lulusan.provinsi', 'lulusan.kabupaten', 'lulusan.no_hp', 'lulusan.tanggal_lahir', 'lulusan.tahun_lulus', 'lulusan.nip_baru_pengguna_lulusan', 'lulusan.nip_lama_pengguna_lulusan'])
             ->map(function ($item) {
                 // Check completeness: prodi, jabatan, satuan_kerja, unit_kerja must all be filled
                 $isComplete = !empty(trim((string) $item->prodi))
@@ -34,6 +34,8 @@ class LulusanExport implements FromCollection, WithHeadings, WithEvents, ShouldA
                     'jabatan' => $item->jabatan,
                     'satuan_kerja' => $item->satuan_kerja,
                     'unit_kerja' => $item->unit_kerja,
+                    'provinsi' => $item->provinsi,
+                    'kabupaten' => $item->kabupaten,
                     'no_hp' => $item->no_hp,
                     'tanggal_lahir' => $item->tanggal_lahir,
                     'tahun_lulus' => $item->tahun_lulus,
@@ -58,6 +60,8 @@ class LulusanExport implements FromCollection, WithHeadings, WithEvents, ShouldA
             'Jabatan',
             'Satuan Kerja',
             'Unit Kerja',
+            'Provinsi',
+            'Kabupaten',
             'No HP',
             'Tanggal Lahir',
             'Tahun Lulus',
@@ -78,7 +82,7 @@ class LulusanExport implements FromCollection, WithHeadings, WithEvents, ShouldA
                 $highestRow = $sheet->getHighestRow();
 
                 // Style header row
-                $sheet->getStyle('A1:N1')->applyFromArray([
+                $sheet->getStyle('A1:P1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],
@@ -91,9 +95,9 @@ class LulusanExport implements FromCollection, WithHeadings, WithEvents, ShouldA
 
                 // Highlight rows with "Data Tidak Lengkap" in red
                 for ($row = 2; $row <= $highestRow; $row++) {
-                    $statusCell = $sheet->getCell("N{$row}")->getValue();
+                    $statusCell = $sheet->getCell("P{$row}")->getValue();
                     if ($statusCell === 'Data Tidak Lengkap') {
-                        $sheet->getStyle("A{$row}:N{$row}")->applyFromArray([
+                        $sheet->getStyle("A{$row}:P{$row}")->applyFromArray([
                             'fill' => [
                                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                                 'startColor' => ['rgb' => 'FEE2E2'], // Light red background
