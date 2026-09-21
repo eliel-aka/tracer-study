@@ -897,7 +897,7 @@ class SurveyController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error loading survey edit form', ['error' => $e->getMessage()]);
-            return redirect()->route('admin.survey.index')->with('error', 'Gagal memuat form edit survey');
+            return redirect()->route('admin.survey.index')->with('error', 'Gagal memuat form edit survey: ' . $e->getMessage() . ' di file ' . $e->getFile() . ' baris ' . $e->getLine());
         }
     }
 
