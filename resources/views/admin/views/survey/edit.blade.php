@@ -564,6 +564,7 @@ function loadExistingSections() {
                                 <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
                                 <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
                                 <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                                <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
                                 <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
                             </ul>
                         </div>
@@ -2684,7 +2685,7 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
                         // Initialize first indicator if empty
                         const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
                         if (list && list.children.length === 0) {
-                            const existingLines = questionTextarea.value.split('\n').filter(l => l.trim());
+                            const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
                             if (existingLines.length > 0) {
                                 existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
                             } else {

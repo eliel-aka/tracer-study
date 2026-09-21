@@ -2401,7 +2401,7 @@ window.toggleKompetensiBlock = function(sectionId, checkbox) {
                         if (container) container.style.display = 'none';
                         const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
                         if (list && list.children.length === 0) {
-                            const existingLines = questionTextarea.value.split('\n').filter(l => l.trim());
+                            const existingLines = questionTextarea.value.split(/\r?\n|\\n/).filter(l => l.trim());
                             if (existingLines.length > 0) {
                                 existingLines.forEach(line => addIndikatorItem(sectionId, qId, line));
                             } else {
@@ -2479,7 +2479,7 @@ window.syncIndikators = function(sectionId, questionId) {
     // Update the hidden textarea
     const textarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${questionId}][question]"]`);
     if (textarea) {
-        textarea.value = values.join('\\n');
+        textarea.value = values.join('\n');
     }
     
     // Re-number the indicators
