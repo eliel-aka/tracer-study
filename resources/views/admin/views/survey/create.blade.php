@@ -1233,6 +1233,12 @@ function addQuestion(sectionId, afterQuestionId = null) {
                     </div>
                 </div>
 
+                <!-- Min Gaji Container -->
+                <div class="min-gaji-container mt-4 pt-4 border-t border-gray-200" id="minGajiContainer-${sectionId}-${temporaryQuestionId}" style="display: none;">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Minimal Nominal Gaji (Boleh dikosongkan)</label>
+                    <input type="number" name="sections[${sectionId}][questions][${temporaryQuestionId}][min_gaji]" class="w-full text-sm leading-normal bg-white outline-none border border-gray-300 rounded px-3 py-2 focus:border-blue-500" placeholder="Contoh: 1500000">
+                </div>
+
                 <!-- Kompetensi Indikator Container (Hidden by default) -->
                 <div id="indikatorContainer-${sectionId}-${temporaryQuestionId}" class="kompetensi-indikator-area mt-4 border-t pt-3" style="display: none;">
                     <label class="block text-xs font-medium text-purple-700 mb-2"><i class="fas fa-list-ol mr-1"></i> Daftar Indikator</label>
@@ -1325,6 +1331,11 @@ function updateQuestionNumbers(sectionId) {
         const addGridColumnButton = question.querySelector('button[onclick^="addGridColumnOption("]');
         if (addGridColumnButton) {
             addGridColumnButton.setAttribute('onclick', `addGridColumnOption(${sectionId}, ${newQuestionId})`);
+        }
+
+        const minGajiContainer = question.querySelector(`[id^="minGajiContainer-${sectionId}-"]`);
+        if (minGajiContainer) {
+            minGajiContainer.id = `minGajiContainer-${sectionId}-${newQuestionId}`;
         }
 
         const indikatorContainer = question.querySelector(`[id^="indikatorContainer-${sectionId}-"]`);
@@ -1577,6 +1588,17 @@ function handleQuestionTypeChange(sectionId, questionId, type) {
         optionsContainer.style.display = 'none';
         if (gridColumnsContainer) {
             gridColumnsContainer.style.display = 'none';
+        }
+    }
+
+    const minGajiContainer = document.getElementById(`minGajiContainer-${sectionId}-${questionId}`);
+    if (minGajiContainer) {
+        if (type === 'gaji') {
+            minGajiContainer.style.display = 'block';
+        } else {
+            minGajiContainer.style.display = 'none';
+            const minGajiInput = minGajiContainer.querySelector('input');
+            if (minGajiInput) minGajiInput.value = '';
         }
     }
 }
