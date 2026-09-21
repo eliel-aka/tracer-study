@@ -916,6 +916,11 @@ function addSection() {
                         <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
                     </div>
                     <div id="kompetensi_info_${sectionCounter}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-blue-800 mb-1">Pertanyaan Utama <span class="text-red-500">*</span></label>
+                            <input type="text" name="sections[${sectionCounter}][pertanyaan_utama]" placeholder="Contoh: Bagaimana tingkat kompetensi [indikator] Anda?" class="text-sm w-full border border-gray-300 rounded px-2 py-1 focus:border-blue-500 outline-none">
+                            <p class="text-[10px] text-blue-600 mt-1">Gunakan kata <strong>[indikator]</strong> di dalam kalimat agar posisi indikator diganti otomatis (opsional).</p>
+                        </div>
                         <p class="text-xs text-blue-800 mb-2">
                             <i class="fas fa-info-circle mr-1"></i>
                             Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
@@ -2045,6 +2050,11 @@ function addSectionAfter(afterSectionId) {
                         <label for="kompetensi_${tempSectionId}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
                     </div>
                     <div id="kompetensi_info_${tempSectionId}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-blue-800 mb-1">Pertanyaan Utama <span class="text-red-500">*</span></label>
+                            <input type="text" name="sections[${tempSectionId}][pertanyaan_utama]" placeholder="Contoh: Bagaimana tingkat kompetensi [indikator] Anda?" class="text-sm w-full border border-gray-300 rounded px-2 py-1 focus:border-blue-500 outline-none">
+                            <p class="text-[10px] text-blue-600 mt-1">Gunakan kata <strong>[indikator]</strong> di dalam kalimat agar posisi indikator diganti otomatis (opsional).</p>
+                        </div>
                         <p class="text-xs text-blue-800 mb-2">
                             <i class="fas fa-info-circle mr-1"></i>
                             Saat penanda ini dipilih, seluruh pertanyaan dalam blok ini akan diolah menjadi satu kesatuan tabel analitik dan visualisasi terintegrasi.
