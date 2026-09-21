@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: tracer-study-app:v18
+    image: tracer-study-app:v19
     restart: unless-stopped
     working_dir: /var/www
     env_file:
