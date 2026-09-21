@@ -373,14 +373,16 @@ class RespondentAttributeService
                 }
             }
 
-            $allBlocks = SurveyBlock::where('survey_id', $survey->id)->orderBy('urutan', 'desc')->get();
+            $allBlocks = SurveyBlock::where('survey_id', $survey->id)->orderBy('urutan', 'asc')->get();
             
-            // Step 2: Shift urutan and assign temporary kodes to avoid intra-shift UNIQUE constraint conflicts
+            $currentUrutan = 2;
+            // Step 2: Assign temporary kodes and sequential urutan to fix any corrupted/duplicate urutan
             foreach ($allBlocks as $blk) {
                 $blk->update([
-                    'urutan' => $blk->urutan + 1,
+                    'urutan' => $currentUrutan,
                     'kode' => 'TMP_' . $blk->id . '_' . uniqid()
                 ]);
+                $currentUrutan++;
             }
             
             // Step 3: Assign final correct kodes to active blocks
