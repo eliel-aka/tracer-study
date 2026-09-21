@@ -81,6 +81,22 @@
                         <h6 class="dark:text-white text-sm font-bold">Master Data Satker</h6>
                         <p class="text-xs text-slate-400 mt-1">Kelola master data Jabatan, Satuan Kerja, dan Unit Kerja</p>
                     </div>
+                    <div class="w-full md:w-64">
+                        <form action="{{ route('admin.manajemenSatker.index') }}" method="GET" class="relative flex w-full flex-wrap items-stretch">
+                            <input type="hidden" name="tab" value="{{ $activeTab }}">
+                            <span class="z-30 flex items-center justify-center w-8 text-center bg-transparent border-0 text-slate-400 absolute h-full px-2">
+                                <i class="fas fa-search text-xs"></i>
+                            </span>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                class="pl-9 w-full text-xs focus:shadow-primary-outline ease leading-5.6 relative block min-w-0 flex-auto rounded-lg border border-solid border-gray-300 dark:bg-slate-850 dark:text-white bg-white bg-clip-padding py-2 pr-3 text-gray-700 transition-all placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:transition-shadow"
+                                placeholder="Cari data..." />
+                            @if(request('search'))
+                                <a href="{{ route('admin.manajemenSatker.index', ['tab' => $activeTab]) }}" class="absolute right-0 z-30 flex items-center justify-center w-8 h-full px-2 text-slate-400 hover:text-slate-600">
+                                    <i class="fas fa-times text-xs"></i>
+                                </a>
+                            @endif
+                        </form>
+                    </div>
                 </div>
 
                 <!-- TABS -->
