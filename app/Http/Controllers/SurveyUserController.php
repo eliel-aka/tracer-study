@@ -67,6 +67,8 @@ class SurveyUserController extends Controller
             'satuan_kerja' => 'nullable|string|max:255',
             'unit_kerja' => 'nullable|string|max:255',
             'no_hp' => 'nullable|string|max:20',
+            'provinsi' => 'required|string|max:255',
+            'kabupaten' => 'required|string|max:255',
         ]);
 
         $user = Auth::user();
@@ -78,6 +80,8 @@ class SurveyUserController extends Controller
                     'satuan_kerja' => $request->satuan_kerja,
                     'unit_kerja' => $request->unit_kerja,
                     'no_hp' => $request->no_hp,
+                    'provinsi' => $request->provinsi,
+                    'kabupaten' => $request->kabupaten,
                 ]);
             } elseif ($user->hasRole('pengguna_lulusan') && $user->pengguna_lulusan) {
                 $user->pengguna_lulusan->update([
@@ -85,6 +89,8 @@ class SurveyUserController extends Controller
                     'satuan_kerja' => $request->satuan_kerja,
                     'unit_kerja' => $request->unit_kerja,
                     'no_hp' => $request->no_hp,
+                    'provinsi' => $request->provinsi,
+                    'kabupaten' => $request->kabupaten,
                 ]);
             } else {
                 return back()->with('error', 'Profile tidak ditemukan.');

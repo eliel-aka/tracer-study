@@ -105,6 +105,14 @@ class LulusanController extends Controller
             $errors['tahun_lulus'] = 'Tahun Lulus wajib diisi.';
         }
 
+        if (empty(trim($request->provinsi))) {
+            $errors['provinsi'] = 'Provinsi wajib diisi.';
+        }
+
+        if (empty(trim($request->kabupaten))) {
+            $errors['kabupaten'] = 'Kabupaten/Kota wajib diisi.';
+        }
+
         if (empty(trim($request->nip_baru_pengguna_lulusan))) {
             $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan wajib diisi.';
         } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru_pengguna_lulusan))) {
@@ -158,6 +166,8 @@ class LulusanController extends Controller
                 'nip_lama_pengguna_lulusan' => $request->nip_lama_pengguna_lulusan,
                 'tanggal_lahir'             => $request->tanggal_lahir,
                 'tahun_lulus'               => $request->tahun_lulus,
+                'provinsi'                  => $request->provinsi,
+                'kabupaten'                 => $request->kabupaten,
             ]);
 
             DB::commit();
@@ -244,6 +254,14 @@ class LulusanController extends Controller
             $errors['tahun_lulus'] = 'Tahun Lulus wajib diisi.';
         }
 
+        if (empty(trim($request->provinsi))) {
+            $errors['provinsi'] = 'Provinsi wajib diisi.';
+        }
+
+        if (empty(trim($request->kabupaten))) {
+            $errors['kabupaten'] = 'Kabupaten/Kota wajib diisi.';
+        }
+
         if (empty(trim($request->nip_baru_pengguna_lulusan))) {
             $errors['nip_baru_pengguna_lulusan'] = 'NIP Baru Pengguna Lulusan wajib diisi.';
         } elseif (!preg_match('/^[0-9]{18}$/', trim($request->nip_baru_pengguna_lulusan))) {
@@ -287,6 +305,8 @@ class LulusanController extends Controller
                 'nip_lama_pengguna_lulusan' => $request->nip_lama_pengguna_lulusan,
                 'tanggal_lahir'             => $request->tanggal_lahir,
                 'tahun_lulus'               => $request->tahun_lulus,
+                'provinsi'                  => $request->provinsi,
+                'kabupaten'                 => $request->kabupaten,
             ]);
 
             DB::commit();

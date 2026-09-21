@@ -141,6 +141,10 @@
                                         <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
                                             Unit Kerja</th>
                                         <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
+                                            Provinsi</th>
+                                        <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
+                                            Kabupaten/Kota</th>
+                                        <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
                                             No HP</th>
                                         <th class="px-3 py-2 font-bold text-center uppercase align-middle bg-transparent border-b border-collapse shadow-none dark:border-white/40 dark:text-white text-xxs border-b-solid tracking-none whitespace-nowrap text-slate-400 opacity-70">
                                             Tanggal Lahir</th>
@@ -184,6 +188,12 @@
                                         </td>
                                         <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                             <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $lulusanus->unit_kerja }}</span>
+                                        </td>
+                                        <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
+                                            <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $lulusanus->provinsi }}</span>
+                                        </td>
+                                        <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
+                                            <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $lulusanus->kabupaten }}</span>
                                         </td>
                                         <td class="px-3 py-1.5 text-center align-middle bg-transparent border-b dark:border-white/40 shadow-transparent">
                                             <span class="text-xs leading-tight dark:text-white dark:opacity-80 text-slate-400 whitespace-nowrap">{{ $lulusanus->no_hp }}</span>

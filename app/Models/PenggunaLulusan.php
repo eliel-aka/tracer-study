@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class PenggunaLulusan extends Model
 {
     protected $table = 'pengguna_lulusan';
-    protected $fillable = ['user_id', 'nama', 'nip', 'nip_baru', 'nip_lama', 'email', 'jabatan', 'satuan_kerja', 'unit_kerja', 'no_hp'];
+    protected $fillable = ['user_id', 'nama', 'nip', 'nip_baru', 'nip_lama', 'email', 'jabatan', 'satuan_kerja', 'unit_kerja', 'no_hp', 'provinsi', 'kabupaten'];
 
     public function getNipAttribute($value)
     {
@@ -30,6 +30,8 @@ class PenggunaLulusan extends Model
             $this->jabatan,
             $this->satuan_kerja,
             $this->unit_kerja,
+            $this->provinsi,
+            $this->kabupaten,
         ];
 
         foreach ($requiredFields as $field) {
@@ -49,14 +51,18 @@ class PenggunaLulusan extends Model
         if ($status === 'lengkap') {
             return $query->whereNotNull('jabatan')->where('jabatan', '!=', '')
                          ->whereNotNull('satuan_kerja')->where('satuan_kerja', '!=', '')
-                         ->whereNotNull('unit_kerja')->where('unit_kerja', '!=', '');
+                         ->whereNotNull('unit_kerja')->where('unit_kerja', '!=', '')
+                         ->whereNotNull('provinsi')->where('provinsi', '!=', '')
+                         ->whereNotNull('kabupaten')->where('kabupaten', '!=', '');
         }
 
         if ($status === 'tidak_lengkap') {
             return $query->where(function ($q) {
                 $q->whereNull('jabatan')->orWhere('jabatan', '')
                   ->orWhereNull('satuan_kerja')->orWhere('satuan_kerja', '')
-                  ->orWhereNull('unit_kerja')->orWhere('unit_kerja', '');
+                  ->orWhereNull('unit_kerja')->orWhere('unit_kerja', '')
+                  ->orWhereNull('provinsi')->orWhere('provinsi', '')
+                  ->orWhereNull('kabupaten')->orWhere('kabupaten', '');
             });
         }
 

@@ -340,6 +340,50 @@
                             </div>
                         </div>
 
+                        <!-- 7.1. Provinsi -->
+                        <div class="user-info-tile">
+                            <span class="user-info-label">Provinsi <span class="text-red-500">*</span></span>
+                            <div class="view-mode">
+                                <span class="user-info-value">
+                                    @if($user->hasRole('lulusan') && $user->lulusan)
+                                        {{ $user->lulusan->provinsi ?? '-' }}
+                                    @elseif($user->hasRole('penggunaLulusan') && $user->penggunaLulusan)
+                                        {{ $user->penggunaLulusan->provinsi ?? '-' }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="edit-mode hidden">
+                                <input type="text" name="provinsi" 
+                                    value="@if($user->hasRole('lulusan') && $user->lulusan){{ $user->lulusan->provinsi }}@elseif($user->hasRole('penggunaLulusan') && $user->penggunaLulusan){{ $user->penggunaLulusan->provinsi }}@endif"
+                                    class="w-full px-2.5 py-1.5 text-xs sm:text-sm border rounded-md transition-colors theme-input"
+                                    placeholder="Masukkan provinsi" required>
+                            </div>
+                        </div>
+
+                        <!-- 7.2. Kabupaten -->
+                        <div class="user-info-tile">
+                            <span class="user-info-label">Kabupaten/Kota <span class="text-red-500">*</span></span>
+                            <div class="view-mode">
+                                <span class="user-info-value">
+                                    @if($user->hasRole('lulusan') && $user->lulusan)
+                                        {{ $user->lulusan->kabupaten ?? '-' }}
+                                    @elseif($user->hasRole('penggunaLulusan') && $user->penggunaLulusan)
+                                        {{ $user->penggunaLulusan->kabupaten ?? '-' }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="edit-mode hidden">
+                                <input type="text" name="kabupaten" 
+                                    value="@if($user->hasRole('lulusan') && $user->lulusan){{ $user->lulusan->kabupaten }}@elseif($user->hasRole('penggunaLulusan') && $user->penggunaLulusan){{ $user->penggunaLulusan->kabupaten }}@endif"
+                                    class="w-full px-2.5 py-1.5 text-xs sm:text-sm border rounded-md transition-colors theme-input"
+                                    placeholder="Masukkan kabupaten/kota" required>
+                            </div>
+                        </div>
+
                         <!-- 8. No Handphone -->
                         <div class="user-info-tile">
                             <span class="user-info-label">No. Handphone</span>

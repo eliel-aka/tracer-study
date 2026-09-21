@@ -29,6 +29,8 @@ class LulusanTemplateExport implements WithHeadings, WithEvents, WithTitle, Shou
             'Jabatan',
             'Satuan Kerja',
             'Unit Kerja',
+            'Provinsi',
+            'Kabupaten',
             'No HP',
             'Tanggal Lahir',
             'Tahun Lulus',
@@ -56,7 +58,7 @@ class LulusanTemplateExport implements WithHeadings, WithEvents, WithTitle, Shou
                 $maxRow = 1000; // Apply validation for up to 1000 rows
 
                 // Style header row
-                $sheet->getStyle('A1:M1')->applyFromArray([
+                $sheet->getStyle('A1:O1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],
@@ -159,14 +161,14 @@ class LulusanTemplateExport implements WithHeadings, WithEvents, WithTitle, Shou
                     }
                 }
 
-                // -- Tanggal Lahir format (Column J) --
-                $sheet->getStyle("J2:J{$maxRow}")
+                // -- Tanggal Lahir format (Column L) --
+                $sheet->getStyle("L2:L{$maxRow}")
                     ->getNumberFormat()
                     ->setFormatCode('YYYY-MM-DD');
 
-                // Set column J prompt
+                // Set column L prompt
                 for ($i = 2; $i <= min(50, $maxRow); $i++) {
-                    $validation = $sheet->getCell("J{$i}")->getDataValidation();
+                    $validation = $sheet->getCell("L{$i}")->getDataValidation();
                     $validation->setType(DataValidation::TYPE_NONE);
                     $validation->setAllowBlank(true);
                     $validation->setShowInputMessage(true);

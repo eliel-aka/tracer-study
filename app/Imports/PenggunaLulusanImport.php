@@ -98,6 +98,8 @@ class PenggunaLulusanImport implements ToModel, WithHeadingRow
                     'satuan_kerja' => $satuanKerja,
                     'unit_kerja' => $unitKerja,
                     'no_hp' => $row['no_hp'] ?? '',
+                    'provinsi' => $row['provinsi'] ?? null,
+                    'kabupaten' => $row['kabupaten'] ?? null,
                 ]
             );
 

@@ -24,6 +24,8 @@ class Lulusan extends Model
         'nip_lama_pengguna_lulusan',
         'tanggal_lahir',
         'tahun_lulus',
+        'provinsi',
+        'kabupaten',
     ];
 
     public function getNipAttribute($value)
@@ -70,6 +72,8 @@ class Lulusan extends Model
             $this->jabatan,
             $this->satuan_kerja,
             $this->unit_kerja,
+            $this->provinsi,
+            $this->kabupaten,
         ];
 
         foreach ($requiredFields as $field) {
@@ -90,7 +94,9 @@ class Lulusan extends Model
             return $query->whereNotNull('prodi')->where('prodi', '!=', '')
                          ->whereNotNull('jabatan')->where('jabatan', '!=', '')
                          ->whereNotNull('satuan_kerja')->where('satuan_kerja', '!=', '')
-                         ->whereNotNull('unit_kerja')->where('unit_kerja', '!=', '');
+                         ->whereNotNull('unit_kerja')->where('unit_kerja', '!=', '')
+                         ->whereNotNull('provinsi')->where('provinsi', '!=', '')
+                         ->whereNotNull('kabupaten')->where('kabupaten', '!=', '');
         }
 
         if ($status === 'tidak_lengkap') {
@@ -98,7 +104,9 @@ class Lulusan extends Model
                 $q->whereNull('prodi')->orWhere('prodi', '')
                   ->orWhereNull('jabatan')->orWhere('jabatan', '')
                   ->orWhereNull('satuan_kerja')->orWhere('satuan_kerja', '')
-                  ->orWhereNull('unit_kerja')->orWhere('unit_kerja', '');
+                  ->orWhereNull('unit_kerja')->orWhere('unit_kerja', '')
+                  ->orWhereNull('provinsi')->orWhere('provinsi', '')
+                  ->orWhereNull('kabupaten')->orWhere('kabupaten', '');
             });
         }
 

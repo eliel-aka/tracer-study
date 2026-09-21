@@ -89,6 +89,14 @@ class PenggunaLulusanController extends Controller
             $errors['email'] = 'Email sudah terdaftar di sistem.';
         }
 
+        if (empty(trim($request->provinsi))) {
+            $errors['provinsi'] = 'Provinsi wajib diisi.';
+        }
+
+        if (empty(trim($request->kabupaten))) {
+            $errors['kabupaten'] = 'Kabupaten/Kota wajib diisi.';
+        }
+
         if (!empty($errors)) {
             return redirect()->back()->withInput()->withErrors($errors);
         }
@@ -124,6 +132,8 @@ class PenggunaLulusanController extends Controller
                 'satuan_kerja'  => $request->satuan_kerja,
                 'unit_kerja'    => $request->unit_kerja,
                 'no_hp'         => $request->no_hp,
+                'provinsi'      => $request->provinsi,
+                'kabupaten'     => $request->kabupaten,
             ]);
 
             DB::commit();
@@ -196,6 +206,14 @@ class PenggunaLulusanController extends Controller
             $errors['email'] = 'Email sudah digunakan oleh pengguna lain.';
         }
 
+        if (empty(trim($request->provinsi))) {
+            $errors['provinsi'] = 'Provinsi wajib diisi.';
+        }
+
+        if (empty(trim($request->kabupaten))) {
+            $errors['kabupaten'] = 'Kabupaten/Kota wajib diisi.';
+        }
+
         if (!empty($errors)) {
             return redirect()->back()->withInput()->withErrors($errors);
         }
@@ -221,6 +239,8 @@ class PenggunaLulusanController extends Controller
                 'satuan_kerja'  => $request->satuan_kerja,
                 'unit_kerja'    => $request->unit_kerja,
                 'no_hp'         => $request->no_hp,
+                'provinsi'      => $request->provinsi,
+                'kabupaten'     => $request->kabupaten,
             ]);
 
             DB::commit();

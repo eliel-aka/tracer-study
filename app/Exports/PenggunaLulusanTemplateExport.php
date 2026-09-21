@@ -27,6 +27,8 @@ class PenggunaLulusanTemplateExport implements WithHeadings, WithEvents, WithTit
             'Jabatan',
             'Satuan Kerja',
             'Unit Kerja',
+            'Provinsi',
+            'Kabupaten',
             'No HP',
         ];
     }
@@ -50,7 +52,7 @@ class PenggunaLulusanTemplateExport implements WithHeadings, WithEvents, WithTit
                 $maxRow = 1000;
 
                 // Style header row
-                $sheet->getStyle('A1:H1')->applyFromArray([
+                $sheet->getStyle('A1:J1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],

@@ -65,6 +65,16 @@ class RespondentAttributeService
                     'type' => 'text',
                     'description' => 'Nomor handphone / WhatsApp'
                 ],
+                'provinsi' => [
+                    'label' => 'Provinsi',
+                    'type' => 'text',
+                    'description' => 'Provinsi tempat instansi / satuan kerja'
+                ],
+                'kabupaten' => [
+                    'label' => 'Kabupaten/Kota',
+                    'type' => 'text',
+                    'description' => 'Kabupaten / Kota tempat instansi / satuan kerja'
+                ],
             ];
         }
 
@@ -129,6 +139,16 @@ class RespondentAttributeService
                 'label' => 'Tahun Lulus',
                 'type' => 'text',
                 'description' => 'Tahun kelulusan dari Politeknik Statistika STIS'
+            ],
+            'provinsi' => [
+                'label' => 'Provinsi',
+                'type' => 'text',
+                'description' => 'Provinsi tempat instansi / satuan kerja'
+            ],
+            'kabupaten' => [
+                'label' => 'Kabupaten/Kota',
+                'type' => 'text',
+                'description' => 'Kabupaten / Kota tempat instansi / satuan kerja'
             ],
         ];
     }
@@ -213,6 +233,8 @@ class RespondentAttributeService
                 'tahun_lulus' => $l->tahun_lulus ? (string)$l->tahun_lulus : '',
                 'nip_baru_pengguna_lulusan' => $l->nip_baru_pengguna_lulusan ?? '',
                 'nip_lama_pengguna_lulusan' => $l->nip_lama_pengguna_lulusan ?? '',
+                'provinsi' => $l->provinsi ?? '',
+                'kabupaten' => $l->kabupaten ?? '',
             ];
         } elseif ($isPengguna && ($user->penggunaLulusan ?? $user->pengguna_lulusan)) {
             $p = $user->penggunaLulusan ?? $user->pengguna_lulusan;
@@ -226,6 +248,8 @@ class RespondentAttributeService
                 'satuan_kerja' => $p->satuan_kerja ?? '',
                 'unit_kerja' => $p->unit_kerja ?? '',
                 'no_hp' => $p->no_hp ?? '',
+                'provinsi' => $p->provinsi ?? '',
+                'kabupaten' => $p->kabupaten ?? '',
             ];
         } else {
             // Fallback for user without specific profile
@@ -280,6 +304,11 @@ class RespondentAttributeService
             'nip baru pengguna lulusan' => 'nip_baru_pengguna_lulusan',
             'nip lama pengguna lulusan' => 'nip_lama_pengguna_lulusan',
             'nip pengguna lulusan' => 'nip_baru_pengguna_lulusan',
+            'provinsi' => 'provinsi',
+            'kabupaten' => 'kabupaten',
+            'kabupaten/kota' => 'kabupaten',
+            'kabupaten / kota' => 'kabupaten',
+            'kota' => 'kabupaten',
         ];
 
         foreach ($normalizedMap as $needle => $key) {
