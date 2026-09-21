@@ -369,31 +369,22 @@ let sectionCounter = 0;
 
 const respondentAttributes = {
     lulusan: [
-        { label: 'Nama Lengkap', type: 'text', description: 'Nama lengkap lulusan' },
-        { label: 'Jenis Kelamin', type: 'text', description: 'Jenis kelamin responden' },
-        { label: 'NIP Baru (18 Digit)', type: 'text', description: 'Nomor Induk Pegawai 18 digit' },
-        { label: 'NIP Lama (9 Digit)', type: 'text', description: 'Nomor Induk Pegawai 9 digit' },
-        { label: 'Email', type: 'text', description: 'Alamat email aktif' },
-        { label: 'Program Studi', type: 'text', description: 'Program studi kelulusan di STIS' },
-        { label: 'Jabatan', type: 'text', description: 'Posisi / jabatan saat ini' },
-        { label: 'Satuan Kerja', type: 'text', description: 'Instansi / satuan kerja penempatan' },
-        { label: 'Unit Kerja', type: 'text', description: 'Bagian / unit kerja saat ini' },
-        { label: 'No. HP', type: 'text', description: 'Nomor handphone / WhatsApp' },
-        { label: 'Tanggal Lahir', type: 'date', description: 'Tanggal lahir responden' },
-        { label: 'Tahun Lulus', type: 'text', description: 'Tahun kelulusan dari Politeknik Statistika STIS' },
-        { label: 'NIP Baru Pengguna Lulusan', type: 'text', description: 'NIP 18 digit atasan langsung / pengguna lulusan' },
-        { label: 'NIP Lama Pengguna Lulusan', type: 'text', description: 'NIP 9 digit atasan langsung / pengguna lulusan' }
+        { label: 'Nama Lengkap (Tanpa Gelar)', type: 'text', description: '' },
+        { label: 'Jenis Kelamin', type: 'text', description: '' },
+        { label: 'Nomor Telpon/HP Aktif', type: 'text', description: '' },
+        { label: 'Email', type: 'text', description: '' },
+        { label: 'Tahun Lulus', type: 'text', description: '' },
+        { label: 'Program Studi saat Kuliah', type: 'text', description: '' },
+        { label: 'Provinsi Tempat Bekerja', type: 'text', description: '' },
+        { label: 'Kabupaten/Kota Tempat Bekerja', type: 'text', description: '' }
     ],
     penggunaLulusan: [
-        { label: 'Nama Lengkap', type: 'text', description: 'Nama lengkap pengguna lulusan' },
-        { label: 'Jenis Kelamin', type: 'text', description: 'Jenis kelamin pengguna lulusan' },
-        { label: 'NIP Baru (18 Digit)', type: 'text', description: 'Nomor Induk Pegawai 18 digit' },
-        { label: 'NIP Lama (9 Digit)', type: 'text', description: 'Nomor Induk Pegawai 9 digit' },
-        { label: 'Email', type: 'text', description: 'Alamat email aktif' },
-        { label: 'Jabatan', type: 'text', description: 'Posisi / jabatan di instansi' },
-        { label: 'Satuan Kerja', type: 'text', description: 'Instansi / satuan kerja' },
-        { label: 'Unit Kerja', type: 'text', description: 'Bagian / unit kerja' },
-        { label: 'No. HP', type: 'text', description: 'Nomor handphone / WhatsApp' }
+        { label: 'Nama Lengkap', type: 'text', description: '' },
+        { label: 'Nomor Telpon/HP Aktif', type: 'text', description: '' },
+        { label: 'Email', type: 'text', description: '' },
+        { label: 'Jabatan', type: 'text', description: '' },
+        { label: 'Satuan Kerja', type: 'text', description: '' },
+        { label: 'Alamat Satuan Kerja', type: 'textarea', description: '' }
     ]
 };
 
