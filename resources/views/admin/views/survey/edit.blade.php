@@ -517,7 +517,7 @@ function loadExistingSections() {
                                 <div>
                                     <h5 class="text-sm font-bold text-blue-900 mb-1">Blok Identitas Responden</h5>
                                     <p class="text-xs text-blue-700">
-                                        Seluruh atribut di bawah ini terisi otomatis dari profil responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei. Blok ini terpasang permanen pada survei.
+                                        Sebagian besar atribut di bawah ini terisi otomatis dari profil responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei (kecuali beberapa atribut seperti Alamat Satuan Kerja). Blok ini terpasang permanen pada survei.
                                     </p>
                                 </div>
                             </div>

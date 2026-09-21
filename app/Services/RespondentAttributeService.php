@@ -23,57 +23,32 @@ class RespondentAttributeService
                 'nama' => [
                     'label' => 'Nama Lengkap',
                     'type' => 'text',
-                    'description' => 'Nama lengkap pengguna lulusan'
+                    'description' => ''
                 ],
-                'jenis_kelamin' => [
-                    'label' => 'Jenis Kelamin',
+                'no_hp' => [
+                    'label' => 'Nomor Telpon/HP Aktif',
                     'type' => 'text',
-                    'description' => 'Jenis kelamin pengguna lulusan'
-                ],
-                'nip_baru' => [
-                    'label' => 'NIP Baru (18 Digit)',
-                    'type' => 'text',
-                    'description' => 'Nomor Induk Pegawai 18 digit'
-                ],
-                'nip_lama' => [
-                    'label' => 'NIP Lama (9 Digit)',
-                    'type' => 'text',
-                    'description' => 'Nomor Induk Pegawai 9 digit'
+                    'description' => ''
                 ],
                 'email' => [
                     'label' => 'Email',
                     'type' => 'text',
-                    'description' => 'Alamat email aktif'
+                    'description' => ''
                 ],
                 'jabatan' => [
                     'label' => 'Jabatan',
                     'type' => 'text',
-                    'description' => 'Posisi / jabatan di instansi'
+                    'description' => ''
                 ],
                 'satuan_kerja' => [
                     'label' => 'Satuan Kerja',
                     'type' => 'text',
-                    'description' => 'Instansi / satuan kerja'
+                    'description' => ''
                 ],
-                'unit_kerja' => [
-                    'label' => 'Unit Kerja',
-                    'type' => 'text',
-                    'description' => 'Bagian / unit kerja'
-                ],
-                'no_hp' => [
-                    'label' => 'No. HP',
-                    'type' => 'text',
-                    'description' => 'Nomor handphone / WhatsApp'
-                ],
-                'provinsi' => [
-                    'label' => 'Provinsi',
-                    'type' => 'text',
-                    'description' => 'Provinsi tempat instansi / satuan kerja'
-                ],
-                'kabupaten' => [
-                    'label' => 'Kabupaten/Kota',
-                    'type' => 'text',
-                    'description' => 'Kabupaten / Kota tempat instansi / satuan kerja'
+                'alamat_satuan_kerja' => [
+                    'label' => 'Alamat Satuan Kerja',
+                    'type' => 'textarea',
+                    'description' => ''
                 ],
             ];
         }
@@ -81,74 +56,44 @@ class RespondentAttributeService
         // Default to lulusan
         return [
             'nama' => [
-                'label' => 'Nama Lengkap',
+                'label' => 'Nama Lengkap (Tanpa Gelar)',
                 'type' => 'text',
-                'description' => 'Nama lengkap lulusan'
+                'description' => ''
             ],
             'jenis_kelamin' => [
                 'label' => 'Jenis Kelamin',
                 'type' => 'text',
-                'description' => 'Jenis kelamin responden'
+                'description' => ''
             ],
-            'nip_baru' => [
-                'label' => 'NIP Baru (18 Digit)',
+            'no_hp' => [
+                'label' => 'Nomor Telpon/HP Aktif',
                 'type' => 'text',
-                'description' => 'Nomor Induk Pegawai 18 digit'
-            ],
-            'nip_lama' => [
-                'label' => 'NIP Lama (9 Digit)',
-                'type' => 'text',
-                'description' => 'Nomor Induk Pegawai 9 digit'
+                'description' => ''
             ],
             'email' => [
                 'label' => 'Email',
                 'type' => 'text',
-                'description' => 'Alamat email aktif'
-            ],
-            'prodi' => [
-                'label' => 'Program Studi',
-                'type' => 'text',
-                'description' => 'Program studi kelulusan di STIS'
-            ],
-            'jabatan' => [
-                'label' => 'Jabatan',
-                'type' => 'text',
-                'description' => 'Posisi / jabatan saat ini'
-            ],
-            'satuan_kerja' => [
-                'label' => 'Satuan Kerja',
-                'type' => 'text',
-                'description' => 'Instansi / satuan kerja penempatan'
-            ],
-            'unit_kerja' => [
-                'label' => 'Unit Kerja',
-                'type' => 'text',
-                'description' => 'Bagian / unit kerja saat ini'
-            ],
-            'no_hp' => [
-                'label' => 'No. HP',
-                'type' => 'text',
-                'description' => 'Nomor handphone / WhatsApp'
-            ],
-            'tanggal_lahir' => [
-                'label' => 'Tanggal Lahir',
-                'type' => 'date',
-                'description' => 'Tanggal lahir responden'
+                'description' => ''
             ],
             'tahun_lulus' => [
                 'label' => 'Tahun Lulus',
                 'type' => 'text',
-                'description' => 'Tahun kelulusan dari Politeknik Statistika STIS'
+                'description' => ''
+            ],
+            'prodi' => [
+                'label' => 'Program Studi saat Kuliah',
+                'type' => 'text',
+                'description' => ''
             ],
             'provinsi' => [
-                'label' => 'Provinsi',
+                'label' => 'Provinsi Tempat Bekerja',
                 'type' => 'text',
-                'description' => 'Provinsi tempat instansi / satuan kerja'
+                'description' => ''
             ],
             'kabupaten' => [
-                'label' => 'Kabupaten/Kota',
+                'label' => 'Kabupaten/Kota Tempat Bekerja',
                 'type' => 'text',
-                'description' => 'Kabupaten / Kota tempat instansi / satuan kerja'
+                'description' => ''
             ],
         ];
     }
@@ -354,8 +299,8 @@ class RespondentAttributeService
             }
 
             $existingBlock->update([
-                'nama' => 'Identitas Responden',
-                'deskripsi' => 'Data identitas responden diambil otomatis dari profil sistem dan berstatus terkunci (read-only).',
+                'nama' => $type === 'penggunaLulusan' ? 'IDENTITAS PENGGUNA LULUSAN' : 'IDENTITAS LULUSAN',
+                'deskripsi' => '',
                 'metadata' => $metadata
             ]);
 
@@ -396,8 +341,8 @@ class RespondentAttributeService
             $existingBlock = SurveyBlock::create([
                 'survey_id' => $survey->id,
                 'kode' => 'BLOCK_01',
-                'nama' => 'Identitas Responden',
-                'deskripsi' => 'Data identitas responden diambil otomatis dari profil sistem dan berstatus terkunci (read-only).',
+                'nama' => $type === 'penggunaLulusan' ? 'IDENTITAS PENGGUNA LULUSAN' : 'IDENTITAS LULUSAN',
+                'deskripsi' => '',
                 'urutan' => 1,
                 'navigation_type' => 'next',
                 'is_terminal' => false,

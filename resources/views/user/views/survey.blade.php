@@ -807,7 +807,7 @@
                                             <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-200/70 text-sky-900 dark:bg-sky-900 dark:text-sky-200">Terverifikasi & Terkunci</span>
                                         </h4>
                                         <p class="text-xs text-sky-800 dark:text-sky-300 leading-relaxed">
-                                            Seluruh isian di blok ini diambil secara otomatis dari database profil akun Anda dan bersifat <strong>resmi (read-only) tanpa dapat diubah</strong>. Silakan periksa data Anda, lalu klik tombol <strong>Lanjutkan</strong> untuk melanjutkan pengisian survei.
+                                            Sebagian besar isian di blok ini diambil secara otomatis dari profil akun Anda dan bersifat <strong>terkunci (read-only)</strong>. Beberapa isian tertentu mungkin dapat Anda lengkapi. Silakan periksa data Anda, lalu klik tombol <strong>Lanjutkan</strong> untuk melanjutkan pengisian survei.
                                         </p>
                                     </div>
                                 </div>
@@ -1651,6 +1651,9 @@
 
                 isQuestionLocked(question) {
                     if (!question) return false;
+                    if (this.isCurrentBlockIdentity() && (question.pertanyaan || '').trim().toLowerCase() === 'alamat satuan kerja') {
+                        return false;
+                    }
                     return !!(question.is_readonly || this.isCurrentBlockIdentity());
                 },
 

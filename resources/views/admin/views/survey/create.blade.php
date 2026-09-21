@@ -411,7 +411,7 @@ function renderIdentityBlock(type) {
                 <div class="block-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <h4 class="text-lg font-semibold text-white">Block 1: Identitas Responden</h4>
+                            <h4 class="text-lg font-semibold text-white" id="headerIdentityTitle">Block 1: IDENTITAS LULUSAN</h4>
                             <span class="bg-amber-400 text-amber-950 text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm flex items-center gap-1">
                                 <i class="fas fa-lock"></i> Terkunci Otomatis
                             </span>
@@ -428,9 +428,9 @@ function renderIdentityBlock(type) {
                         <div class="flex items-start gap-3">
                             <i class="fas fa-user-check text-blue-600 text-xl mt-0.5"></i>
                             <div>
-                                <h5 class="text-sm font-bold text-blue-900 mb-1" id="identityBlockTitle">Blok Identitas Responden (${typeTitle})</h5>
+                                <h5 class="text-sm font-bold text-blue-900 mb-1" id="identityBlockTitle">Blok Identitas Responden</h5>
                                 <p class="text-xs text-blue-700">
-                                    Seluruh atribut di bawah ini terisi otomatis dari profil akun responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei. Blok ini wajib ada dan tidak dapat dihapus.
+                                    Sebagian besar atribut di bawah ini terisi otomatis dari profil akun responden dan <strong>tidak dapat diubah (read-only)</strong> saat responden mengisi survei (kecuali beberapa atribut seperti Alamat Satuan Kerja). Blok ini wajib ada dan tidak dapat dihapus.
                                 </p>
                             </div>
                         </div>
@@ -438,7 +438,7 @@ function renderIdentityBlock(type) {
 
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
                         <h5 class="text-sm font-medium text-gray-700 mb-3">Nama Block <span class="text-red-500">*</span></h5>
-                        <input type="text" name="sections[1][section_name]" value="Identitas Responden" readonly
+                        <input type="text" id="identityInputName" name="sections[1][section_name]" value="IDENTITAS LULUSAN" readonly
                                class="focus:shadow-primary-outline text-sm leading-5.6 ease block w-full appearance-none rounded-lg border border-solid border-gray-300 bg-gray-100 px-3 py-2 font-semibold text-gray-700 outline-none cursor-not-allowed" />
                     </div>
 
@@ -487,10 +487,13 @@ function renderIdentityBlock(type) {
         block1 = document.querySelector('.section-block[data-is-identity="true"]') || document.querySelector('.section-block[data-section-id="1"]');
     } else {
         block1.setAttribute('data-is-identity', 'true');
-        const headerTitle = block1.querySelector('.block-header h4');
-        if (headerTitle) headerTitle.textContent = `Block 1: Identitas Responden`;
+        const headerTitle = document.querySelector('#headerIdentityTitle');
         const identityTitle = block1.querySelector('#identityBlockTitle');
-        if (identityTitle) identityTitle.textContent = `Blok Identitas Responden (${typeTitle})`;
+        const inputName = document.querySelector('#identityInputName');
+
+        if (headerTitle) headerTitle.textContent = `Block 1: IDENTITAS ${typeTitle}`;
+        if (identityTitle) identityTitle.textContent = `Blok IDENTITAS ${typeTitle}`;
+        if (inputName) inputName.value = `IDENTITAS ${typeTitle}`;
         const countSpan = block1.querySelector('#identityQuestionsCount');
         if (countSpan) countSpan.textContent = attrs.length;
     }
@@ -1064,7 +1067,9 @@ function updateSectionNumbers() {
         const header = section.querySelector('.block-header h4');
         if (header) {
             if (section.getAttribute('data-is-identity') === 'true' || index === 0) {
-                header.textContent = `Block ${index + 1}: Identitas Responden`;
+                const typeSelect = document.getElementById('type_survei');
+                const normType = (typeSelect && (typeSelect.value === 'penggunaLulusan' || typeSelect.value === 'pengguna_lulusan')) ? 'PENGGUNA LULUSAN' : 'LULUSAN';
+                header.textContent = `Block ${index + 1}: IDENTITAS ${normType}`;
             } else {
                 header.textContent = `Block ${index + 1}`;
             }
