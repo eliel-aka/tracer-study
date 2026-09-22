@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Survey;
 use App\Models\SurveyBlock;
-use App\Models\SurveyBranchRule;
 use App\Models\TemplatePertanyaan;
 use App\Models\TemplateJawaban;
 use Illuminate\Support\Arr;
@@ -25,25 +24,26 @@ class SurveyFlowService
     public function nextQuestion(Survey $survey, TemplatePertanyaan $currentQuestion, array $givenAnswer): ?TemplatePertanyaan
     {
         try {
-            // 1) Cek rule spesifik answer_option
-            $rule = $this->matchOptionRule($survey, $currentQuestion, $givenAnswer);
-            if ($rule) {
-                return $this->firstQuestionOfBlock($rule->target_block_id);
+            // 1) Cek rule spesifik dari answer_option (TemplateJawaban)
+            $targetBlockId = $this->matchOptionNavigation($currentQuestion, $givenAnswer);
+            
+            if ($targetBlockId !== false) {
+                if ($targetBlockId === 'end') {
+                    return null; // selesai
+                }
+                
+                if ($targetBlockId !== 'next' && $targetBlockId !== null) {
+                    return $this->firstQuestionOfBlock((int) $targetBlockId);
+                }
             }
 
-            // 2) Cek rule berbasis operator/value
-            $rule = $this->matchValueRule($survey, $currentQuestion, $givenAnswer);
-            if ($rule) {
-                return $this->firstQuestionOfBlock($rule->target_block_id);
-            }
-
-            // 3) Default: pertanyaan berikutnya dalam blok yang sama
+            // 2) Default: pertanyaan berikutnya dalam blok yang sama
             $nextInBlock = $this->nextQuestionInSameBlock($currentQuestion);
             if ($nextInBlock) {
                 return $nextInBlock;
             }
 
-            // 4) Jika habis, lanjut ke blok berikutnya (berdasarkan urutan)
+            // 3) Jika habis, lanjut ke blok berikutnya (berdasarkan urutan / target_section_id pada blok)
             $nextBlock = $this->nextBlock($survey, $currentQuestion->block_id);
             if (!$nextBlock || $nextBlock->is_terminal) {
                 return null; // selesai
@@ -63,77 +63,32 @@ class SurveyFlowService
     }
 
     /**
-     * Match rule based on selected answer option
+     * Match navigation rule based on selected answer option directly from TemplateJawaban
+     * Returns: 
+     * - false (no matching option or no custom navigation set)
+     * - 'end' (end survey)
+     * - 'next' (next block)
+     * - numeric string (target block ID)
      */
-    protected function matchOptionRule(Survey $survey, TemplatePertanyaan $q, array $answer): ?SurveyBranchRule
+    protected function matchOptionNavigation(TemplatePertanyaan $q, array $answer)
     {
         $answerOptionId = Arr::get($answer, 'answer_option_id');
-        if (!$answerOptionId) return null;
-
-        return SurveyBranchRule::query()
-            ->where('survey_id', $survey->id)
-            ->where('source_question_id', $q->id)
-            ->where('answer_option_id', $answerOptionId)
-            ->orderBy('priority')
-            ->first();
-    }
-
-    /**
-     * Match rule based on value and operator
-     */
-    protected function matchValueRule(Survey $survey, TemplatePertanyaan $q, array $answer): ?SurveyBranchRule
-    {
-        $value = Arr::get($answer, 'value');
-        if ($value === null) return null;
-
-        $rules = SurveyBranchRule::query()
-            ->where('survey_id', $survey->id)
-            ->where('source_question_id', $q->id)
-            ->whereNull('answer_option_id')
-            ->orderBy('priority')
-            ->get();
-
-        foreach ($rules as $rule) {
-            if ($this->evaluateOperator($rule->operator, $value, $rule->value_json)) {
-                return $rule;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Evaluate operator condition
-     */
-    protected function evaluateOperator(?string $op, $value, $valueJson): bool
-    {
-        $target = $valueJson ? (is_array($valueJson) ? $valueJson : json_decode($valueJson, true)) : null;
         
-        switch ($op) {
-            case 'eq':  
-                return (string)$value === (string)$target;
-            case 'neq': 
-                return (string)$value !== (string)$target;
-            case 'gt':  
-                return floatval($value) > floatval($target);
-            case 'gte': 
-                return floatval($value) >= floatval($target);
-            case 'lt':  
-                return floatval($value) < floatval($target);
-            case 'lte': 
-                return floatval($value) <= floatval($target);
-            case 'in':  
-                return is_array($target) && in_array($value, $target);
-            case 'contains':
-                if (is_array($value)) {
-                    return in_array($target, $value);
-                }
-                if (is_array($target)) {
-                    return is_array($value) ? !empty(array_intersect($value, $target)) : in_array($value, $target);
-                }
-                return is_string($value) && is_string($target) && str_contains($value, $target);
-            default:    
-                return false;
+        // Handle checkbox which uses 'value' as an array of IDs, but custom navigation 
+        // usually doesn't work well for multiple choices. We'll take the first one if it exists.
+        if (!$answerOptionId && isset($answer['value']) && is_array($answer['value'])) {
+            $answerOptionId = Arr::first($answer['value']);
         }
+        
+        if (!$answerOptionId) return false;
+
+        $option = TemplateJawaban::find($answerOptionId);
+        
+        if ($option && $option->navigation_target) {
+            return $option->navigation_target;
+        }
+
+        return false;
     }
 
     /**
@@ -170,7 +125,7 @@ class SurveyFlowService
     }
 
     /**
-     * Get next block based on urutan
+     * Get next block based on block's own target_section_id or urutan
      */
     protected function nextBlock(Survey $survey, ?int $currentBlockId): ?SurveyBlock
     {
@@ -179,6 +134,16 @@ class SurveyFlowService
         $current = SurveyBlock::query()->find($currentBlockId);
         if (!$current) return null;
 
+        // Check if block has explicit target
+        if ($current->is_terminal) {
+            return null;
+        }
+        
+        if ($current->target_section_id) {
+            return SurveyBlock::find($current->target_section_id);
+        }
+
+        // Fallback to sequential next
         return SurveyBlock::query()
             ->where('survey_id', $survey->id)
             ->where('urutan', '>', $current->urutan)
@@ -224,18 +189,35 @@ class SurveyFlowService
         $visited[$block->id] = true;
         $recursionStack[$block->id] = true;
 
-        // Get all rules that target other blocks from questions in this block
-        $rules = SurveyBranchRule::query()
-            ->whereIn('source_question_id', function ($query) use ($block) {
+        // Collect all potential targets for this block
+        $targetBlockIds = [];
+        
+        // 1. Target from block itself
+        if ($block->target_section_id) {
+            $targetBlockIds[] = $block->target_section_id;
+        }
+        
+        // 2. Targets from questions inside the block (TemplateJawaban)
+        $optionTargets = TemplateJawaban::query()
+            ->whereIn('id_template_pertanyaan', function ($query) use ($block) {
                 $query->select('id')
                       ->from('template_pertanyaan')
                       ->where('block_id', $block->id);
             })
-            ->get();
-
-        foreach ($rules as $rule) {
-            $targetBlockId = $rule->target_block_id;
+            ->whereNotNull('navigation_target')
+            ->whereNotIn('navigation_target', ['next', 'end', ''])
+            ->pluck('navigation_target')
+            ->toArray();
             
+        foreach ($optionTargets as $targetId) {
+            if (is_numeric($targetId)) {
+                $targetBlockIds[] = (int) $targetId;
+            }
+        }
+        
+        $targetBlockIds = array_unique($targetBlockIds);
+
+        foreach ($targetBlockIds as $targetBlockId) {
             if (!isset($visited[$targetBlockId])) {
                 $targetBlock = SurveyBlock::find($targetBlockId);
                 if ($targetBlock) {

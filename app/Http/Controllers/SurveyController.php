@@ -704,8 +704,26 @@ class SurveyController extends Controller
                         }
                     }
                     
+                    // Build 1-indexed array of syncedBlocks for simpleNavigationResolve
+                    $blocksForNavigation = [];
+                    foreach ($syncedBlocks as $idx => $b) {
+                        $blocksForNavigation[$idx + 1] = $b;
+                    }
+                    
                     // Add or update options
                     foreach ($newOptions as $optionIndex => $optionText) {
+                        $optionNavigation = null;
+                        
+                        if (isset($questionData['option_navigation']) &&
+                            is_array($questionData['option_navigation']) &&
+                            isset($questionData['option_navigation'][$optionIndex])) {
+                            
+                            $navValue = trim($questionData['option_navigation'][$optionIndex]);
+                            if ($navValue !== '') {
+                                $optionNavigation = $this->simpleNavigationResolve($navValue, $blocksForNavigation);
+                            }
+                        }
+
                         \App\Models\TemplateJawaban::updateOrCreate(
                             [
                                 'id_template_pertanyaan' => $question->id,
@@ -713,6 +731,7 @@ class SurveyController extends Controller
                             ],
                             [
                                 'urutan' => $optionIndex + 1,
+                                'navigation_target' => $optionNavigation,
                                 'updated_at' => now()
                             ]
                         );
