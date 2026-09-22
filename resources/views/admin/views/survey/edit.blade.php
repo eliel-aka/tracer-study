@@ -548,7 +548,7 @@ function loadExistingSections() {
                     <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200" ${isIdentity ? 'style="display:none;"' : ''}>
                         <div class="flex items-center">
                             <input type="checkbox" id="kompetensi_${sectionCounter}" name="sections[${sectionCounter}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${sectionCounter}, this)" ${sectionData.metadata && sectionData.metadata.is_kompetensi ? 'checked' : ''}>
-                            <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                            <label for="kompetensi_${sectionCounter}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Mode Sinkronisasi V2)</label>
                         </div>
                         <div id="kompetensi_info_${sectionCounter}" class="${sectionData.metadata && sectionData.metadata.is_kompetensi ? '' : 'hidden'} mt-3 bg-white p-3 rounded border border-blue-100">
                               <div class="mb-3">
@@ -2067,7 +2067,7 @@ function addSectionAfter(afterSectionId) {
                 <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
                     <div class="flex items-center">
                         <input type="checkbox" id="kompetensi_${tempSectionId}" name="sections[${tempSectionId}][is_kompetensi]" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 mr-2" onchange="toggleKompetensiBlock(${tempSectionId}, this)">
-                        <label for="kompetensi_${tempSectionId}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Satu Tabel Analitik)</label>
+                        <label for="kompetensi_${tempSectionId}" class="text-sm font-semibold text-blue-800">Jadikan sebagai Blok Penilaian Kompetensi/Indikator (Mode Sinkronisasi V2)</label>
                     </div>
                     <div id="kompetensi_info_${tempSectionId}" class="hidden mt-3 bg-white p-3 rounded border border-blue-100">
                         <div class="mb-3">
@@ -2742,6 +2742,13 @@ window.applyKompetensiModeToQuestion = function(sectionId, questionsContainer) {
             if (questionTextarea) {
                 const container = questionTextarea.closest('.question-textarea-container');
                 if (container) container.style.display = 'none';
+                
+                // Sembunyikan textarea deskripsi
+                const descTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][description]"]`);
+                if (descTextarea) {
+                    const descContainer = descTextarea.closest('div');
+                    if (descContainer) descContainer.style.display = 'none';
+                }
                 // Initialize indicators from textarea value
                 const list = document.getElementById(`indikatorList-${sectionId}-${qId}`);
                 if (list && list.children.length === 0) {
@@ -2791,6 +2798,13 @@ window.removeKompetensiModeFromQuestions = function(sectionId, questionsContaine
                 if (questionTextarea) {
                     const container = questionTextarea.closest('.question-textarea-container');
                     if (container) container.style.display = 'block';
+                }
+                
+                // Tampilkan kembali textarea deskripsi
+                const descTextarea = document.querySelector(`textarea[name="sections[${sectionId}][questions][${qId}][description]"]`);
+                if (descTextarea) {
+                    const descContainer = descTextarea.closest('div');
+                    if (descContainer) descContainer.style.display = 'block';
                 }
             }
         });
