@@ -105,11 +105,7 @@ class PenggunaLulusanController extends Controller
         // PROSES SIMPAN
         // -------------------------
         try {
-            $nipLast2     = substr($request->nip_baru ?? $request->nip_lama, -2);
-            $namaLast2    = strtolower(substr(preg_replace('/[^A-Za-z]/', '', $request->nama), -2));
-            $tanggalLahir = str_replace('-', '', $request->tanggal_lahir ?? '01');
-            $tanggalLast2 = substr($tanggalLahir, -2);
-            $password     = $nipLast2 . $namaLast2 . $tanggalLast2;
+            $password     = User::generateDefaultPassword($request->nama, $request->nip_baru, $request->nip_lama);
 
             DB::beginTransaction();
 
