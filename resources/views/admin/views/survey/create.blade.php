@@ -699,7 +699,7 @@ function addSection() {
                         <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
                             <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
                             <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
-                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Multiple Choice Grid</strong>.</li>
                             <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
                             <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
                         </ul>
@@ -800,7 +800,7 @@ function addSectionAfter(afterSectionId) {
                         <ul class="text-xs text-blue-700 list-disc list-inside space-y-1 ml-1">
                             <li>Seluruh pertanyaan dalam blok wajib menggunakan <strong>tipe pertanyaan yang sama</strong>.</li>
                             <li>Seluruh pilihan jawaban juga wajib <strong>sama/seragam</strong>.</li>
-                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Checkbox, Dropdown, Multiple Choice Grid</strong>.</li>
+                            <li>Tipe yang diperbolehkan: <strong>Radio Button, Multiple Choice Grid</strong>.</li>
                             <li>Admin cukup menyiapkan <strong>pertanyaan utama</strong>, <strong>template jawaban</strong>, lalu menambahkan <strong>daftar indikator</strong>.</li>
                             <li>Pertanyaan pada blok ini <strong>wajib memiliki label</strong>.</li>
                         </ul>
