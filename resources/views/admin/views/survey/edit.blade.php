@@ -1917,15 +1917,78 @@ function updateQuestionOnclickHandlers(question, sectionId, oldQuestionId, newQu
     }
 
     // Update clone question button
-    const cloneBtn = question.querySelector(`[onclick*="cloneQuestion(${sectionId}, ${oldQuestionId})"]`);
+    const cloneBtn = question.querySelector(`[onclick*="cloneQuestion("]`);
     if (cloneBtn) {
         cloneBtn.setAttribute('onclick', `cloneQuestion(${sectionId}, ${newQuestionId})`);
     }
     
     // Update delete question button
-    const deleteBtn = question.querySelector(`[onclick*="deleteQuestion(${sectionId}, ${oldQuestionId})"]`);
+    const deleteBtn = question.querySelector(`[onclick*="deleteQuestion("]`);
     if (deleteBtn) {
         deleteBtn.setAttribute('onclick', `deleteQuestion(${sectionId}, ${newQuestionId})`);
+    }
+
+    // Update Options Container & List
+    const optionsContainer = question.querySelector(`[id^="optionsContainer-"]`);
+    if (optionsContainer) {
+        optionsContainer.id = `optionsContainer-${sectionId}-${newQuestionId}`;
+    }
+
+    const optionsList = question.querySelector(`[id^="optionsList-"]`);
+    if (optionsList) {
+        optionsList.id = `optionsList-${sectionId}-${newQuestionId}`;
+    }
+
+    // Update Grid Columns Container & List
+    const gridColumnsContainer = question.querySelector(`[id^="gridColumnsContainer-"]`);
+    if (gridColumnsContainer) {
+        gridColumnsContainer.id = `gridColumnsContainer-${sectionId}-${newQuestionId}`;
+    }
+
+    const gridColumnsList = question.querySelector(`[id^="gridColumnsList-"]`);
+    if (gridColumnsList) {
+        gridColumnsList.id = `gridColumnsList-${sectionId}-${newQuestionId}`;
+    }
+
+    // Update Min Gaji Container
+    const minGajiContainer = question.querySelector(`[id^="minGajiContainer-"]`);
+    if (minGajiContainer) {
+        minGajiContainer.id = `minGajiContainer-${sectionId}-${newQuestionId}`;
+    }
+
+    // Update Kompetensi Indikator Container & List
+    const indikatorContainer = question.querySelector(`[id^="indikatorContainer-"]`);
+    if (indikatorContainer) {
+        indikatorContainer.id = `indikatorContainer-${sectionId}-${newQuestionId}`;
+    }
+
+    const indikatorList = question.querySelector(`[id^="indikatorList-"]`);
+    if (indikatorList) {
+        indikatorList.id = `indikatorList-${sectionId}-${newQuestionId}`;
+    }
+
+    // Update Question Type Select handler
+    const typeSelect = question.querySelector('.question-type-select');
+    if (typeSelect) {
+        typeSelect.setAttribute('onchange', `handleQuestionTypeChange(${sectionId}, ${newQuestionId}, this.value)`);
+    }
+
+    // Update Add Option button handler
+    const addOptionButton = question.querySelector(`button[onclick^="addOption("]`);
+    if (addOptionButton) {
+        addOptionButton.setAttribute('onclick', `addOption(${sectionId}, ${newQuestionId})`);
+    }
+
+    // Update Add Grid Column button handler
+    const addGridColumnButton = question.querySelector(`button[onclick^="addGridColumnOption("]`);
+    if (addGridColumnButton) {
+        addGridColumnButton.setAttribute('onclick', `addGridColumnOption(${sectionId}, ${newQuestionId})`);
+    }
+
+    // Update Add Indikator Item button handler
+    const addIndikatorItemButton = question.querySelector(`button[onclick^="addIndikatorItem("]`);
+    if (addIndikatorItemButton) {
+        addIndikatorItemButton.setAttribute('onclick', `addIndikatorItem(${sectionId}, ${newQuestionId})`);
     }
 }
 function updateNavigationOptions() {
