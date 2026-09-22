@@ -55,7 +55,7 @@ class FormBuilderController extends Controller
             'survey_id' => $request->input('survey_id'),
             'has_sections' => !empty($request->input('sections')),
             'sections_count' => count($request->input('sections', [])),
-            'request_size' => strlen(json_encode($request->all()))
+            'sections' => json_encode($request->input('sections'))
         ]);
 
         // Check if this is questions-only save mode
@@ -928,13 +928,45 @@ class FormBuilderController extends Controller
             return;
         }
 
+        // Pre-fetch blocks if needed for navigation resolving
+        $surveyBlocks = null;
+
         $optionData = [];
         foreach ($options as $optionIndex => $optionText) {
             if (!empty(trim($optionText))) {
+                $optionNavigation = null;
+                
+                // Parse option_navigation if provided
+                if (isset($questionData['option_navigation']) &&
+                    is_array($questionData['option_navigation']) &&
+                    isset($questionData['option_navigation'][$optionIndex])) {
+                    
+                    $navValue = trim($questionData['option_navigation'][$optionIndex]);
+                    
+                    if ($navValue === 'end') {
+                        $optionNavigation = 'end';
+                    } elseif ($navValue === 'next') {
+                        $optionNavigation = 'next';
+                    } elseif (strpos($navValue, 'block_') === 0) {
+                        $blockNumber = (int) substr($navValue, 6);
+                        
+                        if (!$surveyBlocks) {
+                            $surveyBlocks = \App\Models\SurveyBlock::where('survey_id', $question->id_survey)
+                                ->orderBy('urutan')
+                                ->get();
+                        }
+                        
+                        if ($blockNumber > 0 && isset($surveyBlocks[$blockNumber - 1])) {
+                            $optionNavigation = (string) $surveyBlocks[$blockNumber - 1]->id;
+                        }
+                    }
+                }
+
                 $optionData[] = [
                     'id_template_pertanyaan' => $question->id,
                     'pilihan_jawaban' => trim($optionText),
                     'urutan' => $optionIndex + 1,
+                    'navigation_target' => $optionNavigation,
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
