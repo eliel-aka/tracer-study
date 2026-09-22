@@ -2160,7 +2160,10 @@ function humanizeValidationField(field, rawMessage) {
         }
 
         if (fieldName === 'section_description') {
-            return `Deskripsi ${sectionLabel} tidak valid.`;
+            if (rawMessage && (rawMessage.includes('greater than') || rawMessage.includes('max') || rawMessage.includes('karakter'))) {
+                return `Deskripsi ${sectionLabel} terlalu panjang (maksimal 5000 karakter).`;
+            }
+            return `Deskripsi ${sectionLabel}: ${normalizeValidationMessage(rawMessage)}`;
         }
 
         return `Pengaturan navigasi pada ${sectionLabel} tidak valid.`;
