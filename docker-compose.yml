@@ -5,14 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: tracer-study-app:v26
+    image: tracer-study-app:v27
     restart: unless-stopped
     working_dir: /var/www
     env_file:
       - .env
     command: sh -c "mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && chown -R www-data:www-data storage && php artisan migrate --force && php-fpm"
     volumes:
-      - app-code-v26:/var/www
+      - app-code-v27:/var/www
     networks:
       - tracer-study-network
 
@@ -27,7 +27,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - app-code-v26:/var/www
+      - app-code-v27:/var/www
     depends_on:
       - tracer-study-app
     networks:
@@ -38,4 +38,4 @@ networks:
     driver: bridge
 
 volumes:
-  app-code-v26:
+  app-code-v27:
