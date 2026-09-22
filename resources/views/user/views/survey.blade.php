@@ -1252,6 +1252,9 @@
                             urutan: block.urutan,
                             nama: block.nama,
                             deskripsi: block.deskripsi,
+                            navigation_type: block.navigation_type,
+                            target_section_id: block.target_section_id,
+                            is_terminal: block.is_terminal,
                             metadata: block.metadata,
                             questions: (this.surveyData[block.id] || this.surveyData[block.nama] || []).map(q => ({
                                 ...q,
@@ -1378,13 +1381,14 @@
                     }
 
                     const navigationTarget = this.resolveCurrentBlockNavigationTarget();
+                    console.log('nextBlock() resolved navigation target:', navigationTarget);
 
                     if (navigationTarget === 'end') {
                         await this.handleSubmit();
                         return;
                     }
 
-                    if (navigationTarget && typeof navigationTarget === 'number') {
+                    if (navigationTarget !== null && navigationTarget !== undefined && navigationTarget !== 'next') {
                         this.jumpToBlock(navigationTarget);
                         return;
                     }
@@ -1423,19 +1427,23 @@
                     });
                 },
 
-                jumpToBlock(blockId) {
+                jumpToBlock(targetId) {
                     this.scrollToTop();
-                    console.log('=== JUMPING TO BLOCK ===');
-                    console.log('Target block ID:', blockId);
+                    console.log('=== JUMPING TO BLOCK ===', targetId);
                     console.log('Available blocks:', this.allBlocks.map(b => ({ id: b.id, nama: b.nama, urutan: b.urutan })));
                     
-                    // Find block by ID
-                    const blockIndex = this.allBlocks.findIndex(block => block.id === blockId);
+                    // 1. Find block by ID (loose comparison for numeric/string)
+                    let blockIndex = this.allBlocks.findIndex(block => String(block.id) === String(targetId));
+                    
+                    // 2. Fallback: Find block by urutan/order if ID match not found
+                    if (blockIndex === -1) {
+                        blockIndex = this.allBlocks.findIndex(block => String(block.urutan) === String(targetId));
+                    }
                     
                     if (blockIndex !== -1) {
                         const targetBlock = this.allBlocks[blockIndex];
                         console.log('✅ Block found, jumping to:', {
-                            blockId: blockId,
+                            targetId: targetId,
                             blockIndex: blockIndex,
                             blockName: targetBlock.nama,
                             blockOrder: targetBlock.urutan,
@@ -1446,20 +1454,18 @@
                         this.loadCurrentBlock();
                         this.updateProgress();
                         
-                        console.log('✅ Jump completed. Current state:', {
-                            currentBlockIndex: this.currentBlockIndex,
-                            currentBlockName: this.currentBlock?.nama,
-                            currentQuestions: this.currentQuestions?.length || 0
-                        });
-
                         this.$nextTick(() => {
                             this.scrollToTop();
                         });
                     } else {
                         console.error('❌ Block not found for jump:', { 
-                            blockId,
-                            availableBlocks: this.allBlocks.map(b => ({ id: b.id, nama: b.nama }))
+                            targetId,
+                            availableBlocks: this.allBlocks.map(b => ({ id: b.id, nama: b.nama, urutan: b.urutan }))
                         });
+                        // Fallback: move to next sequential block
+                        this.currentBlockIndex++;
+                        this.loadCurrentBlock();
+                        this.updateProgress();
                     }
                 },
 
@@ -1477,16 +1483,28 @@
                 },
 
                 resolveCurrentBlockNavigationTarget() {
-                    if (!this.currentQuestions || this.currentQuestions.length === 0) {
-                        return null;
+                    // 1. Prioritas Utama: Custom Navigation dari pilihan jawaban (opsi)
+                    if (this.currentQuestions && this.currentQuestions.length > 0) {
+                        for (let idx = this.currentQuestions.length - 1; idx >= 0; idx--) {
+                            const question = this.currentQuestions[idx];
+                            const target = this.checkBranchingRules(question);
+                            if (target !== null && target !== undefined) {
+                                console.log('Resolved navigation from option custom rule:', target);
+                                return target;
+                            }
+                        }
                     }
 
-                    // Prioritaskan rule dari pertanyaan terakhir dalam blok yang punya navigation target.
-                    for (let idx = this.currentQuestions.length - 1; idx >= 0; idx--) {
-                        const question = this.currentQuestions[idx];
-                        const target = this.checkBranchingRules(question);
-                        if (target) {
-                            return target;
+                    // 2. Prioritas Kedua: Navigasi Blok pada pengaturan blok saat ini (jika tidak ada custom navigation opsi)
+                    if (this.currentBlock) {
+                        if (this.currentBlock.navigation_type === 'submit' || this.currentBlock.is_terminal) {
+                            console.log('Resolved navigation from block rule: SUBMIT/END');
+                            return 'end';
+                        }
+
+                        if (this.currentBlock.navigation_type === 'section' && this.currentBlock.target_section_id) {
+                            console.log('Resolved navigation from block rule: TARGET SECTION', this.currentBlock.target_section_id);
+                            return this.currentBlock.target_section_id;
                         }
                     }
 
@@ -1494,89 +1512,68 @@
                 },
 
                 checkBranchingRules(question) {
-                    console.log('=== CHECKING BRANCHING RULES ===');
-                    console.log('Question:', {
-                        id: question.id,
-                        type: question.tipe,
-                        text: question.pertanyaan
-                    });
-
                     if (!question || !['radio', 'select'].includes(question.tipe)) {
-                        console.log('âŒ No branching rules: not radio/select type');
                         return null;
                     }
 
                     const selectedAnswerId = this.answers[question.id];
-                    console.log('Selected answer ID:', selectedAnswerId);
-                    
                     if (!selectedAnswerId) {
-                        console.log('âŒ No selected answer');
                         return null;
                     }
 
-                    // Find the selected option
-                    const selectedOption = question.template_jawaban.find(opt => opt.id == selectedAnswerId);
-                    console.log('Available options:', question.template_jawaban);
-                    
+                    // Find the selected option (loose equality String match)
+                    const options = question.template_jawaban || [];
+                    const selectedOption = options.find(opt => String(opt.id) === String(selectedAnswerId));
                     if (!selectedOption) {
-                        console.log('âŒ Selected option not found', { 
-                            selectedAnswerId,
-                            availableOptions: question.template_jawaban.map(opt => ({ id: opt.id, text: opt.pilihan_jawaban }))
-                        });
                         return null;
                     }
 
-                    console.log('âœ… Selected option found:', {
-                        option_id: selectedOption.id,
-                        option_text: selectedOption.pilihan_jawaban,
-                        navigation_target: selectedOption.navigation_target
+                    const rawTarget = selectedOption.navigation_target;
+                    if (!rawTarget || rawTarget === '' || rawTarget === null) {
+                        return null;
+                    }
+
+                    const navigationTarget = String(rawTarget).trim();
+                    console.log('Processing option navigation target:', {
+                        questionId: question.id,
+                        selectedOptionId: selectedOption.id,
+                        target: navigationTarget
                     });
 
-                    if (!selectedOption.navigation_target || selectedOption.navigation_target === '' || selectedOption.navigation_target === null) {
-                        console.log('âŒ No navigation target set for this option');
-                        return null;
-                    }
-
-                    const navigationTarget = selectedOption.navigation_target;
-                    console.log('Processing navigation target:', navigationTarget);
-
-                    // Handle different navigation target formats
-                    if (navigationTarget === 'end') {
-                        console.log('ðŸ Navigation target is END SURVEY');
+                    // 1. End survey / submit
+                    if (navigationTarget === 'end' || navigationTarget === 'submit') {
                         return 'end';
-                    } else if (navigationTarget === 'next') {
-                        console.log('âž¡ï¸ Navigation target is NEXT (normal flow)');
-                        return null;
-                    } else if (navigationTarget.startsWith('block_')) {
-                        // Extract block number from 'block_X' format
-                        const blockNumber = parseInt(navigationTarget.substring(6));
-                        console.log('ðŸŽ¯ Navigation target is specific block:', blockNumber);
-                        
-                        console.log('Available blocks for search:', this.allBlocks.map(b => ({ 
-                            id: b.id, 
-                            nama: b.nama, 
-                            urutan: b.urutan 
-                        })));
-                        
-                        // Find the block by its order (urutan)
-                        const targetBlock = this.allBlocks.find(block => block.urutan === blockNumber);
-                        
-                        if (targetBlock) {
-                            console.log('âœ… Target block found:', {
-                                block_id: targetBlock.id,
-                                block_name: targetBlock.nama,
-                                block_order: targetBlock.urutan
-                            });
-                            return targetBlock.id;
-                        } else {
-                            console.log('âŒ Target block not found for order:', blockNumber);
-                            console.log('Available block orders:', this.allBlocks.map(b => b.urutan));
-                        }
-                    } else {
-                        console.log('â“ Unknown navigation target format:', navigationTarget);
                     }
 
-                    console.log('âŒ No matching navigation rule found');
+                    // 2. Explicit next block (normal sequential flow)
+                    if (navigationTarget === 'next') {
+                        return 'next';
+                    }
+
+                    // 3. Numeric ID (e.g. "38", 38)
+                    if (/^\d+$/.test(navigationTarget)) {
+                        const targetId = parseInt(navigationTarget, 10);
+                        const targetBlockById = this.allBlocks.find(b => String(b.id) === String(targetId));
+                        if (targetBlockById) {
+                            return targetBlockById.id;
+                        }
+                        const targetBlockByOrder = this.allBlocks.find(b => String(b.urutan) === String(targetId));
+                        if (targetBlockByOrder) {
+                            return targetBlockByOrder.id;
+                        }
+                        return targetId;
+                    }
+
+                    // 4. Legacy format: 'block_X' (e.g. 'block_6')
+                    if (navigationTarget.startsWith('block_')) {
+                        const blockNumber = parseInt(navigationTarget.substring(6), 10);
+                        const targetBlock = this.allBlocks.find(b => b.urutan === blockNumber || b.id === blockNumber);
+                        if (targetBlock) {
+                            return targetBlock.id;
+                        }
+                    }
+
+                    console.warn('Unknown option navigation target format:', navigationTarget);
                     return null;
                 },
 

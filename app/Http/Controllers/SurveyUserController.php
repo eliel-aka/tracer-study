@@ -271,6 +271,8 @@ class SurveyUserController extends Controller
                     'urutan' => $block->urutan,
                     'deskripsi' => $block->deskripsi,
                     'navigation_type' => $block->navigation_type,
+                    'target_section_id' => $block->target_section_id,
+                    'is_terminal' => (bool)$block->is_terminal,
                     'metadata' => $block->metadata
                 ];
             });
@@ -1209,11 +1211,27 @@ class SurveyUserController extends Controller
             return $nextQuestionInBlock;
         }
 
-        // No more questions in current block, move to next block
+        // No more questions in current block, evaluate block-level navigation rule
         $currentBlock = $currentQuestion->block;
         if (!$currentBlock) {
             Log::info('No current block found');
             return null;
+        }
+
+        if ($currentBlock->navigation_type === 'submit' || $currentBlock->is_terminal) {
+            Log::info('Current block navigation is configured to submit / end');
+            return null;
+        }
+
+        if ($currentBlock->navigation_type === 'section' && $currentBlock->target_section_id) {
+            Log::info('Current block navigation targets specific block', ['target_section_id' => $currentBlock->target_section_id]);
+            $firstQuestionOfTargetBlock = TemplatePertanyaan::with(['templateJawaban', 'block'])
+                ->where('block_id', $currentBlock->target_section_id)
+                ->orderBy('urutan')
+                ->first();
+            if ($firstQuestionOfTargetBlock) {
+                return $firstQuestionOfTargetBlock;
+            }
         }
 
         $nextBlock = \App\Models\SurveyBlock::where('survey_id', $surveyId)
