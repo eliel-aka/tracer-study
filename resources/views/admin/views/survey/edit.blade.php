@@ -1883,6 +1883,24 @@ function updateSectionOnclickHandlers(section, oldId, newId) {
     if (addSectionBtn) {
         addSectionBtn.setAttribute('onclick', `addSectionAfter(${newId})`);
     }
+
+    // Update kompetensi checkbox, label, and info container
+    const kompetensiCheckbox = section.querySelector(`input[id="kompetensi_${oldId}"]`);
+    if (kompetensiCheckbox) {
+        kompetensiCheckbox.id = `kompetensi_${newId}`;
+        kompetensiCheckbox.setAttribute('onchange', `toggleKompetensiBlock(${newId}, this)`);
+        
+        // Update the label's for attribute
+        const kompetensiLabel = section.querySelector(`label[for="kompetensi_${oldId}"]`);
+        if (kompetensiLabel) {
+            kompetensiLabel.setAttribute('for', `kompetensi_${newId}`);
+        }
+    }
+
+    const kompetensiInfo = section.querySelector(`div[id="kompetensi_info_${oldId}"]`);
+    if (kompetensiInfo) {
+        kompetensiInfo.id = `kompetensi_info_${newId}`;
+    }
 }
 
 function updateQuestionOnclickHandlers(question, sectionId, oldQuestionId, newQuestionId) {
