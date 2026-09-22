@@ -196,12 +196,12 @@ class LulusanImport implements ToModel, WithHeadingRow
 
             // Create new record if no existing lulusan found
             // Create the user
-            $userPassNip = $nipBaru ?? $nipLama ?? ($row['nip'] ?? '12345');
+            $defaultPassword = User::generateDefaultPassword($cleanedName, $nipBaru, $nipLama);
             $user = User::firstOrCreate(
                 ['email' => $row['email']],
                 [
                     'name' => $cleanedName,
-                    'password' => bcrypt(substr($userPassNip, 0, 5)),
+                    'password' => bcrypt($defaultPassword),
                     'role' => 'lulusan',
                 ]
             );

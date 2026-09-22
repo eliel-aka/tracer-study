@@ -26,20 +26,21 @@ class SurveyEmailService
                 throw new \Exception('Survey invitation template not found');
             }
 
-            // Generate password: 2 angka terakhir NIP + 2 huruf terakhir nama + 2 angka terakhir tanggal lahir
+            // Generate password 6 digit: kombinasi nama, nip baru, dan nip lama
             if (!$password) {
-                $nip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
-                $nama = $user->name ?? '';
-                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->penggunaLulusan->tanggal_lahir ?? '01';
-                
-                if ($nip && $nama) {
-                    $nipLast2 = substr($nip, -2);
-                    $namaLast2 = strtolower(substr(preg_replace('/[^A-Za-z]/', '', $nama), -2));
-                    $tanggalLast2 = substr(str_replace('-', '', $tanggalLahir), -2);
-                    $password = $nipLast2 . $namaLast2 . $tanggalLast2;
-                } else {
-                    $password = 'password123';
+                $nipBaru = $user->lulusan->nip_baru ?? $user->penggunaLulusan->nip_baru ?? null;
+                $nipLama = $user->lulusan->nip_lama ?? $user->penggunaLulusan->nip_lama ?? null;
+                if (!$nipBaru && !$nipLama) {
+                    $rawNip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
+                    if (strlen($rawNip) === 18) {
+                        $nipBaru = $rawNip;
+                    } elseif (strlen($rawNip) === 9) {
+                        $nipLama = $rawNip;
+                    } else {
+                        $nipBaru = $rawNip;
+                    }
                 }
+                $password = User::generateDefaultPassword($user->name, $nipBaru, $nipLama);
             }
 
             $subject = $this->replacePlaceholders($template->subject, $user, $survey, $password);
@@ -86,20 +87,21 @@ class SurveyEmailService
                 throw new \Exception('Survey reminder template not found');
             }
 
-            // Generate password: 2 angka terakhir NIP + 2 huruf terakhir nama + 2 angka terakhir tanggal lahir
+            // Generate password 6 digit: kombinasi nama, nip baru, dan nip lama
             if (!$password) {
-                $nip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
-                $nama = $user->name ?? '';
-                $tanggalLahir = $user->lulusan->tanggal_lahir ?? $user->penggunaLulusan->tanggal_lahir ?? '01';
-                
-                if ($nip && $nama) {
-                    $nipLast2 = substr($nip, -2);
-                    $namaLast2 = strtolower(substr(preg_replace('/[^A-Za-z]/', '', $nama), -2));
-                    $tanggalLast2 = substr(str_replace('-', '', $tanggalLahir), -2);
-                    $password = $nipLast2 . $namaLast2 . $tanggalLast2;
-                } else {
-                    $password = 'password123';
+                $nipBaru = $user->lulusan->nip_baru ?? $user->penggunaLulusan->nip_baru ?? null;
+                $nipLama = $user->lulusan->nip_lama ?? $user->penggunaLulusan->nip_lama ?? null;
+                if (!$nipBaru && !$nipLama) {
+                    $rawNip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
+                    if (strlen($rawNip) === 18) {
+                        $nipBaru = $rawNip;
+                    } elseif (strlen($rawNip) === 9) {
+                        $nipLama = $rawNip;
+                    } else {
+                        $nipBaru = $rawNip;
+                    }
                 }
+                $password = User::generateDefaultPassword($user->name, $nipBaru, $nipLama);
             }
 
             $subject = $this->replacePlaceholders($template->subject, $user, $survey, $password);

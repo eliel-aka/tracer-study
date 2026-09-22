@@ -48,7 +48,7 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Lulusan User',
                 'email' => 'lulusan@lulusan.com',
-                'password' => Hash::make('123123123'),
+                'password' => Hash::make('password'),
                 'role' => 'lulusan',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -85,7 +85,7 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Pengguna Lulusan User',
                 'email' => 'penggunaLulusan@penggunaLulusan.com',
-                'password' => Hash::make('123123123'),
+                'password' => Hash::make('password'),
                 'role' => 'pengguna_lulusan',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -128,8 +128,8 @@ class RoleSeeder extends Seeder
 
         $this->command->info('✅ Demo users created with credentials:');
         $this->command->info('👑 Admin: admin@admin.com / 123123123');
-        $this->command->info('🎓 Lulusan: lulusan@lulusan.com / 123123123');
-        $this->command->info('👔 Pengguna Lulusan: penggunaLulusan@penggunaLulusan.com / 123123123');
+        $this->command->info('🎓 Lulusan: lulusan@lulusan.com / password');
+        $this->command->info('👔 Pengguna Lulusan: penggunaLulusan@penggunaLulusan.com / password');
         $this->command->info('📊 Supervisor: supervisor@example.com / 123123123');
         $this->command->info('');
         $this->command->info('🎉 All roles and demo users have been created successfully!');

@@ -52,11 +52,12 @@ class PenggunaLulusanImport implements ToModel, WithHeadingRow
             }
 
             // Create the user
-            $user = User::updateOrCreate(
+            $defaultPassword = User::generateDefaultPassword($row['nama'], $nipBaru, $nipLama);
+            $user = User::firstOrCreate(
                 ['email' => $row['email']], // Check for duplicate email
                 [
                     'name' => $row['nama'],
-                    'password' => bcrypt(substr($nipVal, 0, 5)), // Use first 5 digits of NIP as password
+                    'password' => bcrypt($defaultPassword),
                     'role' => 'pengguna_lulusan',
                 ]
             );

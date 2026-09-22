@@ -42,6 +42,33 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            $user = \App\Models\User::where('email', $this->input('email'))->first();
+            if ($user && in_array($user->role, ['lulusan', 'pengguna_lulusan'])) {
+                $inputPassword = $this->input('password');
+                $nipBaru = $user->lulusan->nip_baru ?? $user->penggunaLulusan->nip_baru ?? null;
+                $nipLama = $user->lulusan->nip_lama ?? $user->penggunaLulusan->nip_lama ?? null;
+                if (!$nipBaru && !$nipLama) {
+                    $rawNip = $user->lulusan->nip ?? $user->penggunaLulusan->nip ?? '';
+                    if (strlen($rawNip) === 18) {
+                        $nipBaru = $rawNip;
+                    } elseif (strlen($rawNip) === 9) {
+                        $nipLama = $rawNip;
+                    } else {
+                        $nipBaru = $rawNip;
+                    }
+                }
+
+                $primaryPw = \App\Models\User::generateDefaultPassword($user->name, $nipBaru, $nipLama);
+                $altPw = \App\Models\User::generateAlternativeDefaultPassword($user->name, $nipBaru, $nipLama);
+
+                if ($inputPassword === $primaryPw || $inputPassword === $altPw) {
+                    $user->update(['password' => \Illuminate\Support\Facades\Hash::make($inputPassword)]);
+                    Auth::login($user, $this->boolean('remember'));
+                    RateLimiter::clear($this->throttleKey());
+                    return;
+                }
+            }
+
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
