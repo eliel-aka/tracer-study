@@ -1,9 +1,14 @@
 @if ($errors->any())
     <div class="mb-6 alert alert-danger alert-with-icon" data-notify="container">
         <span data-notify="icon" class="fas fa-times-circle"></span>
-        <span data-notify="message" class="text-sm font-semibold">
-            <strong>Perhatian!</strong> Terjadi kesalahan saat memproses data
-        </span>
+        <div data-notify="message" class="text-sm font-semibold">
+            <div><strong>Perhatian!</strong> Terjadi kesalahan saat memproses data:</div>
+            <ul class="mt-1.5 ml-4 list-disc list-outside text-xs font-normal space-y-0.5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     </div>
 @endif
 
