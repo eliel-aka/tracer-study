@@ -134,3 +134,19 @@ Route::prefix('surveys/{survey}')->name('surveys.')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+Route::get("/debug-survey-flow/{survey:slug}", function(\App\Models\Survey $survey) {
+    $blocks = \App\Models\SurveyBlock::where("survey_id", $survey->id)->orderBy("urutan")->get();
+    $data = [];
+    foreach($blocks as $b) {
+        $qData = [];
+        foreach(\App\Models\TemplatePertanyaan::where("block_id", $b->id)->get() as $q) {
+            $optData = [];
+            foreach(\App\Models\TemplateJawaban::where("id_template_pertanyaan", $q->id)->get() as $opt) {
+                $optData[] = ["id" => $opt->id, "text" => $opt->pilihan_jawaban, "nav_target" => $opt->navigation_target];
+            }
+            $qData[] = ["id" => $q->id, "text" => $q->pertanyaan, "options" => $optData];
+        }
+        $data[] = ["block_id" => $b->id, "block_nama" => $b->nama, "target_section_id" => $b->target_section_id, "questions" => $qData];
+    }
+    return response()->json($data);
+});
